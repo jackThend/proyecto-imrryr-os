@@ -1,0 +1,19 @@
+{
+  "name": "tts_local",
+  "description": "Convierte texto a voz usando TTS local (edge-tts o pyttsx3)",
+  "script": "skills/tts_local.py",
+  "arguments": [
+    {
+      "name": "text",
+      "type": "string",
+      "description": "Texto a convertir en audio",
+      "required": true
+    },
+    {
+      "name": "voz",
+      "type": "string",
+      "description": "Idioma/voz (es-CL, es-ES, en-US, etc.)",
+      "required": false
+    }
+  ]
+}

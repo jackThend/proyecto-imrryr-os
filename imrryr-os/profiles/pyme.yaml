@@ -1,0 +1,34 @@
+# Perfil: Pyme / Comercial — Solo operaciones core, sin código
+nombre: "Imrryr OS — Perfil Pyme"
+descripcion: "Versión comercial para empresas. Sin acceso a código ni terminal. Enfocado en finanzas, CRM, eventos y WhatsApp."
+
+# Agentes incluidos (sin Build)
+agentes:
+  - agente_financiero.yaml
+  - agente_investigador.yaml
+  - agente_creativo.yaml
+  - agente_crm.yaml
+  - guardia_seguridad.yaml
+
+# Skills incluidos (solo operacionales)
+skills:
+  - inyectar_gasto.py
+  - scraper_fondos.py
+  - crear_evento.py
+  - tts_local.py
+  - transcribir_audio.py
+  - recordatorios.py
+
+# Capacidades bloqueadas
+bloqueos:
+  - terminal
+  - ejecutar_script_python
+  - modificar_agentes
+  - acceso_build
+
+# Módulos activos
+modulos:
+  gateway: true
+  dashboard: true
+  terminal: false
+  codigo: false

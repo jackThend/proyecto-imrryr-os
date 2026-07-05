@@ -1,0 +1,19 @@
+{
+  "name": "enviar_alerta",
+  "description": "Registra una alerta en vault/alertas.log y, si el gateway de WhatsApp está activo, la reenvía al celular del usuario. Usado por el Guardia de Seguridad para avisar sobre procesos atascados o consumo excesivo de tokens.",
+  "script": "skills/enviar_alerta.py",
+  "arguments": [
+    {
+      "name": "mensaje",
+      "type": "string",
+      "description": "Texto de la alerta",
+      "required": true
+    },
+    {
+      "name": "nivel",
+      "type": "string",
+      "description": "Severidad: info, warning o critical",
+      "required": false
+    }
+  ]
+}

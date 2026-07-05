@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Imrryr OS</title>
+<style>
+  :root {
+    --bg: #0f0f12;
+    --surface: #1a1a20;
+    --surface2: #22222b;
+    --border: #2a2a35;
+    --text: #c8c8d0;
+    --text-dim: #7a7a8a;
+    --accent: #7c6ff0;
+    --accent2: #4ecdc4;
+    --red: #ff6b6b;
+    --yellow: #ffd93d;
+    --radius: 10px;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    padding: 16px;
+    min-height: 100vh;
+  }
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 16px; margin-bottom: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .header h1 {
+    font-size: 16px; font-weight: 500; letter-spacing: 1.5px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .status-bar { display: flex; gap: 12px; align-items: center; }
+  .status-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-dim); transition: all 0.3s;
+  }
+  .status-dot.on { background: var(--accent2); box-shadow: 0 0 5px var(--accent2); }
+  .status-dot.off { background: var(--red); }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 12px;
+  }
+  .widget {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+    cursor: grab;
+    transition: box-shadow 0.15s, opacity 0.15s;
+    min-height: 160px;
+    display: flex; flex-direction: column;
+  }
+  .widget:active { cursor: grabbing; }
+  .widget.drag-over { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+  .widget.dragging { opacity: 0.4; }
+  .widget-header {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 10px; padding-bottom: 6px;
+    border-bottom: 1px solid var(--border);
+  }
+  .widget-title {
+    font-size: 11px; font-weight: 600; color: var(--text-dim);
+    text-transform: uppercase; letter-spacing: 1px;
+  }
+  .widget-content { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; min-height: 0; }
+  .widget-content p { margin-bottom: 6px; }
+  .widget-error {
+    padding: 8px; background: rgba(255,107,107,0.1); border-radius: 6px;
+    color: var(--red); font-size: 12px; border: 1px solid rgba(255,107,107,0.2);
+  }
+
+  .metric-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 5px 0; border-bottom: 1px solid var(--border);
+  }
+  .metric-row:last-child { border: none; }
+  .metric-label { color: var(--text-dim); font-size: 12px; }
+  .metric-value { font-weight: 500; color: var(--accent2); font-size: 13px; }
+
+  .bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .bar-fill {
+    height: 14px; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.4s ease;
+    min-width: 4px; flex-shrink: 0;
+  }
+  .bar-label { font-size: 11px; color: var(--text-dim); min-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-value { font-size: 10px; color: var(--text); min-width: 45px; text-align: right; }
+
+  .chat-area {
+    display: flex; flex-direction: column; flex: 1; min-height: 0;
+  }
+  .chat-msgs {
+    flex: 1; overflow-y: auto; margin-bottom: 8px;
+    font-size: 12px; line-height: 1.5;
+    min-height: 60px; max-height: 200px;
+    padding: 4px 0;
+  }
+  .chat-msgs .user { color: var(--accent); margin-bottom: 3px; }
+  .chat-msgs .assistant { color: var(--text); margin-bottom: 8px; }
+  .chat-msgs .error { color: var(--red); margin-bottom: 8px; }
+  .chat-msgs .thinking { color: var(--text-dim); font-style: italic; margin-bottom: 8px; }
+  .chat-box {
+    display: flex; gap: 6px; flex-shrink: 0;
+  }
+  .chat-box input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 7px 10px; color: var(--text);
+    font-size: 12px; outline: none;
+  }
+  .chat-box input:focus { border-color: var(--accent); }
+  .chat-box button {
+    background: var(--accent); color: white; border: none;
+    border-radius: 6px; padding: 7px 14px; cursor: pointer;
+    font-size: 12px; transition: opacity 0.15s; white-space: nowrap;
+  }
+  .chat-box button:disabled { opacity: 0.5; cursor: not-allowed; }
+  .chat-box button:not(:disabled):hover { opacity: 0.85; }
+
+  .seed-item {
+    padding: 5px 0; border-bottom: 1px solid var(--border);
+    font-size: 12px; cursor: pointer; transition: color 0.15s;
+  }
+  .seed-item:last-child { border: none; }
+  .seed-item:hover { color: var(--accent); }
+
+  .tag {
+    display: inline-block; background: var(--surface2);
+    padding: 2px 7px; border-radius: 4px; font-size: 10px;
+    margin: 1px; color: var(--text-dim);
+  }
+
+  .loading {
+    display: flex; align-items: center; justify-content: center;
+    height: 100%; color: var(--text-dim); font-size: 11px;
+  }
+  .loading::after {
+    content: ''; width: 10px; height: 10px; margin-left: 6px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty { color: var(--text-dim); font-size: 12px; text-align: center; padding: 16px; }
+
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 10px 16px;
+    font-size: 12px; color: var(--text);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    transform: translateY(80px); opacity: 0;
+    transition: transform 0.3s, opacity 0.3s;
+    z-index: 100;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.error { border-color: var(--red); }
+  .toast.success { border-color: var(--accent2); }
+
+  .refresh-btn {
+    background: none; border: none; color: var(--text-dim);
+    cursor: pointer; font-size: 14px; padding: 2px 4px;
+    border-radius: 3px; transition: color 0.15s;
+  }
+  .refresh-btn:hover { color: var(--accent); }
+
+  .gw-modo-btn {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 6px; padding: 5px 10px; font-size: 11px; cursor: pointer; flex: 1;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .gw-modo-btn.active { border-color: var(--accent); color: var(--accent); }
+  .gw-field { margin-bottom: 6px; }
+  .gw-field label {
+    display: block; font-size: 10px; color: var(--text-dim);
+    margin-bottom: 2px; text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .gw-field input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; color: var(--text); font-size: 12px; outline: none;
+  }
+  .gw-field input:focus { border-color: var(--accent); }
+  .gw-save-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; cursor: pointer; margin-top: 2px;
+  }
+  .gw-save-btn:hover { opacity: 0.85; }
+  .gw-qr { text-align: center; margin: 8px 0; }
+  .gw-qr img { max-width: 160px; border-radius: 6px; border: 1px solid var(--border); background: #fff; padding: 4px; }
+
+  @media (max-width: 768px) {
+    .grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 8px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>IMRRYR OS</h1>
+  <div class="status-bar" id="statusBar"></div>
+</div>
+<div class="grid" id="widgetGrid"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// --- Toast ---
+let toastTimer = null;
+function mostrarToast(msg, tipo) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (tipo ? ' ' + tipo : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+// --- Drag & Drop ---
+let dragSrc = null;
+document.addEventListener('dragstart', e => {
+  const w = e.target.closest('.widget');
+  if (!w) return;
+  w.classList.add('dragging'); dragSrc = w;
+  e.dataTransfer.effectAllowed = 'move';
+});
+document.addEventListener('dragend', () => {
+  document.querySelectorAll('.widget').forEach(w => w.classList.remove('dragging', 'drag-over'));
+});
+document.addEventListener('dragover', e => {
+  e.preventDefault();
+  const w = e.target.closest('.widget');
+  if (w && w !== dragSrc) w.classList.add('drag-over');
+});
+document.addEventListener('dragleave', e => {
+  e.target.closest('.widget')?.classList.remove('drag-over');
+});
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  const w = e.target.closest('.widget');
+  if (!w || w === dragSrc) return;
+  w.classList.remove('drag-over');
+  const g = document.getElementById('widgetGrid');
+  const kids = [...g.children];
+  if (kids.indexOf(dragSrc) < kids.indexOf(w))
+    w.insertAdjacentElement('afterend', dragSrc);
+  else
+    w.insertAdjacentElement('beforebegin', dragSrc);
+  guardarOrden();
+});
+function guardarOrden() {
+  const orden = [...document.getElementById('widgetGrid').children].map(w => w.dataset.id);
+  localStorage.setItem('imrryr_order', JSON.stringify(orden));
+}
+function cargarOrden() {
+  try { return JSON.parse(localStorage.getItem('imrryr_order')); } catch { return null; }
+}
+
+// --- Cargar widgets ---
+async function cargarWidgets() {
+  const grid = document.getElementById('widgetGrid');
+  try {
+    const r = await fetch('/api/widgets');
+    const data = await r.json();
+    const base = [
+      { id: 'finanzas', nombre: 'Finanzas' },
+      { id: 'chat', nombre: 'Terminal' },
+      { id: 'semillas', nombre: 'Semillas' },
+      { id: 'gateway', nombre: 'Gateway WhatsApp' },
+      ...data.widgets.map(w => ({ id: w.id, nombre: w.nombre, desc: w.descripcion, tools: w.herramientas }))
+    ];
+    const orden = cargarOrden();
+    if (orden) base.sort((a,b) => (orden.indexOf(a.id)<0?999:orden.indexOf(a.id)) - (orden.indexOf(b.id)<0?999:orden.indexOf(b.id)));
+    grid.innerHTML = '';
+    for (const w of base) {
+      const div = document.createElement('div');
+      div.className = 'widget'; div.draggable = true; div.dataset.id = w.id;
+      div.innerHTML = `<div class="widget-header"><span class="widget-title">${w.nombre}</span></div><div class="widget-content" id="w-${w.id}"><div class="loading">Cargando</div></div>`;
+      grid.appendChild(div);
+      switch (w.id) {
+        case 'finanzas': cargarFinanzas(); break;
+        case 'chat': cargarChat(); break;
+        case 'semillas': cargarSemillas(); break;
+        case 'gateway': cargarGateway(); break;
+        default: cargarWidgetGen(w); break;
+      }
+    }
+  } catch (e) {
+    grid.innerHTML = `<div class="widget" style="cursor:default;grid-column:1/-1;align-items:center;justify-content:center;min-height:200px"><div class="widget-error">Error al conectar con el servidor: ${e.message}</div></div>`;
+  }
+}
+
+// --- Finanzas ---
+let finanzasTimer = null;
+async function cargarFinanzas() {
+  const el = document.getElementById('w-finanzas');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/finanzas');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const cats = Object.entries(d.por_categoria || {}).slice(0, 5);
+    const max = Math.max(...cats.map(([,v]) => v.subtotal), 1);
+    let html = `<div class="metric-row"><span class="metric-label">Total gastos</span><span class="metric-value">$${(d.total||0).toFixed(0)}</span></div>`;
+    if (cats.length) {
+      html += '<div style="margin-top:6px">';
+      for (const [cat, info] of cats) {
+        const pct = (info.subtotal / max * 100).toFixed(0);
+        html += `<div class="bar"><span class="bar-label">${cat}</span><div class="bar-fill" style="width:${pct}%"></div><span class="bar-value">$${info.subtotal.toFixed(0)}</span></div>`;
+      }
+      html += '</div>';
+    } else {
+      html += '<div class="empty">Sin gastos registrados</div>';
+    }
+    if (d.gastos && d.gastos.length) {
+      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Ultimo: ${d.gastos[0].comercio} — $${d.gastos[0].monto.toFixed(0)}</div>`;
+    }
+    el.innerHTML = html;
+    // Auto-refresh cada 30s
+    clearTimeout(finanzasTimer);
+    finanzasTimer = setTimeout(cargarFinanzas, 30000);
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+// --- Semillas ---
+async function cargarSemillas() {
+  const el = document.getElementById('w-semillas');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/semillas');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    if (!d.semillas || !d.semillas.length) {
+      el.innerHTML = '<div class="empty">Sin semillas. Crea un .md en /semillas</div>';
+      return;
+    }
+    el.innerHTML = d.semillas.slice(0, 12).map(s =>
+      `<div class="seed-item" onclick="mostrarToast('${s.nombre.replace(/'/g,"\\'")}','')" title="${s.contenido.replace(/"/g,'&quot;').slice(0,200)}">${s.nombre}</div>`
+    ).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+// --- Gateway WhatsApp (Local/QR o Cloud API) ---
+const GATEWAY_URL = 'http://localhost:5050';
+let gwConfigActual = null;
+let gwRefreshTimer = null;
+
+async function cargarGateway() {
+  const el = document.getElementById('w-gateway');
+  if (!el) return;
+  try {
+    const r = await fetch(GATEWAY_URL + '/api/gateway/config');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    gwConfigActual = await r.json();
+    renderGateway();
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Gateway no disponible: ${e.message}</div>`;
+  }
+}
+
+function renderGateway() {
+  const el = document.getElementById('w-gateway');
+  if (!el || !gwConfigActual) return;
+  const modo = gwConfigActual.modo;
+  let html = `<div style="display:flex;gap:6px;margin-bottom:10px">
+    <button class="gw-modo-btn ${modo === 'local' ? 'active' : ''}" onclick="cambiarModoGateway('local')">Local (QR)</button>
+    <button class="gw-modo-btn ${modo === 'cloud' ? 'active' : ''}" onclick="cambiarModoGateway('cloud')">Cloud API</button>
+  </div>`;
+
+  if (modo === 'local') {
+    const conectado = !!(gwConfigActual.local && gwConfigActual.local.conectado);
+    html += `<div style="font-size:11px;margin-bottom:6px">Estado: <span style="color:${conectado ? 'var(--accent2)' : 'var(--yellow)'}">${conectado ? 'Conectado' : 'Esperando escaneo de QR'}</span></div>`;
+    if (!conectado) {
+      html += `<div class="gw-qr"><img id="gwQrImg" src="${GATEWAY_URL}/api/gateway/qr?_=${Date.now()}" onerror="this.style.display='none'; document.getElementById('gwQrMsg').style.display='block'"></div>
+        <div class="empty" id="gwQrMsg" style="display:none">QR aún no disponible. Verifica que el sidecar (gateway/whatsapp_local) esté corriendo.</div>`;
+    }
+  } else {
+    const cloud = gwConfigActual.cloud || {};
+    html += `
+      <div class="gw-field"><label>Phone Number ID</label><input id="gwPhoneId" value="${cloud.phone_number_id || ''}"></div>
+      <div class="gw-field"><label>Access Token</label><input id="gwToken" type="password" placeholder="${cloud.access_token || 'sin configurar'}"></div>
+      <div class="gw-field"><label>Verify Token</label><input id="gwVerify" value="${cloud.verify_token || ''}"></div>
+      <button class="gw-save-btn" onclick="guardarGatewayCloud()">Guardar credenciales</button>
+    `;
+  }
+  el.innerHTML = html;
+
+  clearTimeout(gwRefreshTimer);
+  if (modo === 'local' && !(gwConfigActual.local && gwConfigActual.local.conectado)) {
+    gwRefreshTimer = setTimeout(cargarGateway, 5000);
+  }
+}
+
+async function cambiarModoGateway(modo) {
+  try {
+    const r = await fetch(GATEWAY_URL + '/api/gateway/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ modo }),
+    });
+    gwConfigActual = await r.json();
+    renderGateway();
+    mostrarToast('Modo WhatsApp: ' + modo, 'success');
+  } catch (e) {
+    mostrarToast('Error cambiando modo: ' + e.message, 'error');
+  }
+}
+
+async function guardarGatewayCloud() {
+  const cloud = {
+    phone_number_id: document.getElementById('gwPhoneId').value.trim(),
+    verify_token: document.getElementById('gwVerify').value.trim(),
+  };
+  const token = document.getElementById('gwToken').value.trim();
+  if (token) cloud.access_token = token;
+  try {
+    const r = await fetch(GATEWAY_URL + '/api/gateway/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ cloud }),
+    });
+    gwConfigActual = await r.json();
+    renderGateway();
+    mostrarToast('Credenciales guardadas', 'success');
+  } catch (e) {
+    mostrarToast('Error guardando: ' + e.message, 'error');
+  }
+}
+
+// --- Chat ---
+let chatHistorial = [];
+function cargarChat() {
+  const el = document.getElementById('w-chat');
+  if (!el) return;
+  el.style.display = 'flex'; el.style.flexDirection = 'column';
+  el.innerHTML = `<div class="chat-area">
+    <div class="chat-msgs" id="chatMsgs"></div>
+    <div class="chat-box">
+      <input type="text" id="chatInp" placeholder="Escribe un mensaje..." autocomplete="off">
+      <button id="chatBtn">Enviar</button>
+    </div>
+  </div>`;
+  document.getElementById('chatInp').addEventListener('keydown', e => { if (e.key === 'Enter') enviarChat(); });
+  document.getElementById('chatBtn').addEventListener('click', enviarChat);
+  if (chatHistorial.length) renderChat();
+}
+function renderChat() {
+  const el = document.getElementById('chatMsgs');
+  if (!el) return;
+  el.innerHTML = chatHistorial.map(m => `<div class="${m.role}">${m.role === 'user' ? '> ' : ''}${m.text}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+async function enviarChat() {
+  const inp = document.getElementById('chatInp');
+  const btn = document.getElementById('chatBtn');
+  const texto = inp.value.trim();
+  if (!texto || btn.disabled) return;
+  inp.value = '';
+  chatHistorial.push({ role: 'user', text: texto });
+  chatHistorial.push({ role: 'thinking', text: 'Pensando...' });
+  renderChat();
+  btn.disabled = true;
+  try {
+    const r = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensaje: texto }),
+      signal: AbortSignal.timeout(120000),
+    });
+    const data = await r.json();
+    chatHistorial.pop();
+    if (data.error) {
+      chatHistorial.push({ role: 'error', text: 'Error: ' + data.error });
+    } else {
+      chatHistorial.push({ role: 'assistant', text: data.respuesta || '(sin respuesta)' });
+    }
+  } catch (e) {
+    chatHistorial.pop();
+    chatHistorial.push({ role: 'error', text: 'Error de conexion: ' + e.message });
+  }
+  renderChat();
+  btn.disabled = false;
+  inp.focus();
+  // Mantener solo ultimos 20 mensajes
+  if (chatHistorial.length > 40) chatHistorial = chatHistorial.slice(-40);
+}
+
+// --- Widget generico (desde YAML) ---
+function cargarWidgetGen(w) {
+  const el = document.getElementById('w-' + w.id);
+  if (!el) return;
+  let html = w.desc ? `<p style="font-size:12px;color:var(--text-dim)">${w.desc}</p>` : '';
+  if (w.tools && w.tools.length) html += '<div style="margin-top:6px">' + w.tools.map(t => `<span class="tag">${t}</span>`).join('') + '</div>';
+  el.innerHTML = html || '<div class="empty">Sin informacion</div>';
+}
+
+// --- Status dots ---
+async function actualizarStatus() {
+  const bar = document.getElementById('statusBar');
+  try {
+    const r = await fetch('/api/status');
+    if (!r.ok) throw new Error('');
+    const d = await r.json();
+    const svc = d.servicios || {};
+    bar.innerHTML = ['litellm','opencode','gateway'].map(s =>
+      `<div class="status-item"><span class="status-dot ${svc[s]?'on':'off'}"></span>${s}</div>`
+    ).join('');
+  } catch {
+    bar.innerHTML = '<div class="status-item" style="color:var(--red)">sin conexion</div>';
+  }
+}
+
+// --- Init ---
+cargarWidgets();
+actualizarStatus();
+setInterval(actualizarStatus, 15000);
+</script>
+</body>
+</html>

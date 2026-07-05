@@ -1,0 +1,31 @@
+{
+  "name": "recordatorios",
+  "description": "Gestiona recordatorios y alarmas programadas",
+  "script": "skills/recordatorios.py",
+  "arguments": [
+    {
+      "name": "crear",
+      "type": "string",
+      "description": "Mensaje del recordatorio",
+      "required": false
+    },
+    {
+      "name": "cuando",
+      "type": "string",
+      "description": "Fecha y hora ISO (YYYY-MM-DD HH:MM)",
+      "required": false
+    },
+    {
+      "name": "ejecutar",
+      "type": "boolean",
+      "description": "Disparar recordatorios vencidos",
+      "required": false
+    },
+    {
+      "name": "listar",
+      "type": "boolean",
+      "description": "Listar recordatorios pendientes",
+      "required": false
+    }
+  ]
+}

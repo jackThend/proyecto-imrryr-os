@@ -1,0 +1,13 @@
+{
+  "name": "scraper_fondos",
+  "description": "Busca fondos concursables en portales públicos (Sercotec, Corfo)",
+  "script": "skills/scraper_fondos.py",
+  "arguments": [
+    {
+      "name": "fuente",
+      "type": "string",
+      "description": "Fuente específica: sercotec o corfo",
+      "required": false
+    }
+  ]
+}

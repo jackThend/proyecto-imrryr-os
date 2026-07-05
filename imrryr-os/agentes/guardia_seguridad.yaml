@@ -1,0 +1,12 @@
+nombre: "Guardia de Seguridad"
+descripcion: >
+  Módulo silencioso de observabilidad. Monitorea procesos, detecta bucles
+  infinitos o consumo excesivo de tokens y detiene tareas atascadas.
+herramientas_permitidas:
+  - monitorear_procesos
+  - detener_proceso
+  - enviar_alerta
+modelo_preferido: gemini-flash
+activo: true
+tipo: observabilidad
+timeout_max: 300

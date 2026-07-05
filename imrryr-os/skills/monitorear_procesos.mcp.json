@@ -1,0 +1,13 @@
+{
+  "name": "monitorear_procesos",
+  "description": "Lista los procesos hijos de OpenCode/LiteLLM/Gateway y marca cuáles llevan más tiempo activo que el umbral dado (por defecto 300s). Usado por el Guardia de Seguridad para detectar tareas atascadas (ej. scraping colgado).",
+  "script": "skills/monitorear_procesos.py",
+  "arguments": [
+    {
+      "name": "timeout",
+      "type": "number",
+      "description": "Segundos a partir de los cuales un proceso se considera atascado",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "name": "imrryr-whatsapp-local",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sidecar local de WhatsApp (whatsapp-web.js + QR, sin cuenta Meta) para Imrryr OS.",
+  "main": "index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.1",
+    "qrcode": "^1.5.4",
+    "whatsapp-web.js": "^1.26.0"
+  }
+}

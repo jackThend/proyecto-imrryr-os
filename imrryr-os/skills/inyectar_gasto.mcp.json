@@ -1,0 +1,31 @@
+{
+  "name": "inyectar_gasto",
+  "description": "Inserta un gasto en la base de datos SQLite y lista gastos recientes",
+  "script": "skills/inyectar_gasto.py",
+  "arguments": [
+    {
+      "name": "monto",
+      "type": "number",
+      "description": "Monto del gasto",
+      "required": true
+    },
+    {
+      "name": "comercio",
+      "type": "string",
+      "description": "Nombre del comercio o servicio",
+      "required": true
+    },
+    {
+      "name": "categoria",
+      "type": "string",
+      "description": "Categoría del gasto (software, suscripciones, servicios, etc.)",
+      "required": false
+    },
+    {
+      "name": "descripcion",
+      "type": "string",
+      "description": "Descripción opcional del gasto",
+      "required": false
+    }
+  ]
+}

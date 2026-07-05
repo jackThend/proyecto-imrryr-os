@@ -1,0 +1,19 @@
+{
+  "name": "transcribir_audio",
+  "description": "Transcribe archivos de audio a texto usando Whisper local",
+  "script": "skills/transcribir_audio.py",
+  "arguments": [
+    {
+      "name": "audio",
+      "type": "string",
+      "description": "Ruta del archivo de audio (.ogg, .mp3, .wav)",
+      "required": true
+    },
+    {
+      "name": "modelo",
+      "type": "string",
+      "description": "Tamaño del modelo (tiny, base, small, medium)",
+      "required": false
+    }
+  ]
+}

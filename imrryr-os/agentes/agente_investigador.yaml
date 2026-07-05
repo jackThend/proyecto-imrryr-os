@@ -1,0 +1,10 @@
+nombre: "Agente Investigador"
+descripcion: >
+  Busca fondos concursables y oportunidades de financiamiento. Ejecuta
+  scraping diario en portales públicos para detectar nuevas convocatorias.
+herramientas_permitidas:
+  - scraper_fondos
+  - inyectar_gasto
+cron: "0 8 * * *"
+modelo_preferido: gemini-flash
+activo: true

@@ -1,0 +1,177 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "imryyr-llm/gemini-flash",
+  "model": "imryyr-llm/gemini-flash",
+  "provider": {
+    "imryyr-llm": {
+      "name": "Imrryr LLM Gateway (LiteLLM)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:4000/v1",
+        "apiKey": "sk-imryyr-local"
+      },
+      "models": {
+        "gemini-pro": {
+          "name": "Gemini 1.5 Pro (vía LiteLLM)",
+          "tool_call": true,
+          "limit": {
+            "context": 1000000,
+            "output": 8192
+          }
+        },
+        "gemini-flash": {
+          "name": "Gemini 1.5 Flash (vía LiteLLM)",
+          "tool_call": true,
+          "limit": {
+            "context": 1000000,
+            "output": 8192
+          }
+        }
+      }
+    }
+  },
+  "mcp": {
+    "imrryr": {
+      "type": "local",
+      "command": [
+        "C:\\Users\\caosd\\Desktop\\Proyectos Software\\Proyecto Imrryr OS\\imrryr-os\\.venv\\Scripts\\python.exe",
+        "C:\\Users\\caosd\\Desktop\\Proyectos Software\\Proyecto Imrryr OS\\imrryr-os\\mcp_server\\skills_server.py"
+      ],
+      "enabled": true
+    }
+  },
+  "agent": {
+    "creativo": {
+      "description": "Recibe ideas sueltas, las etiqueta y las almacena en la carpeta /semillas para su posterior evaluación. Gestiona el banco de ideas del proyecto.",
+      "mode": "subagent",
+      "model": "imryyr-llm/gemini-flash",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_crear_evento": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "crm": {
+      "description": "Gestiona clientes potenciales: lee correos de consultas, busca proyectos previos en la memoria vectorial y genera propuestas y cotizaciones.",
+      "mode": "subagent",
+      "model": "imryyr-llm/gemini-flash",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_leer_gmail": "allow",
+          "imrryr_consultar_memoria_vectorial": "allow",
+          "imrryr_crear_evento": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "financiero": {
+      "description": "Automatiza la contabilidad: lee correos bancarios, extrae montos y los registra en la base SQLite. Genera reportes de gastos.",
+      "mode": "subagent",
+      "model": "imryyr-llm/gemini-flash",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_leer_gmail": "allow",
+          "imrryr_inyectar_gasto": "allow",
+          "imrryr_scraper_fondos": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "investigador": {
+      "description": "Busca fondos concursables y oportunidades de financiamiento. Ejecuta scraping diario en portales públicos para detectar nuevas convocatorias.",
+      "mode": "subagent",
+      "model": "imryyr-llm/gemini-flash",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_scraper_fondos": "allow",
+          "imrryr_inyectar_gasto": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "guardia_seguridad": {
+      "description": "Módulo silencioso de observabilidad. Monitorea procesos, detecta bucles infinitos o consumo excesivo de tokens y detiene tareas atascadas.",
+      "mode": "subagent",
+      "model": "imryyr-llm/gemini-flash",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_monitorear_procesos": "allow",
+          "imrryr_detener_proceso": "allow",
+          "imrryr_enviar_alerta": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "leer_gmail",
+  "description": "Lee correos del inbox de Gmail vía Gmail API (solo lectura). Requiere config/gmail_credentials.json (OAuth client de Google Cloud) que no viene incluido en el repo; hasta que ese archivo exista, la skill responde con instrucciones y una lista vacía en vez de fallar.",
+  "script": "skills/leer_gmail.py",
+  "estado": "inactivo_sin_credenciales",
+  "arguments": [
+    {
+      "name": "max_results",
+      "type": "number",
+      "description": "Cantidad máxima de correos a devolver",
+      "required": false
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "description": "Filtro de búsqueda estilo Gmail (ej. 'subject:banco', 'from:notificaciones@banco.cl')",
+      "required": false
+    }
+  ]
+}

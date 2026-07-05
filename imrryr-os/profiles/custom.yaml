@@ -1,0 +1,12 @@
+# Perfil: Custom — Selección manual de componentes
+nombre: "Imrryr OS — Perfil Personalizado"
+descripcion: "Selecciona qué agentes y skills incluir editando este archivo."
+
+agentes: []
+skills: []
+bloqueos: []
+modulos:
+  gateway: true
+  dashboard: true
+  terminal: false
+  codigo: false

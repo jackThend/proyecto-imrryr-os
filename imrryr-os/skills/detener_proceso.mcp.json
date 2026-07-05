@@ -1,0 +1,19 @@
+{
+  "name": "detener_proceso",
+  "description": "Detiene un proceso por PID (terminación limpia, o forzada si no responde). Usado por el Guardia de Seguridad para cortar procesos atascados detectados con monitorear_procesos.",
+  "script": "skills/detener_proceso.py",
+  "arguments": [
+    {
+      "name": "pid",
+      "type": "number",
+      "description": "PID del proceso a detener",
+      "required": true
+    },
+    {
+      "name": "forzar",
+      "type": "boolean",
+      "description": "Si es true, usa SIGKILL directamente en vez de una terminación limpia",
+      "required": false
+    }
+  ]
+}

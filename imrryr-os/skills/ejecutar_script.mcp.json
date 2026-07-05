@@ -1,0 +1,25 @@
+{
+  "name": "ejecutar_script",
+  "description": "Ejecuta un script Python que viva dentro de scripts/ o skills/ del proyecto, con timeout, usando el intérprete del venv local. No es una terminal genérica: no acepta comandos de shell arbitrarios ni rutas fuera de esas dos carpetas.",
+  "script": "skills/ejecutar_script.py",
+  "arguments": [
+    {
+      "name": "script",
+      "type": "string",
+      "description": "Ruta relativa del script .py a ejecutar (dentro de scripts/ o skills/)",
+      "required": true
+    },
+    {
+      "name": "args",
+      "type": "array",
+      "description": "Argumentos de línea de comandos a pasar al script",
+      "required": false
+    },
+    {
+      "name": "timeout",
+      "type": "number",
+      "description": "Segundos máximos de ejecución antes de abortar (default 60)",
+      "required": false
+    }
+  ]
+}

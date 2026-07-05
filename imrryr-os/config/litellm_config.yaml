@@ -1,0 +1,39 @@
+# =====================================================================
+# Imrryr OS — Configuración del proxy LiteLLM (Traductor Agnóstico)
+# ---------------------------------------------------------------------
+# Pilar: Neutralidad de Modelos. OpenCode NUNCA habla directo con los
+# proveedores; enruta todo a través de LiteLLM en :4000, que traduce al
+# backend real. Para conmutar "cerebro", basta cambiar el model_name.
+#
+# Arranque manual:  litellm --config config/litellm_config.yaml --port 4000
+# (startup.py lo automatiza en la Subfase 1.3)
+#
+# NOTA: Sin master_key ni general_settings => modo pass-through sin DB de
+# tracking (Fase 1, local-first, un solo usuario en 127.0.0.1). LiteLLM no
+# intenta importar Prisma en este modo. El Guardia de Seguridad (Fase 4)
+# añadirá observabilidad propia con SQLite puro si se requiere.
+# =====================================================================
+
+model_list:
+  # --- Modelo de nube "grande" (por defecto) ---
+  - model_name: gemini-pro            # alias que ve OpenCode
+    litellm_params:
+      model: gemini/gemini-2.5-pro    # proveedor/modelo real en LiteLLM
+      api_key: os.environ/GEMINI_API_KEY
+
+  # --- Modelo de nube "ligero" (conmutación agnóstica) ---
+  - model_name: gemini-flash
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/GEMINI_API_KEY
+
+  # --- Modelo local (DIFERIDO: sin GPU/Ollama en este host) ---
+  # Descomentar cuando exista GPU + Ollama y se haya hecho `ollama pull qwen2.5`.
+  # - model_name: qwen-local
+  #   litellm_params:
+  #     model: ollama/qwen2.5
+  #     api_base: os.environ/OLLAMA_HOST
+
+litellm_settings:
+  drop_params: true
+  telemetry: false                   # privacidad: no reportar uso a LiteLLM

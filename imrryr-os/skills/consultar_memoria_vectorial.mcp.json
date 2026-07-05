@@ -1,0 +1,19 @@
+{
+  "name": "consultar_memoria_vectorial",
+  "description": "Busca en la base de conocimiento vectorial (ChromaDB) los fragmentos más relevantes de documentos previamente ingeridos (proyectos pasados, manuales, cotizaciones) para una consulta dada. Usado por el Agente Comercial (CRM) para redactar propuestas con contexto real.",
+  "script": "skills/consultar_memoria_vectorial.py",
+  "arguments": [
+    {
+      "name": "query",
+      "type": "string",
+      "description": "Texto de búsqueda semántica",
+      "required": true
+    },
+    {
+      "name": "n",
+      "type": "number",
+      "description": "Cantidad de fragmentos a devolver (default 5)",
+      "required": false
+    }
+  ]
+}

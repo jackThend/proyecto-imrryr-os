@@ -1,0 +1,10 @@
+nombre: "Asistente Financiero"
+descripcion: >
+  Automatiza la contabilidad: lee correos bancarios, extrae montos y los
+  registra en la base SQLite. Genera reportes de gastos.
+herramientas_permitidas:
+  - leer_gmail
+  - inyectar_gasto
+  - scraper_fondos
+modelo_preferido: gemini-flash
+activo: true

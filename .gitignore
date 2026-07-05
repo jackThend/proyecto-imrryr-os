@@ -1,0 +1,77 @@
+# =====================================================================
+# Imrryr OS — .gitignore raíz
+# Filosofía local-first: todo secreto y todo artefacto queda fuera de git.
+# Vive en la raíz del repo (un nivel por encima de imrryr-os/), así que
+# todo patrón con "/" intermedio debe llevar el prefijo imrryr-os/ para
+# quedar anclado correctamente.
+# =====================================================================
+
+# --- Secretos / entorno (patrones sin "/" intermedio: aplican a cualquier profundidad) ---
+.env
+.env.*
+!.env.example
+imrryr-os/gateway/gateway_config.json
+
+# --- Fork de OpenCode (se gestiona en su propio repo) ---
+opencode/
+/opencode
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Node / Bun (del dashboard, del sidecar de WhatsApp y de OpenCode si se mueve) ---
+node_modules/
+dist/
+build/
+.next/
+.cache/
+
+# --- Sidecar local de WhatsApp (sesión de Chromium y QR, nunca al repo) ---
+imrryr-os/gateway/whatsapp_local/.wwebjs_auth/
+imrryr-os/gateway/whatsapp_local/.wwebjs_cache/
+imrryr-os/gateway/whatsapp_local/qr.png
+imrryr-os/gateway/whatsapp_local/tmp/
+
+# --- Bases de datos locales (soberanía de datos: NUNCA al repo) ---
+*.db
+*.sqlite
+*.sqlite3
+chroma/
+.chroma/
+vectordb/
+
+# --- Semillas y datos de usuario ---
+imrryr-os/semillas/*
+!imrryr-os/semillas/.gitkeep
+imrryr-os/semillas/**/*.ogg
+imrryr-os/semillas/**/*.md
+
+# --- Logs / temporales / PID ---
+*.log
+logs/
+*.pid
+.run/
+
+# --- Sistema / editor ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*~
+
+# --- Documentos sensibles de la bóveda (manuales, PDFs del usuario) ---
+imrryr-os/docs/privado/
+imrryr-os/vault/
+
+# --- Audio generado/descargado en runtime (TTS, notas de voz) ---
+imrryr-os/docs/audios/
+imrryr-os/docs/eventos/*.ics

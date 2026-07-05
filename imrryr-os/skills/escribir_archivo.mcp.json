@@ -1,0 +1,25 @@
+{
+  "name": "escribir_archivo",
+  "description": "Escribe o sobrescribe un archivo, restringido a imrryr-os/ o a proyectos declarados en config/proyectos_permitidos.json. Bloquea path traversal fuera del sandbox.",
+  "script": "skills/escribir_archivo.py",
+  "arguments": [
+    {
+      "name": "ruta",
+      "type": "string",
+      "description": "Ruta relativa o absoluta del archivo a escribir",
+      "required": true
+    },
+    {
+      "name": "contenido",
+      "type": "string",
+      "description": "Contenido de texto a escribir",
+      "required": true
+    },
+    {
+      "name": "sobrescribir",
+      "type": "boolean",
+      "description": "Si es false y el archivo ya existe, falla en vez de sobrescribir (default true)",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+nombre: "CTO Adjunto (Build)"
+descripcion: >
+  Agente de código. Ayuda a programar, depurar y mantener el sistema.
+  Acceso sandboxed a lectura/escritura de archivos y ejecución de scripts
+  dentro de scripts/ y skills/ (no tiene acceso a una terminal genérica
+  ni a rutas fuera del proyecto, por seguridad).
+herramientas_permitidas:
+  - ejecutar_script
+  - leer_archivo
+  - escribir_archivo
+modelo_preferido: gemini-flash
+activo: true
+privilegios: sandboxed

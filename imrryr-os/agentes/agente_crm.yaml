@@ -1,0 +1,10 @@
+nombre: "Agente Comercial (CRM)"
+descripcion: >
+  Gestiona clientes potenciales: lee correos de consultas, busca proyectos
+  previos en la memoria vectorial y genera propuestas y cotizaciones.
+herramientas_permitidas:
+  - leer_gmail
+  - consultar_memoria_vectorial
+  - crear_evento
+modelo_preferido: gemini-flash
+activo: true

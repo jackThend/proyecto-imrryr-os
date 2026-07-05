@@ -1,0 +1,19 @@
+{
+  "name": "leer_archivo",
+  "description": "Lee el contenido de un archivo, restringido a imrryr-os/ o a proyectos declarados en config/proyectos_permitidos.json. Bloquea path traversal fuera del sandbox.",
+  "script": "skills/leer_archivo.py",
+  "arguments": [
+    {
+      "name": "ruta",
+      "type": "string",
+      "description": "Ruta relativa o absoluta del archivo a leer",
+      "required": true
+    },
+    {
+      "name": "max_chars",
+      "type": "number",
+      "description": "Máximo de caracteres a devolver (default 5000)",
+      "required": false
+    }
+  ]
+}

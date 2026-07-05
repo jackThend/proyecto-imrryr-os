@@ -1,0 +1,52 @@
+# =====================================================================
+# Imrryr OS — Dependencias Python (Fase 1)
+# Instalar:  .venv\Scripts\activate && pip install -r requirements.txt
+# =====================================================================
+
+# --- Traductor agnóstico de modelos (pilar Neutralidad de Modelos) ---
+# El extra [proxy] es obligatorio: trae backoff, uvicorn, fastapi y otros
+# deps que el servidor `litellm` CLI necesita para levantar el proxy en :4000.
+litellm[proxy]>=1.52.0
+
+# --- Carga de credenciales locales ---
+python-dotenv>=1.0.1
+
+# --- Backend del dashboard (Fase 6) y servidores locales ---
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+
+# --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---
+mcp>=1.2.0
+
+# --- Cliente HTTP para healthchecks y llamadas a APIs locales ---
+httpx>=0.27.0
+
+# --- Parseo de manifiestos YAML de agentes (/agentes/*.yaml) ---
+pyyaml>=6.0.2
+
+# =====================================================================
+# Dependencias Fase 2+
+# =====================================================================
+
+# --- Memoria Vectorial (Fase 2.2) ---
+chromadb>=1.5.0
+
+# --- Lectura de PDFs (Fase 2.2, ingesta docs) ---
+pymupdf>=1.24.0
+
+# --- Web scraping (Fase 3.1) ---
+# beautifulsoup4>=4.12.0
+
+# --- Text-to-Speech local (Fase 3.2, skills/tts_local.py) ---
+edge-tts>=6.1.0
+pyttsx3>=2.90
+
+# --- Transcripción de audio local (Fase 5.2, skills/transcribir_audio.py) ---
+faster-whisper>=1.0.0
+
+# --- Gmail API (Fase 3.1, skills/leer_gmail.py — inactivo sin credenciales) ---
+google-auth-oauthlib>=1.2.0
+google-api-python-client>=2.100.0
+
+# --- Observabilidad de procesos (Fase 4, Guardia de Seguridad) ---
+psutil>=6.0.0

@@ -1,0 +1,32 @@
+# Perfil: Tech / CTO — Sistema completo con todas las herramientas
+nombre: "Imrryr OS — Perfil Tech"
+descripcion: "Sistema completo para desarrolladores. Incluye todos los agentes, skills y herramientas de terminal."
+
+# Agentes incluidos
+agentes:
+  - agente_build.yaml
+  - agente_financiero.yaml
+  - agente_investigador.yaml
+  - agente_creativo.yaml
+  - agente_crm.yaml
+  - guardia_seguridad.yaml
+
+# Skills incluidos
+skills:
+  - inyectar_gasto.py
+  - scraper_fondos.py
+  - crear_evento.py
+  - tts_local.py
+  - transcribir_audio.py
+  - recordatorios.py
+  - leer_gmail.py
+
+# Capacidades bloqueadas (ninguna en tech)
+bloqueos: []
+
+# Módulos activos
+modulos:
+  gateway: true
+  dashboard: true
+  terminal: true
+  codigo: true

@@ -1,0 +1,37 @@
+{
+  "name": "crear_evento",
+  "description": "Genera un archivo .ics de calendario para eventos y recordatorios",
+  "script": "skills/crear_evento.py",
+  "arguments": [
+    {
+      "name": "titulo",
+      "type": "string",
+      "description": "Título del evento",
+      "required": true
+    },
+    {
+      "name": "fecha",
+      "type": "string",
+      "description": "Fecha del evento (YYYY-MM-DD)",
+      "required": false
+    },
+    {
+      "name": "hora",
+      "type": "string",
+      "description": "Hora del evento (HH:MM)",
+      "required": false
+    },
+    {
+      "name": "duracion",
+      "type": "number",
+      "description": "Duración en minutos",
+      "required": false
+    },
+    {
+      "name": "descripcion",
+      "type": "string",
+      "description": "Descripción del evento",
+      "required": false
+    }
+  ]
+}
