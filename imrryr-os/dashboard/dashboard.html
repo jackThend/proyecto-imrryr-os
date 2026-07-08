@@ -12,8 +12,8 @@
     --surface2: #22222b;
     --surface-rgb: 26, 26, 32;
     --border: #2a2a35;
-    --text: #c8c8d0;
-    --text-dim: #7a7a8a;
+    --text: #dcdce2;
+    --text-dim: #9c9cae;
     --accent: #7c6ff0;
     --accent2: #4ecdc4;
     --red: #ff6b6b;
@@ -24,12 +24,16 @@
     --glow: 0 0 24px rgba(124,111,240,0.18);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { background: var(--bg); }
+  /* OJO: el fondo va SOLO en html, nunca en body. Si body también pinta un
+     background propio, cualquier hijo suyo con z-index negativo (el aurora,
+     el fondo del tema Creativo) queda tapado detrás de ese fondo — es un
+     efecto real y conocido de cómo los navegadores pintan el "canvas". */
+  html { background: var(--bg); }
   body {
     position: relative;
     color: var(--text);
     font-family: var(--font);
-    font-size: 14px;
+    font-size: 15px;
     padding: 20px;
     min-height: 100vh;
   }
@@ -49,6 +53,15 @@
   }
   .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; flex-shrink: 0; }
   .icon-lg { width: 34px; height: 34px; }
+  /* --- Acentos de los íconos: pequeños detalles con relleno (punto, check, trend) ---
+     Quietos por defecto; el tema Creativo los anima suave y continuo (ver overrides),
+     el Serio los deja fijos para no distraer. */
+  .icon-accent-dot { transform-box: fill-box; transform-origin: center; }
+  .icon-accent-check {
+    stroke-dasharray: 8; stroke-dashoffset: 8; transition: stroke-dashoffset .35s ease;
+  }
+  .nav-tab:hover .icon-accent-check, .nav-tab.active .icon-accent-check,
+  .hero-card:hover .icon-accent-check, .mini-card:hover .icon-accent-check { stroke-dashoffset: 0; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -74,6 +87,7 @@
     background: linear-gradient(135deg, var(--accent), var(--accent2) 60%, #b06fe0);
     -webkit-background-clip: text; -webkit-text-fill-color: transparent;
     background-clip: text;
+    filter: drop-shadow(0 2px 10px rgba(0,0,0,0.45));
   }
   .header-tagline { font-size: 12px; color: var(--text-dim); letter-spacing: .8px; margin-top: 2px; }
   .status-bar { display: flex; gap: 12px; align-items: center; }
@@ -117,7 +131,7 @@
     font-size: 11px; font-weight: 600; color: var(--text-dim);
     text-transform: uppercase; letter-spacing: 1px;
   }
-  .widget-content { flex: 1; font-size: 13px; line-height: 1.5; overflow-y: auto; min-height: 0; }
+  .widget-content { flex: 1; font-size: 14px; line-height: 1.55; overflow-y: auto; min-height: 0; }
   .widget-content p { margin-bottom: 6px; }
   .widget-error {
     padding: 8px; background: rgba(255,107,107,0.1); border-radius: 6px;
@@ -129,8 +143,8 @@
     padding: 5px 0; border-bottom: 1px solid var(--border);
   }
   .metric-row:last-child { border: none; }
-  .metric-label { color: var(--text-dim); font-size: 12px; }
-  .metric-value { font-weight: 500; color: var(--accent2); font-size: 13px; }
+  .metric-label { color: var(--text-dim); font-size: 13px; }
+  .metric-value { font-weight: 500; color: var(--accent2); font-size: 14px; }
 
   .bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
   .bar-fill {
@@ -139,15 +153,15 @@
     transition: width 0.4s ease;
     min-width: 4px; flex-shrink: 0;
   }
-  .bar-label { font-size: 11px; color: var(--text-dim); min-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .bar-value { font-size: 10px; color: var(--text); min-width: 45px; text-align: right; }
+  .bar-label { font-size: 12px; color: var(--text-dim); min-width: 70px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .bar-value { font-size: 11px; color: var(--text); min-width: 45px; text-align: right; }
 
   .chat-area {
     display: flex; flex-direction: column; flex: 1; min-height: 0;
   }
   .chat-msgs {
     flex: 1; overflow-y: auto; margin-bottom: 8px;
-    font-size: 12px; line-height: 1.5;
+    font-size: 13px; line-height: 1.5;
     min-height: 60px; max-height: 200px;
     padding: 4px 0;
   }
@@ -161,20 +175,20 @@
   .chat-box input {
     flex: 1; background: var(--surface2); border: 1px solid var(--border);
     border-radius: 6px; padding: 7px 10px; color: var(--text);
-    font-size: 12px; outline: none;
+    font-size: 13px; outline: none;
   }
   .chat-box input:focus { border-color: var(--accent); }
   .chat-box button {
     background: var(--accent); color: white; border: none;
     border-radius: 6px; padding: 7px 14px; cursor: pointer;
-    font-size: 12px; transition: opacity 0.15s; white-space: nowrap;
+    font-size: 13px; transition: opacity 0.15s; white-space: nowrap;
   }
   .chat-box button:disabled { opacity: 0.5; cursor: not-allowed; }
   .chat-box button:not(:disabled):hover { opacity: 0.85; }
 
   .seed-item {
     padding: 5px 0; border-bottom: 1px solid var(--border);
-    font-size: 12px; cursor: pointer; transition: color 0.15s;
+    font-size: 13px; cursor: pointer; transition: color 0.15s;
   }
   .seed-item:last-child { border: none; }
   .seed-item:hover { color: var(--accent); }
@@ -270,7 +284,7 @@
   @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
   .home-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; padding: 0 20px; margin-bottom: 22px; }
   .hero-card {
-    background: rgba(var(--surface-rgb), 0.5);
+    background: rgba(var(--surface-rgb), 0.65);
     backdrop-filter: blur(18px) saturate(150%);
     -webkit-backdrop-filter: blur(18px) saturate(150%);
     border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 30px;
@@ -312,7 +326,7 @@
   .hero-preview-thumb { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface2); border: 1px solid var(--border); }
 
   .home-assistant {
-    margin: 0 20px 22px; background: rgba(var(--surface-rgb), 0.5);
+    margin: 0 20px 22px; background: rgba(var(--surface-rgb), 0.65);
     backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
     border: 1px solid rgba(255,255,255,0.08);
     border-radius: 24px; padding: 22px; display: flex; flex-direction: column; height: 300px;
@@ -323,7 +337,7 @@
 
   .home-secondary { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; padding: 0 20px 20px; }
   .mini-card {
-    background: rgba(var(--surface-rgb), 0.45);
+    background: rgba(var(--surface-rgb), 0.6);
     backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
     border: 1px solid rgba(255,255,255,0.07); border-radius: 16px;
     padding: 16px; cursor: pointer; transition: border-color .15s, transform .15s;
@@ -345,30 +359,30 @@
   .mini-card-icon .icon { width: 20px; height: 20px; }
   .mini-card-body { min-width: 0; }
   .mini-card-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
-  .mini-card-sub { font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+  .mini-card-sub { font-size: 12px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
 
   /* --- Oportunidades --- */
   .oport-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
-  .oport-col-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); margin-bottom: 8px; }
+  .oport-col-title { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); margin-bottom: 8px; }
   .oport-card {
     background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    padding: 10px; margin-bottom: 8px; font-size: 12px;
+    padding: 10px; margin-bottom: 8px; font-size: 13px;
   }
-  .oport-card-fuente { font-size: 10px; text-transform: uppercase; color: var(--accent2); letter-spacing: .4px; }
+  .oport-card-fuente { font-size: 11px; text-transform: uppercase; color: var(--accent2); letter-spacing: .4px; }
   .oport-card-titulo { font-weight: 600; margin: 3px 0 5px; }
-  .oport-card-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
-  .oport-card-nota { font-size: 11px; color: var(--text-dim); font-style: italic; margin-bottom: 6px; }
+  .oport-card-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+  .oport-card-nota { font-size: 12px; color: var(--text-dim); font-style: italic; margin-bottom: 6px; }
   .oport-card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
   .oport-card-actions button {
     background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
-    border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer;
+    border-radius: 6px; padding: 3px 8px; font-size: 11px; cursor: pointer;
   }
   .oport-card-actions button:hover { color: var(--accent); border-color: var(--accent); }
 
   .app-layout { display: flex; gap: 12px; padding: 0 16px 16px; align-items: flex-start; }
   .app-chat-panel {
     width: 280px; flex-shrink: 0;
-    background: rgba(var(--surface-rgb), 0.55);
+    background: rgba(var(--surface-rgb), 0.7);
     backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
     border: 1px solid rgba(255,255,255,0.07);
     border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column;
@@ -380,11 +394,11 @@
   .app-subtabs { display: flex; gap: 6px; margin-bottom: 12px; }
   .app-subtab {
     background: none; border: 1px solid var(--border); color: var(--text-dim);
-    padding: 5px 12px; border-radius: 7px; font-size: 11px; cursor: pointer; transition: color .15s, border-color .15s;
+    padding: 5px 12px; border-radius: 7px; font-size: 12px; cursor: pointer; transition: color .15s, border-color .15s;
   }
   .app-subtab.active { color: var(--accent2); border-color: var(--accent2); }
   .app-title-row { display: flex; align-items: center; gap: 14px; margin: 4px 20px 20px; }
-  .app-title-row h2 { font-family: var(--font-display); font-weight: 600; font-size: 30px; letter-spacing: .3px; }
+  .app-title-row h2 { font-family: var(--font-display); font-weight: 600; font-size: 30px; letter-spacing: .3px; text-shadow: 0 2px 10px rgba(0,0,0,0.35); }
   .app-title-row .icon-lg { color: var(--accent); }
   .idea-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
   .idea-card {
@@ -463,6 +477,69 @@
   }
   .ayuda-switch.on .ayuda-switch-knob { transform: translateX(18px); }
 
+  /* --- Apariencia: tarjetas de selección de tema --- */
+  .tema-opcion {
+    background: rgba(var(--surface-rgb), 0.5); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px; cursor: pointer; transition: border-color .15s, transform .15s;
+  }
+  .tema-opcion:hover { transform: translateY(-2px); }
+  .tema-opcion.activo { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
+
+  /* --- Fondo personalizado (modo Creativo) --- */
+  /* Escapado a [data-tema="creativo"]: la clase se guarda con la subida, no con
+     el tema activo, así que sin este scope el fondo subido se filtraba también
+     al modo Serio al cambiar de tema. */
+  [data-tema="creativo"] body.tiene-fondo-personalizado::before {
+    content: ''; position: fixed; inset: 0; z-index: -2;
+    background-image: var(--fondo-personalizado); background-size: cover; background-position: center;
+    filter: brightness(0.6) saturate(1.1) blur(1px);
+  }
+
+  /* --- Temas: overrides al final para que siempre ganen sobre las reglas base --- */
+  [data-tema="minimalista"] .aurora-bg { display: none; }
+  [data-tema="minimalista"] .header-logo { width: 36px; height: 36px; animation: none; box-shadow: none; }
+  [data-tema="minimalista"] .hero-card,
+  [data-tema="minimalista"] .mini-card,
+  [data-tema="minimalista"] .app-chat-panel,
+  [data-tema="minimalista"] .home-assistant {
+    background: var(--surface); backdrop-filter: none; -webkit-backdrop-filter: none;
+  }
+  [data-tema="minimalista"] .hero-card-metric { -webkit-text-fill-color: var(--accent2); background: none; font-size: 36px; }
+  [data-tema="minimalista"] .hero-card { animation: none; }
+  [data-tema="minimalista"] .mini-card { animation: none; }
+  /* Íconos serios: color plano, sin animación continua — el detalle queda quieto */
+  [data-tema="minimalista"] .hero-card-icon,
+  [data-tema="minimalista"] .mini-card-icon { background: var(--surface2); box-shadow: none; }
+  [data-tema="minimalista"] .icon-accent-dot { animation: none !important; }
+  [data-tema="minimalista"] .nav-tab:hover .icon { transform: scale(1.1); }
+
+  [data-tema="creativo"] .header-logo { width: 110px; height: 110px; }
+  [data-tema="creativo"] .header-brand { gap: 20px; }
+  [data-tema="creativo"] .aurora-blob { opacity: .75; filter: blur(70px); }
+  /* Íconos creativos: insignia con más color y un acento que respira solo */
+  [data-tema="creativo"] .hero-card-icon {
+    background: linear-gradient(135deg, rgba(124,111,240,0.5), rgba(78,205,196,0.3));
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.16), 0 0 16px rgba(124,111,240,0.25);
+  }
+  [data-tema="creativo"] .mini-card-icon {
+    background: linear-gradient(135deg, rgba(78,205,196,0.45), rgba(124,111,240,0.22));
+  }
+  [data-tema="creativo"] .nav-tab:hover .icon { transform: scale(1.18) rotate(-8deg); }
+  [data-tema="creativo"] .nav-tab.active .icon { transform: scale(1.1) rotate(-3deg); }
+  [data-tema="creativo"] .mini-card:hover .mini-card-icon { transform: scale(1.2) rotate(6deg); }
+  [data-tema="creativo"] .icon-accent-dot { animation: iconAccentPulse 2.2s ease-in-out infinite; }
+  @keyframes iconAccentPulse {
+    0%, 100% { opacity: .55; transform: scale(0.85); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+  [data-tema="creativo"] body::after {
+    content: ''; position: fixed; inset: -10%; z-index: -3;
+    background-image: url('/static/logo.png'); background-size: 120% auto; background-position: center 20%;
+    filter: blur(28px) brightness(0.55) saturate(1.2); opacity: .9;
+  }
+  [data-tema="creativo"] body.tiene-fondo-personalizado::after { display: none; }
+  [data-tema="creativo"] #ideaGrid .idea-card { border-radius: 18px; }
+
   /* Media queries al final para que siempre ganen sobre las reglas base */
   @media print {
     .header, .nav-tabs, .app-chat-panel, .app-toolbar button, .app-subtabs { display: none !important; }
@@ -482,17 +559,17 @@
 <body>
 <div class="aurora-bg"><div class="aurora-blob a1"></div><div class="aurora-blob a2"></div><div class="aurora-blob a3"></div></div>
 <svg style="display:none" xmlns="http://www.w3.org/2000/svg">
-  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 9v10h14V9"/></symbol>
-  <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
-  <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z"/><path d="M8 5H5a3 3 0 0 0 3 3"/><path d="M16 5h3a3 3 0 0 1-3 3"/><path d="M12 12v3"/><path d="M9 19h6"/><path d="M10 16h4v3h-4z"/></symbol>
-  <symbol id="icon-bulb" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2c.5.3.8.9.8 1.5v.3h4.4v-.3c0-.6.3-1.2.8-1.5A6 6 0 0 0 12 3z"/></symbol>
-  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></symbol>
-  <symbol id="icon-chat" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 17l-2 4 5-4"/></symbol>
-  <symbol id="icon-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
-  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 9v10a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V9"/><circle class="icon-accent-dot" cx="12" cy="16.2" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/><circle class="icon-accent-dot" cx="18.5" cy="6.5" r="1.6" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z"/><path d="M8 5H5a3 3 0 0 0 3 3"/><path d="M16 5h3a3 3 0 0 1-3 3"/><path d="M12 12v3"/><path d="M9 19h6"/><path d="M10 16h4v3h-4z"/><path class="icon-accent-dot" d="M12 6.2l.4.9.9.1-.7.6.2.9-.8-.5-.8.5.2-.9-.7-.6.9-.1z" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-bulb" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2c.5.3.8.9.8 1.5v.3h4.4v-.3c0-.6.3-1.2.8-1.5A6 6 0 0 0 12 3z"/><path d="M4.2 6l1.4 1.3M19.8 6l-1.4 1.3M3 12.5h1.8M19.2 12.5H21"/><circle class="icon-accent-dot" cx="12" cy="10.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/><path d="M5 9l5-4 5 3 5-4"/><circle class="icon-accent-dot" cx="20" cy="4" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-chat" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 17l-2 4 5-4"/><circle class="icon-accent-dot" cx="8" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle class="icon-accent-dot" cx="12" cy="10.5" r="1" fill="currentColor" stroke="none"/><circle class="icon-accent-dot" cx="16" cy="10.5" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/><circle class="icon-accent-dot" cx="12" cy="12" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/><circle class="icon-accent-dot" cx="12" cy="5.5" r="0.9" fill="currentColor" stroke="none"/></symbol>
   <symbol id="icon-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></symbol>
-  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></symbol>
-  <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5"/><circle cx="17" cy="8" r="3"/><path d="M22 20c0-3-3-5-7-5"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path class="icon-accent-check" d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5"/><circle cx="17" cy="8" r="3"/><path d="M22 20c0-3-3-5-7-5"/><path d="M11.5 8h1" stroke-dasharray="1.2 1.6"/></symbol>
   <symbol id="icon-code" viewBox="0 0 24 24"><path d="M8 6l-5 6 5 6"/><path d="M16 6l5 6-5 6"/></symbol>
   <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M13 5l7 7-7 7"/></symbol>
   <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></symbol>
@@ -502,6 +579,9 @@
   <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol>
   <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></symbol>
   <symbol id="icon-print" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="6"/><rect x="4" y="9" width="16" height="8" rx="1"/><rect x="7" y="14" width="10" height="6"/></symbol>
+  <symbol id="icon-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1 0 2-.5 2-2 0-.6-.3-1-.6-1.4-.3-.4-.4-.9-.1-1.3.3-.4.9-.6 1.4-.6H17a4 4 0 0 0 4-4 9 9 0 0 0-9-8z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/><circle cx="17" cy="10.5" r="1"/></symbol>
+  <symbol id="icon-modulos" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/><circle class="icon-accent-dot" cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle class="icon-accent-dot" cx="12" cy="14.8" r="1.1" fill="currentColor" stroke="none"/><path d="M12 15.8v1.4"/></symbol>
 </svg>
 
 <div class="header">
@@ -625,8 +705,14 @@
     <button class="app-subtab" id="ajustesSub-perfil" onclick="cambiarSubtabAjustes('perfil')" data-ayuda="Cuéntale a Imrryr sobre tu negocio para que el Investigador filtre mejor los fondos."><svg class="icon"><use href="#icon-briefcase"/></svg> Perfil de Negocio</button>
     <button class="app-subtab" id="ajustesSub-ia" onclick="cambiarSubtabAjustes('ia')" data-ayuda="Elige qué proveedor de IA (Gemini, OpenAI, Claude, etc.) usan todos tus agentes."><svg class="icon"><use href="#icon-chat"/></svg> Cuentas de IA</button>
     <button class="app-subtab" id="ajustesSub-ayuda" onclick="cambiarSubtabAjustes('ayuda')" data-ayuda="Prende o apaga las explicaciones que aparecen al pasar el mouse."><svg class="icon"><use href="#icon-bulb"/></svg> Ayuda</button>
+    <button class="app-subtab" id="ajustesSub-apariencia" onclick="cambiarSubtabAjustes('apariencia')" data-ayuda="Elige entre un modo Creativo (más visual) o Minimalista (más sobrio)."><svg class="icon"><use href="#icon-palette"/></svg> Apariencia</button>
   </div>
   <div style="padding:0 16px" id="ajustesSubcontent"></div>
+</div>
+
+<div class="view" id="view-modulos">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-modulos"/></svg><h2>Módulos</h2></div>
+  <div style="padding:0 16px" id="modulosContent"></div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -651,6 +737,7 @@ const APPS = [
   { id: 'crm', nombre: 'CRM', icono: 'users', agente: 'crm', chatLabel: 'Agente Comercial', ayuda: 'Gestiona clientes potenciales y te ayuda a redactar propuestas y cotizaciones.' },
   { id: 'seguridad', nombre: 'Seguridad', icono: 'shield', agente: 'guardia_seguridad', chatLabel: 'Guardia de Seguridad', ayuda: 'Vigila que los demás agentes no se atasquen ni gasten de más — funciona en silencio.' },
   { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
+  { id: 'modulos', nombre: 'Módulos', icono: 'modulos', agente: null, ayuda: 'Activa, desactiva o elimina agentes — protegido con contraseña.' },
 ];
 const NAV_ITEMS = [{ id: 'inicio', nombre: 'Inicio', icono: 'home', ayuda: 'El punto de partida: un vistazo rápido a todo.' }, ...APPS];
 function appPorId(id) { return APPS.find(a => a.id === id); }
@@ -739,9 +826,18 @@ async function enviarChatGenerico(appId, agente) {
 // --- Navegación entre apps ---
 const vistasInicializadas = new Set();
 
+let vistaActivaActual = 'inicio';
+
 function abrirApp(id) {
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.id === 'tab-' + id));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+  // Módulos vuelve a pedir la contraseña cada vez que se sale de la sección
+  // — es una barrera de verdad, no un desbloqueo permanente de la pestaña.
+  if (vistaActivaActual === 'modulos' && id !== 'modulos') {
+    modulosDesbloqueado = false;
+    modulosPasswordActual = null;
+  }
+  vistaActivaActual = id;
   if (!vistasInicializadas.has(id)) {
     inicializarVista(id);
     vistasInicializadas.add(id);
@@ -772,6 +868,7 @@ function cargarVista(id) {
     case 'oportunidades': cargarOportunidadesView(); break;
     case 'finanzas': cargarFinanzasView(); break;
     case 'ajustes': cambiarSubtabAjustes(ajustesSubtabActual); break;
+    case 'modulos': cargarModulosView(); break;
   }
 }
 
@@ -860,6 +957,10 @@ async function cargarHomeSecundaria() {
     <div class="mini-card" onclick="abrirApp('seguridad')" data-ayuda="Vigila en silencio que los agentes no se atasquen ni gasten de más.">
       <div class="mini-card-icon"><svg class="icon"><use href="#icon-shield"/></svg></div>
       <div class="mini-card-body"><div class="mini-card-title">Seguridad</div><div class="mini-card-sub">Observabilidad del sistema</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('modulos')" data-ayuda="Activa, desactiva o elimina agentes — protegido con contraseña.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-modulos"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Módulos</div><div class="mini-card-sub">Gestiona tus agentes</div></div>
     </div>`;
   try {
     const r = await fetch('/api/finanzas');
@@ -1192,13 +1293,16 @@ async function cargarGateway() {
     const r = await fetch(GATEWAY_URL + '/api/gateway/config');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     gwConfigActual = await r.json();
+    if (ajustesSubtabActual !== 'whatsapp') return; // el usuario ya cambió de sub-tab mientras esperábamos
     renderGateway();
   } catch (e) {
+    if (ajustesSubtabActual !== 'whatsapp') return; // idem: no pisar otra sub-tab con un error atrasado
     el.innerHTML = `<div class="widget-error">Gateway no disponible: ${e.message}</div>`;
   }
 }
 
 function renderGateway() {
+  if (ajustesSubtabActual !== 'whatsapp') return;
   const el = document.getElementById('ajustesSubcontent');
   if (!el || !gwConfigActual) return;
   const modo = gwConfigActual.modo;
@@ -1276,13 +1380,16 @@ async function cargarPerfilNegocio() {
     const r = await fetch('/api/perfil-negocio');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     perfilNegocioActual = await r.json();
+    if (ajustesSubtabActual !== 'perfil') return; // el usuario ya cambió de sub-tab mientras esperábamos
     renderPerfilNegocio();
   } catch (e) {
+    if (ajustesSubtabActual !== 'perfil') return;
     el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
   }
 }
 
 function renderPerfilNegocio() {
+  if (ajustesSubtabActual !== 'perfil') return;
   const el = document.getElementById('ajustesSubcontent');
   if (!el || !perfilNegocioActual) return;
   const p = perfilNegocioActual;
@@ -1373,13 +1480,16 @@ async function cargarCuentasIaView() {
     const d = await r.json();
     cuentasIaLista = d.cuentas || [];
     cuentasIaProveedores = d.proveedores || {};
+    if (ajustesSubtabActual !== 'ia') return; // el usuario ya cambió de sub-tab mientras esperábamos
     renderCuentasIaView();
   } catch (e) {
+    if (ajustesSubtabActual !== 'ia') return;
     el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
   }
 }
 
 function renderCuentasIaView() {
+  if (ajustesSubtabActual !== 'ia') return;
   const el = document.getElementById('ajustesSubcontent');
   if (!el) return;
   let html = '<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Elige qué proveedor de IA usan todos tus agentes (Gemini, OpenAI, Claude, DeepSeek, un modelo local con Ollama, u otro). Solo una cuenta puede estar activa a la vez.</p>';
@@ -1481,6 +1591,198 @@ async function eliminarCuentaIa(id) {
     await fetch(`/api/ajustes/cuentas-ia/${id}`, { method: 'DELETE' });
     mostrarToast('Cuenta eliminada', 'success');
     cargarCuentasIaView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Módulos (gestión de agentes, protegido por contraseña) ---
+let modulosPasswordActual = null; // solo en memoria, nunca en localStorage
+let modulosDesbloqueado = false;
+let ultimosModulosCargados = [];
+
+async function cargarModulosView() {
+  if (modulosDesbloqueado) { cargarModulosLista(); return; }
+  const el = document.getElementById('modulosContent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/modulos/password-estado');
+    const d = await r.json();
+    renderModulosGate(d.configurada);
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderModulosGate(configurada) {
+  const el = document.getElementById('modulosContent');
+  if (!el) return;
+  if (!configurada) {
+    el.innerHTML = `
+      <div class="seed-item" style="display:block;max-width:420px">
+        <div style="font-weight:600;margin-bottom:6px"><svg class="icon"><use href="#icon-lock"/></svg> Crea la contraseña de administrador</div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Es una sola contraseña compartida — una barrera para que nadie borre un agente por accidente, no un sistema de permisos por usuario. Guárdala en un lugar seguro.</p>
+        <div class="gw-field"><label>Nueva contraseña</label><input type="password" id="modulosNuevaPass"></div>
+        <button class="gw-save-btn" onclick="crearPasswordModulos()">Crear contraseña</button>
+      </div>`;
+    return;
+  }
+  el.innerHTML = `
+    <div class="seed-item" style="display:block;max-width:420px">
+      <div style="font-weight:600;margin-bottom:6px"><svg class="icon"><use href="#icon-lock"/></svg> Ingresa la contraseña de administrador</div>
+      <div class="gw-field"><label>Contraseña</label><input type="password" id="modulosPassInput"></div>
+      <button class="gw-save-btn" onclick="desbloquearModulos()">Entrar</button>
+    </div>`;
+  const input = document.getElementById('modulosPassInput');
+  if (input) input.addEventListener('keydown', e => { if (e.key === 'Enter') desbloquearModulos(); });
+}
+
+async function crearPasswordModulos() {
+  const val = document.getElementById('modulosNuevaPass').value;
+  try {
+    const r = await fetch('/api/modulos/configurar-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: val }),
+    });
+    const d = await r.json();
+    if (!d.ok) { mostrarToast(d.error || 'No se pudo crear', 'error'); return; }
+    modulosPasswordActual = val;
+    modulosDesbloqueado = true;
+    mostrarToast('Contraseña creada', 'success');
+    cargarModulosLista();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function desbloquearModulos() {
+  const val = document.getElementById('modulosPassInput').value;
+  try {
+    const r = await fetch('/api/modulos/verificar-password', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: val }),
+    });
+    const d = await r.json();
+    if (!d.ok) { mostrarToast('Contraseña incorrecta', 'error'); return; }
+    modulosPasswordActual = val;
+    modulosDesbloqueado = true;
+    cargarModulosLista();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function cargarModulosLista() {
+  const el = document.getElementById('modulosContent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/modulos');
+    const d = await r.json();
+    ultimosModulosCargados = d.modulos || [];
+    renderModulosLista(ultimosModulosCargados, d.eliminados || []);
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function tarjetaModuloHtml(m) {
+  return `<div class="mini-card" style="align-items:flex-start;cursor:default;flex-direction:column;gap:8px;padding:16px">
+    <div style="display:flex;align-items:center;gap:10px;width:100%">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-${m.icono}"/></svg></div>
+      <div style="flex:1">
+        <div class="mini-card-title">${m.nombre}</div>
+        <span class="estado-badge ${m.activo ? 'estado-proyecto' : 'estado-archivada'}">${m.activo ? 'activo' : 'inactivo'}</span>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text-dim)">${(m.descripcion || '').slice(0, 160)}</div>
+    <div>${(m.herramientas || []).map(t => `<span class="tag">${t}</span>`).join('')}</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      ${m.activo
+        ? `<button class="gw-modo-btn" onclick="desactivarModulo('${m.id}')" data-ayuda="Lo apaga sin borrar nada. Puedes reactivarlo cuando quieras.">Desactivar</button>`
+        : `<button class="gw-save-btn" onclick="activarModulo('${m.id}')">Activar</button>`}
+      <button class="gw-modo-btn" style="color:var(--red)" onclick="mostrarConfirmarEliminarModulo('${m.id}')" data-ayuda="Lo saca de la lista de agentes. Se puede recuperar después.">Eliminar</button>
+    </div>
+    <div id="confirmarEliminar_${m.id}" style="width:100%"></div>
+  </div>`;
+}
+
+function renderModulosLista(modulos, eliminados) {
+  const el = document.getElementById('modulosContent');
+  if (!el) return;
+  let html = '<div class="home-secondary" style="padding:0;margin-bottom:20px">' + modulos.map(tarjetaModuloHtml).join('') + '</div>';
+
+  html += '<div class="app-title-row" style="margin:0 0 14px 0"><svg class="icon-lg" style="color:var(--text-dim)"><use href="#icon-trash"/></svg><h2 style="font-size:18px">Desactivados / eliminados</h2></div>';
+  if (!eliminados.length) {
+    html += '<div class="empty">No hay módulos eliminados. Por ahora, esta sección solo muestra los que tú mismo desactives o elimines — todavía no hay un catálogo externo de agentes nuevos para descargar.</div>';
+  } else {
+    html += '<div class="home-secondary" style="padding:0">' + eliminados.map(m => `
+      <div class="mini-card" style="cursor:default">
+        <div class="mini-card-icon"><svg class="icon"><use href="#icon-${m.icono}"/></svg></div>
+        <div class="mini-card-body" style="flex:1"><div class="mini-card-title">${m.nombre}</div><div class="mini-card-sub">Eliminado</div></div>
+        <button class="gw-save-btn" onclick="restaurarModulo('${m.id}')">Restaurar</button>
+      </div>`).join('') + '</div>';
+  }
+  el.innerHTML = html;
+}
+
+function mostrarConfirmarEliminarModulo(id) {
+  const box = document.getElementById('confirmarEliminar_' + id);
+  const modulo = ultimosModulosCargados.find(m => m.id === id);
+  const datos = modulo && modulo.datos_asociados ? modulo.datos_asociados : 'Este módulo no tiene datos propios guardados.';
+  box.innerHTML = `
+    <div style="margin-top:8px;padding:10px;background:var(--surface2);border-radius:8px;width:100%">
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">Al eliminar, se saca de la lista de agentes (recuperable con "Restaurar"). Si además marcas la casilla, esto también se borra: <b>${datos}</b></div>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:8px">
+        <input type="checkbox" id="borrarDatos_${id}"> También borrar los datos guardados
+      </label>
+      <div style="display:flex;gap:6px">
+        <button class="gw-save-btn" style="background:var(--red)" onclick="confirmarEliminarModulo('${id}')">Confirmar eliminación</button>
+        <button class="gw-modo-btn" onclick="document.getElementById('confirmarEliminar_${id}').innerHTML=''">Cancelar</button>
+      </div>
+    </div>`;
+}
+
+async function confirmarEliminarModulo(id) {
+  const borrarDatos = document.getElementById('borrarDatos_' + id).checked;
+  try {
+    const r = await fetch(`/api/modulos/${id}/eliminar`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password: modulosPasswordActual, borrar_datos: borrarDatos }),
+    });
+    const d = await r.json();
+    if (!d.ok) { mostrarToast(d.error || 'No se pudo eliminar', 'error'); return; }
+    mostrarToast('Módulo eliminado', 'success');
+    cargarModulosLista();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function activarModulo(id) {
+  try {
+    await fetch(`/api/modulos/${id}/activar`, { method: 'POST' });
+    mostrarToast('Módulo activado', 'success');
+    cargarModulosLista();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function desactivarModulo(id) {
+  try {
+    await fetch(`/api/modulos/${id}/desactivar`, { method: 'POST' });
+    mostrarToast('Módulo desactivado', 'success');
+    cargarModulosLista();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function restaurarModulo(id) {
+  try {
+    await fetch(`/api/modulos/${id}/restaurar`, { method: 'POST' });
+    mostrarToast('Módulo restaurado', 'success');
+    cargarModulosLista();
   } catch (e) {
     mostrarToast('Error: ' + e.message, 'error');
   }
@@ -1690,12 +1992,13 @@ async function descartarBorradorCorreo(id) {
 let ajustesSubtabActual = 'whatsapp';
 function cambiarSubtabAjustes(sub) {
   ajustesSubtabActual = sub;
-  ['whatsapp', 'perfil', 'ia', 'ayuda'].forEach(s =>
+  ['whatsapp', 'perfil', 'ia', 'ayuda', 'apariencia'].forEach(s =>
     document.getElementById('ajustesSub-' + s).classList.toggle('active', sub === s));
   document.getElementById('ajustesSubcontent').innerHTML = '<div class="loading">Cargando</div>';
   if (sub === 'whatsapp') cargarGateway();
   else if (sub === 'perfil') cargarPerfilNegocio();
   else if (sub === 'ia') cargarCuentasIaView();
+  else if (sub === 'apariencia') renderApariencia();
   else renderAyudaSettings();
 }
 
@@ -1741,6 +2044,103 @@ function toggleAyudaSwitch() {
   const nuevo = localStorage.getItem('imrryr_ayuda_on') !== '1';
   aplicarModoAyuda(nuevo);
   renderAyudaSettings();
+}
+
+// --- Apariencia: tema Creativo/Minimalista + fondo personalizado ---
+function aplicarTema(tema) {
+  document.documentElement.setAttribute('data-tema', tema);
+  localStorage.setItem('imrryr_tema', tema);
+}
+
+function seleccionarTema(tema) {
+  aplicarTema(tema);
+  renderApariencia();
+  mostrarToast('Tema aplicado: ' + (tema === 'creativo' ? 'Creativo' : 'Minimalista'), 'success');
+}
+
+function renderApariencia() {
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  const actual = localStorage.getItem('imrryr_tema') || 'minimalista';
+  el.innerHTML = `
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:12px">Elige cómo se ve Imrryr OS. El cambio es inmediato.</p>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
+      <div class="tema-opcion ${actual === 'creativo' ? 'activo' : ''}" onclick="seleccionarTema('creativo')" data-ayuda="Fondo con imagen, logo grande, más decorativo — pensado para artistas y diseñadores.">
+        <svg class="icon-lg" style="color:var(--accent);margin-bottom:6px"><use href="#icon-bulb"/></svg>
+        <div style="font-family:var(--font-display);font-size:16px;margin-bottom:4px">Creativo</div>
+        <div style="font-size:11px;color:var(--text-dim)">Fondo con imagen, logo grande, más visual.</div>
+      </div>
+      <div class="tema-opcion ${actual === 'minimalista' ? 'activo' : ''}" onclick="seleccionarTema('minimalista')" data-ayuda="Sobrio y profesional, sin decoraciones de fondo.">
+        <svg class="icon-lg" style="color:var(--accent);margin-bottom:6px"><use href="#icon-briefcase"/></svg>
+        <div style="font-family:var(--font-display);font-size:16px;margin-bottom:4px">Minimalista</div>
+        <div style="font-size:11px;color:var(--text-dim)">Sobrio y profesional, sin decoraciones.</div>
+      </div>
+    </div>
+    <div id="fondoPersonalizadoBox"></div>`;
+  cargarFondoPersonalizado();
+}
+
+async function cargarFondoPersonalizado() {
+  const box = document.getElementById('fondoPersonalizadoBox');
+  if (!box) return;
+  const tema = localStorage.getItem('imrryr_tema') || 'minimalista';
+  if (tema !== 'creativo') { box.innerHTML = '<p style="font-size:11px;color:var(--text-dim)">El fondo personalizado solo aplica en modo Creativo.</p>'; return; }
+  try {
+    const r = await fetch('/api/ajustes/fondo');
+    const d = await r.json();
+    box.innerHTML = `
+      <div class="seed-item" style="display:block">
+        <div style="font-weight:600;margin-bottom:6px">Fondo personalizado</div>
+        ${d.url ? `<img src="${d.url}?t=${Date.now()}" style="max-width:220px;border-radius:10px;margin-bottom:8px;display:block">` : '<div class="empty" style="padding:6px 0">Usando el fondo por defecto (tu logo, difuminado)</div>'}
+        <input type="file" id="fondoInput" accept="image/*" style="margin-bottom:8px;font-size:12px">
+        <div style="display:flex;gap:6px">
+          <button class="gw-save-btn" onclick="subirFondoPersonalizado()" data-ayuda="Usa tu propia imagen (mood board, arte, foto) como fondo del sistema.">Subir imagen</button>
+          ${d.url ? '<button class="gw-modo-btn" onclick="quitarFondoPersonalizado()">Quitar</button>' : ''}
+        </div>
+      </div>`;
+  } catch (e) {
+    box.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function subirFondoPersonalizado() {
+  const input = document.getElementById('fondoInput');
+  if (!input || !input.files[0]) { mostrarToast('Elige una imagen primero', 'error'); return; }
+  const formData = new FormData();
+  formData.append('archivo', input.files[0]);
+  try {
+    const r = await fetch('/api/ajustes/fondo', { method: 'POST', body: formData });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    mostrarToast('Fondo actualizado', 'success');
+    aplicarFondoPersonalizado();
+    cargarFondoPersonalizado();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function quitarFondoPersonalizado() {
+  try {
+    await fetch('/api/ajustes/fondo', { method: 'DELETE' });
+    mostrarToast('Fondo quitado', 'success');
+    aplicarFondoPersonalizado();
+    cargarFondoPersonalizado();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function aplicarFondoPersonalizado() {
+  try {
+    const r = await fetch('/api/ajustes/fondo');
+    const d = await r.json();
+    if (d.url) {
+      document.body.style.setProperty('--fondo-personalizado', `url('${d.url}?t=${Date.now()}')`);
+      document.body.classList.add('tiene-fondo-personalizado');
+    } else {
+      document.body.classList.remove('tiene-fondo-personalizado');
+    }
+  } catch (e) { /* silencioso: el fondo es cosmético, no crítico */ }
 }
 
 // --- Status dots ---
@@ -1956,6 +2356,8 @@ async function cambiarEstadoOportunidad(id, estado) {
 
 // --- Init ---
 aplicarModoAyuda(localStorage.getItem('imrryr_ayuda_on') === '1');
+aplicarTema(localStorage.getItem('imrryr_tema') || 'minimalista');
+aplicarFondoPersonalizado();
 inicializarPosicionAyuda();
 renderNavTabs();
 montarChatPanels();

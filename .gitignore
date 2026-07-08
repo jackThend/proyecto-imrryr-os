@@ -18,6 +18,7 @@ imrryr-os/config/gmail_secretario_credentials.json
 imrryr-os/config/gmail_secretario_token.pickle
 imrryr-os/correo/cuentas.json
 imrryr-os/config/cuentas_ia.json
+imrryr-os/config/admin_modulos.json
 
 # --- Fork de OpenCode (se gestiona en su propio repo) ---
 opencode/
@@ -60,6 +61,10 @@ imrryr-os/semillas/*
 !imrryr-os/semillas/.gitkeep
 imrryr-os/semillas/**/*.ogg
 imrryr-os/semillas/**/*.md
+
+# --- Fondo personalizado subido por el usuario (tema Creativo) ---
+imrryr-os/dashboard/static/fondos/*
+!imrryr-os/dashboard/static/fondos/.gitkeep
 
 # --- Logs / temporales / PID ---
 *.log
