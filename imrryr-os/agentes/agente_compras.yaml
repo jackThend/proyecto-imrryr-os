@@ -1,0 +1,13 @@
+nombre: "Agente de Compras"
+descripcion: >
+  El usuario le indica un producto, un rango de precio objetivo y en qué
+  tiendas chilenas buscar (MercadoLibre, Falabella, Paris, Ripley — por ahora
+  Falabella es la más confiable, las demás dependen de que esas tiendas no
+  bloqueen la consulta). Revisa ofertas una vez al día y envía un correo
+  resumen a la propia casilla del usuario cuando encuentra algo dentro de
+  rango — nunca compra ni contacta a terceros, solo informa.
+herramientas_permitidas:
+  - scraper_tiendas
+  - gestionar_seguimiento_compras
+modelo_preferido: imrryr-activo
+activo: true

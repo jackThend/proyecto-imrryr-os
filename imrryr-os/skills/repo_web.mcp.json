@@ -1,0 +1,49 @@
+{
+  "name": "repo_web",
+  "description": "Clona/actualiza el repo de GitHub del sitio web, lee/edita un archivo y hace commit+push",
+  "script": "skills/repo_web.py",
+  "arguments": [
+    {
+      "name": "cuenta_id",
+      "type": "string",
+      "description": "ID de la cuenta de GitHub a usar (vacío = la marcada como activa)",
+      "required": false
+    },
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "clonar_o_actualizar | leer_archivo | editar_archivo | commit_push",
+      "required": true
+    },
+    {
+      "name": "archivo",
+      "type": "string",
+      "description": "Ruta del archivo dentro del repo (para leer_archivo/editar_archivo)",
+      "required": false
+    },
+    {
+      "name": "contenido_nuevo",
+      "type": "string",
+      "description": "Reemplaza el archivo completo con este contenido",
+      "required": false
+    },
+    {
+      "name": "buscar",
+      "type": "string",
+      "description": "Texto a buscar dentro del archivo (find-and-replace)",
+      "required": false
+    },
+    {
+      "name": "reemplazar_por",
+      "type": "string",
+      "description": "Texto de reemplazo para 'buscar'",
+      "required": false
+    },
+    {
+      "name": "mensaje_commit",
+      "type": "string",
+      "description": "Mensaje del commit (para commit_push)",
+      "required": false
+    }
+  ]
+}

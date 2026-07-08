@@ -1,0 +1,6 @@
+{
+  "name": "publicar_posts_programados",
+  "description": "Publica los posts programados que ya vencieron (tarea de mantenimiento, sin IA)",
+  "script": "skills/publicar_posts_programados.py",
+  "arguments": []
+}

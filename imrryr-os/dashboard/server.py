@@ -44,6 +44,14 @@ Endpoints:
     POST /api/ajustes/cuentas-ia          → Crea/edita una cuenta de IA
     DELETE /api/ajustes/cuentas-ia/{id}   → Elimina una cuenta de IA
     POST /api/ajustes/cuentas-ia/{id}/activar  → Activa una cuenta (reinicia LiteLLM)
+    GET  /api/ajustes/cuentas-git          → Cuentas de GitHub configuradas (token oculto)
+    POST /api/ajustes/cuentas-git          → Crea/edita una cuenta de GitHub
+    DELETE /api/ajustes/cuentas-git/{id}   → Elimina una cuenta de GitHub
+    POST /api/ajustes/cuentas-git/{id}/activar   → Marca cuál cuenta usa repo_web por defecto
+    GET  /api/ajustes/cuentas-social       → Cuentas de Meta Graph API configuradas (token oculto)
+    POST /api/ajustes/cuentas-social       → Crea/edita una cuenta social
+    DELETE /api/ajustes/cuentas-social/{id}      → Elimina una cuenta social
+    POST /api/ajustes/cuentas-social/{id}/activar → Marca cuál cuenta usa redes_sociales por defecto
     GET  /api/modulos                     → Lista módulos/agentes activos e inactivos + eliminados
     GET  /api/modulos/password-estado     → Si ya existe una contraseña de administrador configurada
     POST /api/modulos/configurar-password → Crea la contraseña (solo la primera vez)
@@ -52,6 +60,16 @@ Endpoints:
     POST /api/modulos/{id}/desactivar     → Desactiva un módulo sin borrar sus datos
     POST /api/modulos/{id}/eliminar       → Requiere password; mueve el YAML a agentes/_eliminados/
     POST /api/modulos/{id}/restaurar      → Recupera un módulo eliminado
+    GET  /api/rrss/posts          → Lista posts programados para redes sociales
+    POST /api/rrss/posts          → Programa un post nuevo (sin pasar por el LLM)
+    GET  /api/compras/seguimientos       → Lista productos en seguimiento de precio
+    POST /api/compras/seguimientos       → Crea un seguimiento nuevo
+    DELETE /api/compras/seguimientos/{id} → Elimina un seguimiento (y sus ofertas)
+    GET  /api/compras/prefs       → Cuenta de correo + destinatario del digest diario
+    POST /api/compras/prefs      → Guarda esas preferencias
+    GET  /api/agenda/eventos?rango=hoy|semana → Lista eventos activos (sin pasar por el LLM)
+    POST /api/agenda/eventos                  → Crea un evento nuevo
+    POST /api/agenda/eventos/{id}/cancelar    → Cancela un evento
     POST /api/chat               → Envía prompt a OpenCode (agente configurable)
 """
 from __future__ import annotations
@@ -506,6 +524,60 @@ async def activar_cuenta_ia(cuenta_id: str):
 
 
 # ---------------------------------------------------------------------------
+# API: Cuentas de GitHub (repos que el Agente RRSS/Web puede administrar)
+# ---------------------------------------------------------------------------
+@app.get("/api/ajustes/cuentas-git")
+async def get_cuentas_git():
+    from config import cuentas_git
+    return {"cuentas": cuentas_git.cuentas_seguras()}
+
+
+@app.post("/api/ajustes/cuentas-git")
+async def set_cuenta_git(datos: dict):
+    from config import cuentas_git
+    return cuentas_git.guardar_cuenta(datos)
+
+
+@app.delete("/api/ajustes/cuentas-git/{cuenta_id}")
+async def eliminar_cuenta_git(cuenta_id: str):
+    from config import cuentas_git
+    return cuentas_git.quitar_cuenta(cuenta_id)
+
+
+@app.post("/api/ajustes/cuentas-git/{cuenta_id}/activar")
+async def activar_cuenta_git(cuenta_id: str):
+    from config import cuentas_git
+    return cuentas_git.activar_cuenta(cuenta_id)
+
+
+# ---------------------------------------------------------------------------
+# API: Cuentas de redes sociales (Meta Graph API: Facebook + Instagram)
+# ---------------------------------------------------------------------------
+@app.get("/api/ajustes/cuentas-social")
+async def get_cuentas_social():
+    from config import cuentas_social
+    return {"cuentas": cuentas_social.cuentas_seguras()}
+
+
+@app.post("/api/ajustes/cuentas-social")
+async def set_cuenta_social(datos: dict):
+    from config import cuentas_social
+    return cuentas_social.guardar_cuenta(datos)
+
+
+@app.delete("/api/ajustes/cuentas-social/{cuenta_id}")
+async def eliminar_cuenta_social(cuenta_id: str):
+    from config import cuentas_social
+    return cuentas_social.quitar_cuenta(cuenta_id)
+
+
+@app.post("/api/ajustes/cuentas-social/{cuenta_id}/activar")
+async def activar_cuenta_social(cuenta_id: str):
+    from config import cuentas_social
+    return cuentas_social.activar_cuenta(cuenta_id)
+
+
+# ---------------------------------------------------------------------------
 # API: Gestión de Módulos/Agentes (protegida por contraseña, ver config/admin_modulos.py)
 # ---------------------------------------------------------------------------
 AGENTES_ELIMINADOS_DIR = AGENTES_DIR / "_eliminados"
@@ -514,18 +586,25 @@ AGENTE_NATIVO_EXCLUIDO = "agente_build"  # agente nativo de OpenCode, sync_agent
 ICONOS_POR_MODULO = {
     "agente_financiero": "chart", "agente_creativo": "bulb", "agente_crm": "users",
     "agente_investigador": "trophy", "agente_secretario": "mail", "guardia_seguridad": "shield",
+    "agente_rrss_web": "globe", "agente_compras": "cart", "agente_agenda": "calendar",
 }
 DESCRIPCION_DATOS_POR_MODULO = {
     "agente_financiero": "Gastos registrados y el progreso de importación bancaria (tablas gastos, importaciones).",
     "agente_creativo": "Ideas y proyectos guardados, con sus adjuntos (tablas semillas, proyectos, adjuntos_semilla).",
     "agente_investigador": "Oportunidades de fondos encontradas (tabla oportunidades_fondos).",
     "agente_secretario": "Cuentas de correo configuradas y borradores pendientes (correo/cuentas.json, tabla borradores_pendientes).",
+    "agente_rrss_web": "Posts programados para redes sociales (tabla posts_programados). Las credenciales de GitHub/Meta se gestionan en Ajustes y no se borran con el módulo.",
+    "agente_compras": "Productos en seguimiento y ofertas encontradas (tablas productos_seguimiento, ofertas_encontradas).",
+    "agente_agenda": "Eventos agendados (tabla eventos). Los recordatorios puntuales siguen en la tabla recordatorios, compartida con otras funciones del sistema.",
 }
 TABLAS_POR_MODULO = {
     "agente_financiero": ["gastos", "importaciones"],
     "agente_creativo": ["semillas", "proyectos", "adjuntos_semilla"],
     "agente_investigador": ["oportunidades_fondos"],
     "agente_secretario": ["borradores_pendientes"],
+    "agente_rrss_web": ["posts_programados"],
+    "agente_compras": ["productos_seguimiento", "ofertas_encontradas"],
+    "agente_agenda": ["eventos"],
 }
 
 
@@ -649,6 +728,107 @@ async def restaurar_modulo(modulo_id: str):
         return JSONResponse({"ok": False, "error": "no existe en eliminados"}, status_code=404)
     origen.rename(AGENTES_DIR / f"{modulo_id}.yaml")
     _sincronizar_agentes()
+    return {"ok": True}
+
+
+# ---------------------------------------------------------------------------
+# API: RRSS y Web — posts programados (lectura/alta directa, sin pasar por el LLM)
+# ---------------------------------------------------------------------------
+@app.get("/api/rrss/posts")
+async def listar_posts_programados():
+    import sqlite3
+    conn = sqlite3.connect(str(DB_PATH))
+    conn.row_factory = sqlite3.Row
+    try:
+        cur = conn.execute("SELECT * FROM posts_programados ORDER BY programado_at DESC")
+        return {"posts": [dict(row) for row in cur.fetchall()]}
+    finally:
+        conn.close()
+
+
+@app.post("/api/rrss/posts")
+async def crear_post_programado(datos: dict):
+    import sqlite3
+    contenido = datos.get("contenido", "")
+    plataformas = datos.get("plataformas", "")
+    programado_at = datos.get("programado_at", "")
+    if not contenido or not plataformas or not programado_at:
+        return JSONResponse({"ok": False, "error": "faltan contenido, plataformas o programado_at"}, status_code=400)
+    conn = sqlite3.connect(str(DB_PATH))
+    try:
+        cur = conn.execute(
+            "INSERT INTO posts_programados (contenido, media_ruta, plataformas, programado_at) VALUES (?, ?, ?, ?)",
+            (contenido, datos.get("media_ruta", ""), plataformas, programado_at),
+        )
+        conn.commit()
+        return {"ok": True, "id": cur.lastrowid}
+    finally:
+        conn.close()
+
+
+# ---------------------------------------------------------------------------
+# API: Compras — seguimientos de precio (lectura/alta directa) + preferencias de digest
+# ---------------------------------------------------------------------------
+@app.get("/api/compras/seguimientos")
+async def listar_seguimientos_compras():
+    from skills.gestionar_seguimiento_compras import gestionar_seguimiento_compras
+    return gestionar_seguimiento_compras(accion="listar")
+
+
+@app.post("/api/compras/seguimientos")
+async def crear_seguimiento_compras(datos: dict):
+    from skills.gestionar_seguimiento_compras import gestionar_seguimiento_compras
+    return gestionar_seguimiento_compras(
+        accion="crear", producto=datos.get("producto", ""),
+        precio_min=datos.get("precio_min"), precio_max=datos.get("precio_max"),
+        tiendas=datos.get("tiendas", ""),
+    )
+
+
+@app.delete("/api/compras/seguimientos/{seguimiento_id}")
+async def eliminar_seguimiento_compras(seguimiento_id: int):
+    from skills.gestionar_seguimiento_compras import gestionar_seguimiento_compras
+    return gestionar_seguimiento_compras(accion="eliminar", seguimiento_id=seguimiento_id)
+
+
+@app.get("/api/agenda/eventos")
+async def listar_eventos_agenda(rango: str = "hoy"):
+    from skills.agenda import agenda as agenda_skill
+    return agenda_skill(accion="que_tengo", cuando=rango)
+
+
+@app.post("/api/agenda/eventos")
+async def crear_evento_agenda(datos: dict):
+    from skills.agenda import agenda as agenda_skill
+    return agenda_skill(
+        accion="crear", titulo=datos.get("titulo", ""), fecha=datos.get("fecha", ""),
+        hora=datos.get("hora", "09:00"), duracion=datos.get("duracion", 60),
+        descripcion=datos.get("descripcion", ""),
+        avisar_dia_inicio=bool(datos.get("avisar_dia_inicio")),
+        avisar_1h_antes=bool(datos.get("avisar_1h_antes")),
+    )
+
+
+@app.post("/api/agenda/eventos/{evento_id}/cancelar")
+async def cancelar_evento_agenda(evento_id: int):
+    from skills.agenda import agenda as agenda_skill
+    return agenda_skill(accion="cancelar", evento_id=evento_id)
+
+
+COMPRAS_PREFS_PATH = ROOT / "config" / "compras_prefs.json"
+
+
+@app.get("/api/compras/prefs")
+async def get_compras_prefs():
+    if not COMPRAS_PREFS_PATH.exists():
+        return {"cuenta_correo_id": "", "destinatario": ""}
+    return json.loads(COMPRAS_PREFS_PATH.read_text(encoding="utf-8"))
+
+
+@app.post("/api/compras/prefs")
+async def set_compras_prefs(datos: dict):
+    COMPRAS_PREFS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    COMPRAS_PREFS_PATH.write_text(json.dumps(datos, indent=2, ensure_ascii=False), encoding="utf-8")
     return {"ok": True}
 
 
@@ -797,6 +977,8 @@ def main():
     ap.add_argument("--port", type=int, default=3000)
     args = ap.parse_args()
     _iniciar_scheduler_finanzas()
+    from scripts.scheduler import iniciar_scheduler_generico
+    iniciar_scheduler_generico()
     uvicorn.run(app, host="127.0.0.1", port=args.port, log_level="info")
 
 

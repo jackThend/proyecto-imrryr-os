@@ -1,0 +1,43 @@
+{
+  "name": "gestionar_seguimiento_compras",
+  "description": "Crea, lista, desactiva o elimina productos en seguimiento de precio",
+  "script": "skills/gestionar_seguimiento_compras.py",
+  "arguments": [
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "crear | listar | desactivar | eliminar",
+      "required": true
+    },
+    {
+      "name": "producto",
+      "type": "string",
+      "description": "Nombre del producto a seguir (para 'crear')",
+      "required": false
+    },
+    {
+      "name": "precio_min",
+      "type": "number",
+      "description": "Precio mínimo objetivo, opcional",
+      "required": false
+    },
+    {
+      "name": "precio_max",
+      "type": "number",
+      "description": "Precio máximo objetivo, opcional",
+      "required": false
+    },
+    {
+      "name": "tiendas",
+      "type": "string",
+      "description": "comma-separated: mercadolibre,falabella,paris,ripley",
+      "required": false
+    },
+    {
+      "name": "seguimiento_id",
+      "type": "integer",
+      "description": "ID del seguimiento (para desactivar/eliminar)",
+      "required": false
+    }
+  ]
+}

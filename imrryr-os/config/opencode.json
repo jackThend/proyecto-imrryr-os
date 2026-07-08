@@ -49,6 +49,57 @@
     }
   },
   "agent": {
+    "agenda": {
+      "description": "Agenda actividades del usuario (fecha, hora, duración) y responde qué tiene hoy, mañana, esta semana, o qué hizo ayer. Puede avisar por WhatsApp al inicio del día o una hora antes de una actividad, pero solo si el usuario lo pidió explícitamente para ese evento (o activó el resumen diario) — nunca avisa por su cuenta sin haber sido configurado para eso. También puede decir si una fecha es feriado en el país configurado del usuario.",
+      "mode": "subagent",
+      "model": "imryyr-llm/imrryr-activo",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_agenda": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "compras": {
+      "description": "El usuario le indica un producto, un rango de precio objetivo y en qué tiendas chilenas buscar (MercadoLibre, Falabella, Paris, Ripley — por ahora Falabella es la más confiable, las demás dependen de que esas tiendas no bloqueen la consulta). Revisa ofertas una vez al día y envía un correo resumen a la propia casilla del usuario cuando encuentra algo dentro de rango — nunca compra ni contacta a terceros, solo informa.",
+      "mode": "subagent",
+      "model": "imryyr-llm/imrryr-activo",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_scraper_tiendas": "allow",
+          "imrryr_gestionar_seguimiento_compras": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
     "creativo": {
       "description": "Incuba ideas: cuando el usuario le manda una idea suelta (texto o audio, por WhatsApp o el dashboard), siempre la desarrolla primero en una versión detallada y bien escrita antes de guardarla — nunca guarda la idea tal cual llegó sin enriquecerla. Gestiona el banco de ideas (etapas: idea -> desarrollada -> proyecto -> archivada) y puede discutirlas y desarrollarlas más con el usuario usando el contexto de la memoria vectorial. Cambia una idea a proyecto cuando el usuario lo pide explícitamente (por texto o WhatsApp).",
       "mode": "subagent",
@@ -159,6 +210,32 @@
           "imrryr_listar_oportunidades": "allow",
           "imrryr_cambiar_estado_oportunidad": "allow",
           "imrryr_leer_perfil_negocio": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
+    "rrss_web": {
+      "description": "Administra el sitio web del usuario vía GitHub (editar archivos, hacer commit y push a la rama activa cuando el usuario lo pide explícitamente — siempre reporta el hash y el mensaje del commit) y publica contenido en Instagram/Facebook (Meta Graph API), ya sea de inmediato o programado para una fecha/hora futura. Cuando el usuario pide redactar contenido con anticipación, lo escribe una sola vez al momento de programar — la publicación en sí, llegado el momento, no vuelve a consultar al modelo de lenguaje.",
+      "mode": "subagent",
+      "model": "imryyr-llm/imrryr-activo",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_repo_web": "allow",
+          "imrryr_redes_sociales": "allow",
           "imrryr_*": "deny",
           "*": "deny"
         }

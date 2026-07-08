@@ -1,0 +1,73 @@
+{
+  "name": "agenda",
+  "description": "Crea eventos, responde qué tienes hoy/mañana/semana o qué hiciste ayer, y dice si una fecha es feriado",
+  "script": "skills/agenda.py",
+  "arguments": [
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "crear | que_tengo | que_hice | es_feriado | cancelar",
+      "required": true
+    },
+    {
+      "name": "titulo",
+      "type": "string",
+      "description": "Título del evento (para 'crear')",
+      "required": false
+    },
+    {
+      "name": "fecha",
+      "type": "string",
+      "description": "Fecha ISO 8601 (YYYY-MM-DD)",
+      "required": false
+    },
+    {
+      "name": "hora",
+      "type": "string",
+      "description": "Hora HH:MM, default 09:00",
+      "required": false
+    },
+    {
+      "name": "duracion",
+      "type": "integer",
+      "description": "Duración en minutos, default 60",
+      "required": false
+    },
+    {
+      "name": "descripcion",
+      "type": "string",
+      "description": "Descripción opcional del evento",
+      "required": false
+    },
+    {
+      "name": "avisar_dia_inicio",
+      "type": "boolean",
+      "description": "Incluir este evento en el resumen diario de la mañana",
+      "required": false
+    },
+    {
+      "name": "avisar_1h_antes",
+      "type": "boolean",
+      "description": "Avisar por WhatsApp 1 hora antes",
+      "required": false
+    },
+    {
+      "name": "cuando",
+      "type": "string",
+      "description": "hoy | mañana | semana (para que_tengo/es_feriado)",
+      "required": false
+    },
+    {
+      "name": "exportar_ics",
+      "type": "boolean",
+      "description": "Además generar un archivo .ics del evento",
+      "required": false
+    },
+    {
+      "name": "evento_id",
+      "type": "integer",
+      "description": "ID del evento (para cancelar)",
+      "required": false
+    }
+  ]
+}

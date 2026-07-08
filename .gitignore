@@ -19,6 +19,12 @@ imrryr-os/config/gmail_secretario_token.pickle
 imrryr-os/correo/cuentas.json
 imrryr-os/config/cuentas_ia.json
 imrryr-os/config/admin_modulos.json
+imrryr-os/config/cuentas_git.json
+imrryr-os/config/cuentas_social.json
+imrryr-os/config/scheduler_estado.json
+imrryr-os/config/agenda_prefs.json
+imrryr-os/config/region.json
+imrryr-os/config/compras_prefs.json
 
 # --- Fork de OpenCode (se gestiona en su propio repo) ---
 opencode/

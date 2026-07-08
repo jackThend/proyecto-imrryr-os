@@ -582,6 +582,9 @@
   <symbol id="icon-palette" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18c1 0 2-.5 2-2 0-.6-.3-1-.6-1.4-.3-.4-.4-.9-.1-1.3.3-.4.9-.6 1.4-.6H17a4 4 0 0 0 4-4 9 9 0 0 0-9-8z"/><circle cx="7.5" cy="10.5" r="1"/><circle cx="10.5" cy="7.5" r="1"/><circle cx="14.5" cy="7.5" r="1"/><circle cx="17" cy="10.5" r="1"/></symbol>
   <symbol id="icon-modulos" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/><path d="M3 17l9 5 9-5"/><circle class="icon-accent-dot" cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="icon-lock" viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle class="icon-accent-dot" cx="12" cy="14.8" r="1.1" fill="currentColor" stroke="none"/><path d="M12 15.8v1.4"/></symbol>
+  <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 2.4 4.2 5.6 4.2 9s-1.4 6.6-4.2 9c-2.8-2.4-4.2-5.6-4.2-9s1.4-6.6 4.2-9z"/><circle class="icon-accent-dot" cx="18.5" cy="7" r="1.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2A2 2 0 0 0 9.35 17H18a2 2 0 0 0 1.96-1.6L21 8H6"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/><circle class="icon-accent-dot" cx="17" cy="11" r="1.1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle class="icon-accent-dot" cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <div class="header">
@@ -698,6 +701,54 @@
   </div>
 </div>
 
+<div class="view" id="view-rrss">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-globe"/></svg><h2>RRSS y Web</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="rrss"></div>
+    <div class="app-main">
+      <div class="app-toolbar">
+        <button class="gw-save-btn" onclick="abrirFormularioPost()"><svg class="icon"><use href="#icon-plus"/></svg> Programar post</button>
+      </div>
+      <div id="rrssFormulario" style="display:none;margin-bottom:14px"></div>
+      <div id="rrssContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-compras">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-cart"/></svg><h2>Compras</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="compras"></div>
+    <div class="app-main">
+      <div class="app-toolbar">
+        <button class="gw-save-btn" onclick="abrirFormularioSeguimiento()"><svg class="icon"><use href="#icon-plus"/></svg> Seguir producto</button>
+      </div>
+      <div id="comprasFormulario" style="display:none;margin-bottom:14px"></div>
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Elige a qué correo (de los configurados en Ajustes &gt; Correo) se manda el resumen diario de ofertas:</p>
+      <div id="comprasCorreoSelector" style="margin-bottom:14px"></div>
+      <div id="comprasContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-agenda">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-calendar"/></svg><h2>Agenda</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="agenda"></div>
+    <div class="app-main">
+      <div class="app-toolbar">
+        <select id="agendaFiltroRango" onchange="cargarAgendaView()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 8px">
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+        </select>
+        <button class="gw-save-btn" onclick="abrirFormularioEvento()"><svg class="icon"><use href="#icon-plus"/></svg> Nuevo evento</button>
+      </div>
+      <div id="agendaFormulario" style="display:none;margin-bottom:14px"></div>
+      <div id="agendaContent"></div>
+    </div>
+  </div>
+</div>
+
 <div class="view" id="view-ajustes">
   <div class="app-title-row"><svg class="icon-lg"><use href="#icon-gear"/></svg><h2>Ajustes</h2></div>
   <div class="app-toolbar" style="margin:0 16px 12px">
@@ -706,6 +757,8 @@
     <button class="app-subtab" id="ajustesSub-ia" onclick="cambiarSubtabAjustes('ia')" data-ayuda="Elige qué proveedor de IA (Gemini, OpenAI, Claude, etc.) usan todos tus agentes."><svg class="icon"><use href="#icon-chat"/></svg> Cuentas de IA</button>
     <button class="app-subtab" id="ajustesSub-ayuda" onclick="cambiarSubtabAjustes('ayuda')" data-ayuda="Prende o apaga las explicaciones que aparecen al pasar el mouse."><svg class="icon"><use href="#icon-bulb"/></svg> Ayuda</button>
     <button class="app-subtab" id="ajustesSub-apariencia" onclick="cambiarSubtabAjustes('apariencia')" data-ayuda="Elige entre un modo Creativo (más visual) o Minimalista (más sobrio)."><svg class="icon"><use href="#icon-palette"/></svg> Apariencia</button>
+    <button class="app-subtab" id="ajustesSub-github" onclick="cambiarSubtabAjustes('github')" data-ayuda="Conecta el repo de GitHub de tu sitio web para que el Agente RRSS y Web pueda editarlo."><svg class="icon"><use href="#icon-code"/></svg> GitHub</button>
+    <button class="app-subtab" id="ajustesSub-social" onclick="cambiarSubtabAjustes('social')" data-ayuda="Conecta tu Página de Facebook / cuenta de Instagram Business para publicar contenido."><svg class="icon"><use href="#icon-globe"/></svg> Redes sociales</button>
   </div>
   <div style="padding:0 16px" id="ajustesSubcontent"></div>
 </div>
@@ -736,6 +789,9 @@ const APPS = [
   { id: 'finanzas', nombre: 'Finanzas', icono: 'chart', agente: 'financiero', chatLabel: 'Asistente Financiero', ayuda: 'Lleva el control de tus gastos: los registra, los ordena por categoría y te da reportes.' },
   { id: 'crm', nombre: 'CRM', icono: 'users', agente: 'crm', chatLabel: 'Agente Comercial', ayuda: 'Gestiona clientes potenciales y te ayuda a redactar propuestas y cotizaciones.' },
   { id: 'seguridad', nombre: 'Seguridad', icono: 'shield', agente: 'guardia_seguridad', chatLabel: 'Guardia de Seguridad', ayuda: 'Vigila que los demás agentes no se atasquen ni gasten de más — funciona en silencio.' },
+  { id: 'rrss', nombre: 'RRSS y Web', icono: 'globe', agente: 'rrss_web', chatLabel: 'Agente RRSS y Web', ayuda: 'Actualiza tu sitio web por GitHub y programa publicaciones en Instagram y Facebook.' },
+  { id: 'compras', nombre: 'Compras', icono: 'cart', agente: 'compras', chatLabel: 'Agente de Compras', ayuda: 'Sigue el precio de productos en tiendas chilenas y te avisa por correo cuando encuentra ofertas.' },
+  { id: 'agenda', nombre: 'Agenda', icono: 'calendar', agente: 'agenda', chatLabel: 'Agente de Agenda', ayuda: 'Agenda tus actividades y te dice qué tienes hoy, mañana o esta semana — puede avisarte por WhatsApp si se lo pides.' },
   { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
   { id: 'modulos', nombre: 'Módulos', icono: 'modulos', agente: null, ayuda: 'Activa, desactiva o elimina agentes — protegido con contraseña.' },
 ];
@@ -857,6 +913,9 @@ function inicializarVista(id) {
     case 'finanzas': initChat('finanzas', 'financiero'); break;
     case 'crm': initChat('crm', 'crm'); break;
     case 'seguridad': initChat('seguridad', 'guardia_seguridad'); break;
+    case 'rrss': initChat('rrss', 'rrss_web', cargarRrssView); break;
+    case 'compras': initChat('compras', 'compras', cargarComprasView); break;
+    case 'agenda': initChat('agenda', 'agenda', cargarAgendaView); break;
   }
 }
 
@@ -869,6 +928,9 @@ function cargarVista(id) {
     case 'finanzas': cargarFinanzasView(); break;
     case 'ajustes': cambiarSubtabAjustes(ajustesSubtabActual); break;
     case 'modulos': cargarModulosView(); break;
+    case 'rrss': cargarRrssView(); break;
+    case 'compras': cargarComprasView(); break;
+    case 'agenda': cargarAgendaView(); break;
   }
 }
 
@@ -961,6 +1023,18 @@ async function cargarHomeSecundaria() {
     <div class="mini-card" onclick="abrirApp('modulos')" data-ayuda="Activa, desactiva o elimina agentes — protegido con contraseña.">
       <div class="mini-card-icon"><svg class="icon"><use href="#icon-modulos"/></svg></div>
       <div class="mini-card-body"><div class="mini-card-title">Módulos</div><div class="mini-card-sub">Gestiona tus agentes</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('rrss')" data-ayuda="Actualiza tu sitio web por GitHub y programa publicaciones en Instagram y Facebook.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-globe"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">RRSS y Web</div><div class="mini-card-sub">GitHub + Instagram/Facebook</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('compras')" data-ayuda="Sigue el precio de productos en tiendas chilenas y te avisa por correo cuando encuentra ofertas.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-cart"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Compras</div><div class="mini-card-sub">Cotizador de productos</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('agenda')" data-ayuda="Agenda tus actividades y te dice qué tienes hoy, mañana o esta semana.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-calendar"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Agenda</div><div class="mini-card-sub">Tus actividades del día</div></div>
     </div>`;
   try {
     const r = await fetch('/api/finanzas');
@@ -1470,6 +1544,10 @@ async function quitarCaracteristica(clave) {
 let cuentasIaLista = [];
 let cuentasIaProveedores = {};
 let cuentasIaMostrarForm = false;
+let cuentasGitLista = [];
+let cuentasGitMostrarForm = false;
+let cuentasSocialLista = [];
+let cuentasSocialMostrarForm = false;
 
 async function cargarCuentasIaView() {
   const el = document.getElementById('ajustesSubcontent');
@@ -1591,6 +1669,471 @@ async function eliminarCuentaIa(id) {
     await fetch(`/api/ajustes/cuentas-ia/${id}`, { method: 'DELETE' });
     mostrarToast('Cuenta eliminada', 'success');
     cargarCuentasIaView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Ajustes > GitHub (config/cuentas_git.py) ---
+async function cargarCuentasGitView() {
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/ajustes/cuentas-git');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    cuentasGitLista = d.cuentas || [];
+    if (ajustesSubtabActual !== 'github') return;
+    renderCuentasGitView();
+  } catch (e) {
+    if (ajustesSubtabActual !== 'github') return;
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCuentasGitView() {
+  if (ajustesSubtabActual !== 'github') return;
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  let html = '<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Conecta el repositorio de GitHub de tu sitio web para que el Agente RRSS y Web pueda editarlo y hacer commit/push cuando se lo pidas.</p>';
+
+  html += cuentasGitLista.length ? '<div style="margin-bottom:10px">' + cuentasGitLista.map(c => `
+    <div class="seed-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div><b>${c.nombre}</b> <span class="tag">${c.repo_url}</span>${c.activa ? '<span class="estado-badge estado-proyecto" style="margin-left:6px">activa</span>' : ''}</div>
+      <div style="display:flex;gap:6px">
+        ${!c.activa ? `<button class="gw-save-btn" onclick="activarCuentaGit('${c.id}')">Usar esta</button>` : ''}
+        <button class="gw-save-btn" onclick="eliminarCuentaGit('${c.id}')">Eliminar</button>
+      </div>
+    </div>`).join('') + '</div>' : '<div class="empty">Sin repos de GitHub configurados todavía</div>';
+
+  html += `<button class="gw-save-btn" onclick="toggleCuentaGitForm()">${cuentasGitMostrarForm ? 'Cancelar' : '+ Repo de GitHub'}</button>`;
+
+  if (cuentasGitMostrarForm) {
+    html += `
+      <div style="margin-top:10px">
+        <div class="gw-field"><label>Nombre</label><input id="cgNombre" placeholder="ej. Mi sitio web"></div>
+        <div class="gw-field"><label>URL del repo</label><input id="cgRepoUrl" placeholder="https://github.com/usuario/repo.git"></div>
+        <div class="gw-field"><label>Carpeta local (dónde clonarlo)</label><input id="cgRutaLocal" placeholder="C:\\ruta\\a\\mi-sitio"></div>
+        <div class="gw-field"><label>Rama</label><input id="cgRama" value="main"></div>
+        <div class="gw-field"><label>Token de acceso personal</label><input id="cgToken" type="password"></div>
+        <button class="gw-save-btn" style="margin-top:6px" onclick="guardarCuentaGit()">Guardar repo</button>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function toggleCuentaGitForm() {
+  cuentasGitMostrarForm = !cuentasGitMostrarForm;
+  renderCuentasGitView();
+}
+
+async function guardarCuentaGit() {
+  const nombre = document.getElementById('cgNombre').value.trim();
+  const repo_url = document.getElementById('cgRepoUrl').value.trim();
+  if (!nombre || !repo_url) { mostrarToast('Falta el nombre o la URL del repo', 'error'); return; }
+  const id = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) + '_' + Date.now().toString(36);
+  const datos = {
+    id, nombre, repo_url,
+    ruta_local: document.getElementById('cgRutaLocal').value.trim(),
+    rama: document.getElementById('cgRama').value.trim() || 'main',
+  };
+  const token = document.getElementById('cgToken').value.trim();
+  if (token) datos.token = token;
+  try {
+    const r = await fetch('/api/ajustes/cuentas-git', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    cuentasGitMostrarForm = false;
+    mostrarToast('Repo de GitHub guardado', 'success');
+    cargarCuentasGitView();
+  } catch (e) {
+    mostrarToast('Error guardando repo: ' + e.message, 'error');
+  }
+}
+
+async function activarCuentaGit(id) {
+  try {
+    const r = await fetch(`/api/ajustes/cuentas-git/${id}/activar`, { method: 'POST' });
+    const d = await r.json();
+    mostrarToast(d.ok ? 'Repo activado' : 'Error: ' + (d.error || ''), d.ok ? 'success' : 'error');
+    cargarCuentasGitView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function eliminarCuentaGit(id) {
+  try {
+    await fetch(`/api/ajustes/cuentas-git/${id}`, { method: 'DELETE' });
+    mostrarToast('Repo eliminado', 'success');
+    cargarCuentasGitView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Ajustes > Redes sociales (config/cuentas_social.py) ---
+async function cargarCuentasSocialView() {
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/ajustes/cuentas-social');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    cuentasSocialLista = d.cuentas || [];
+    if (ajustesSubtabActual !== 'social') return;
+    renderCuentasSocialView();
+  } catch (e) {
+    if (ajustesSubtabActual !== 'social') return;
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCuentasSocialView() {
+  if (ajustesSubtabActual !== 'social') return;
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  let html = `<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Conecta tu app de Meta for Developers (Página de Facebook +, opcional, cuenta de Instagram Business vinculada) para que el Agente RRSS y Web pueda publicar.
+    <br><b>Importante:</b> publicar contra cuentas que no son admin/tester de tu app de Meta requiere que esa app pase App Review para los permisos pages_manage_posts / instagram_content_publish — es un trámite externo ante Meta, no algo que Imrryr pueda resolver por su cuenta.</p>`;
+
+  html += cuentasSocialLista.length ? '<div style="margin-bottom:10px">' + cuentasSocialLista.map(c => `
+    <div class="seed-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div><b>${c.nombre}</b> <span class="tag">page_id: ${c.page_id}</span>${c.ig_business_id ? `<span class="tag">IG: ${c.ig_business_id}</span>` : ''}${c.activa ? '<span class="estado-badge estado-proyecto" style="margin-left:6px">activa</span>' : ''}</div>
+      <div style="display:flex;gap:6px">
+        ${!c.activa ? `<button class="gw-save-btn" onclick="activarCuentaSocial('${c.id}')">Usar esta</button>` : ''}
+        <button class="gw-save-btn" onclick="eliminarCuentaSocial('${c.id}')">Eliminar</button>
+      </div>
+    </div>`).join('') + '</div>' : '<div class="empty">Sin cuentas sociales configuradas todavía</div>';
+
+  html += `<button class="gw-save-btn" onclick="toggleCuentaSocialForm()">${cuentasSocialMostrarForm ? 'Cancelar' : '+ Cuenta social'}</button>`;
+
+  if (cuentasSocialMostrarForm) {
+    html += `
+      <div style="margin-top:10px">
+        <div class="gw-field"><label>Nombre</label><input id="csNombre" placeholder="ej. Página de mi negocio"></div>
+        <div class="gw-field"><label>Facebook Page ID</label><input id="csPageId"></div>
+        <div class="gw-field"><label>Instagram Business Account ID (opcional)</label><input id="csIgId"></div>
+        <div class="gw-field"><label>Access token de Meta Graph API</label><input id="csToken" type="password"></div>
+        <button class="gw-save-btn" style="margin-top:6px" onclick="guardarCuentaSocial()">Guardar cuenta</button>
+      </div>`;
+  }
+  el.innerHTML = html;
+}
+
+function toggleCuentaSocialForm() {
+  cuentasSocialMostrarForm = !cuentasSocialMostrarForm;
+  renderCuentasSocialView();
+}
+
+async function guardarCuentaSocial() {
+  const nombre = document.getElementById('csNombre').value.trim();
+  const page_id = document.getElementById('csPageId').value.trim();
+  if (!nombre || !page_id) { mostrarToast('Falta el nombre o el Page ID', 'error'); return; }
+  const id = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) + '_' + Date.now().toString(36);
+  const datos = { id, nombre, page_id, ig_business_id: document.getElementById('csIgId').value.trim() };
+  const token = document.getElementById('csToken').value.trim();
+  if (token) datos.access_token = token;
+  try {
+    const r = await fetch('/api/ajustes/cuentas-social', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    cuentasSocialMostrarForm = false;
+    mostrarToast('Cuenta social guardada', 'success');
+    cargarCuentasSocialView();
+  } catch (e) {
+    mostrarToast('Error guardando cuenta: ' + e.message, 'error');
+  }
+}
+
+async function activarCuentaSocial(id) {
+  try {
+    const r = await fetch(`/api/ajustes/cuentas-social/${id}/activar`, { method: 'POST' });
+    const d = await r.json();
+    mostrarToast(d.ok ? 'Cuenta activada' : 'Error: ' + (d.error || ''), d.ok ? 'success' : 'error');
+    cargarCuentasSocialView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function eliminarCuentaSocial(id) {
+  try {
+    await fetch(`/api/ajustes/cuentas-social/${id}`, { method: 'DELETE' });
+    mostrarToast('Cuenta eliminada', 'success');
+    cargarCuentasSocialView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- App RRSS y Web (tabla posts_programados) ---
+async function cargarRrssView() {
+  const el = document.getElementById('rrssContent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/rrss/posts');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const lista = d.posts || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty">Sin posts programados todavía. Usa "Programar post" o pídeselo al Agente RRSS y Web.</div>';
+      return;
+    }
+    el.innerHTML = `<div class="oport-board">${lista.map(p => `
+      <div class="oport-card">
+        <div class="oport-card-fuente">${p.plataformas}</div>
+        <div class="oport-card-titulo">${p.contenido}</div>
+        <div class="oport-card-meta">Programado: ${p.programado_at}</div>
+        <span class="estado-badge estado-${p.estado === 'publicado' ? 'proyecto' : p.estado === 'fallido' ? 'archivada' : 'idea'}">${p.estado}</span>
+        ${p.error_detalle ? `<div class="oport-card-nota">${p.error_detalle}</div>` : ''}
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function abrirFormularioPost() {
+  const el = document.getElementById('rrssFormulario');
+  const abierto = el.style.display !== 'none';
+  if (abierto) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="gw-field"><label>Contenido</label><input id="rrssContenido" placeholder="Texto del post"></div>
+    <div class="gw-field"><label>Imagen (ruta local o URL pública — obligatoria para Instagram)</label><input id="rrssMedia" placeholder="https://... o ruta local"></div>
+    <div class="gw-field"><label>Plataformas</label>
+      <label style="font-size:12px;margin-right:10px"><input type="checkbox" id="rrssFb" checked> Facebook</label>
+      <label style="font-size:12px"><input type="checkbox" id="rrssIg" checked> Instagram</label>
+    </div>
+    <div class="gw-field"><label>Fecha y hora</label><input id="rrssFecha" type="datetime-local"></div>
+    <button class="gw-save-btn" style="margin-top:6px" onclick="guardarPostProgramado()">Programar</button>`;
+}
+
+async function guardarPostProgramado() {
+  const contenido = document.getElementById('rrssContenido').value.trim();
+  const fecha = document.getElementById('rrssFecha').value;
+  if (!contenido || !fecha) { mostrarToast('Falta el contenido o la fecha', 'error'); return; }
+  const plataformas = [
+    document.getElementById('rrssFb').checked ? 'facebook' : null,
+    document.getElementById('rrssIg').checked ? 'instagram' : null,
+  ].filter(Boolean).join(',');
+  const datos = {
+    contenido, plataformas, programado_at: fecha.replace('T', ' '),
+    media_ruta: document.getElementById('rrssMedia').value.trim(),
+  };
+  try {
+    const r = await fetch('/api/rrss/posts', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('rrssFormulario').style.display = 'none';
+    mostrarToast('Post programado', 'success');
+    cargarRrssView();
+  } catch (e) {
+    mostrarToast('Error programando post: ' + e.message, 'error');
+  }
+}
+
+// --- App Compras (tabla productos_seguimiento) ---
+async function cargarComprasView() {
+  cargarComprasCorreoSelector();
+  const el = document.getElementById('comprasContent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/compras/seguimientos');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const lista = d.seguimientos || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty">Sin productos en seguimiento todavía. Usa "Seguir producto" o pídeselo al Agente de Compras.</div>';
+      return;
+    }
+    el.innerHTML = `<div class="oport-board">${lista.map(s => `
+      <div class="oport-card">
+        <div class="oport-card-fuente">${s.tiendas}</div>
+        <div class="oport-card-titulo">${s.producto}</div>
+        <div class="oport-card-meta">${s.precio_min ? 'Desde $' + s.precio_min : ''}${s.precio_max ? ' hasta $' + s.precio_max : ''}</div>
+        <div class="oport-card-nota">Último chequeo: ${s.ultimo_chequeo || 'todavía no'}</div>
+        <span class="estado-badge estado-${s.activo ? 'proyecto' : 'archivada'}">${s.activo ? 'activo' : 'inactivo'}</span>
+        <div class="oport-card-actions" style="margin-top:8px">
+          <button onclick="eliminarSeguimientoCompras(${s.id})">Eliminar</button>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function abrirFormularioSeguimiento() {
+  const el = document.getElementById('comprasFormulario');
+  const abierto = el.style.display !== 'none';
+  if (abierto) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="gw-field"><label>Producto</label><input id="csProducto" placeholder="ej. audífonos sony wh-1000xm5"></div>
+    <div class="gw-field"><label>Precio mínimo (opcional)</label><input id="csPrecioMin" type="number"></div>
+    <div class="gw-field"><label>Precio máximo (opcional)</label><input id="csPrecioMax" type="number"></div>
+    <div class="gw-field"><label>Tiendas</label>
+      <label style="font-size:12px;margin-right:10px"><input type="checkbox" id="csFalabella" checked> Falabella</label>
+      <label style="font-size:12px;margin-right:10px"><input type="checkbox" id="csMeli" checked> MercadoLibre</label>
+      <label style="font-size:12px;margin-right:10px"><input type="checkbox" id="csParis" checked> Paris</label>
+      <label style="font-size:12px"><input type="checkbox" id="csRipley" checked> Ripley</label>
+    </div>
+    <button class="gw-save-btn" style="margin-top:6px" onclick="guardarSeguimientoCompras()">Seguir producto</button>`;
+}
+
+async function guardarSeguimientoCompras() {
+  const producto = document.getElementById('csProducto').value.trim();
+  if (!producto) { mostrarToast('Falta el nombre del producto', 'error'); return; }
+  const tiendas = [
+    document.getElementById('csFalabella').checked ? 'falabella' : null,
+    document.getElementById('csMeli').checked ? 'mercadolibre' : null,
+    document.getElementById('csParis').checked ? 'paris' : null,
+    document.getElementById('csRipley').checked ? 'ripley' : null,
+  ].filter(Boolean).join(',');
+  const datos = {
+    producto, tiendas,
+    precio_min: parseFloat(document.getElementById('csPrecioMin').value) || null,
+    precio_max: parseFloat(document.getElementById('csPrecioMax').value) || null,
+  };
+  try {
+    const r = await fetch('/api/compras/seguimientos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('comprasFormulario').style.display = 'none';
+    mostrarToast('Producto en seguimiento', 'success');
+    cargarComprasView();
+  } catch (e) {
+    mostrarToast('Error guardando seguimiento: ' + e.message, 'error');
+  }
+}
+
+async function eliminarSeguimientoCompras(id) {
+  try {
+    await fetch(`/api/compras/seguimientos/${id}`, { method: 'DELETE' });
+    mostrarToast('Seguimiento eliminado', 'success');
+    cargarComprasView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function cargarComprasCorreoSelector() {
+  const el = document.getElementById('comprasCorreoSelector');
+  if (!el) return;
+  try {
+    const [rCuentas, rPrefs] = await Promise.all([fetch('/api/correo/cuentas'), fetch('/api/compras/prefs')]);
+    const cuentas = (await rCuentas.json()).cuentas || [];
+    const prefs = await rPrefs.json();
+    const opciones = cuentas.map(c => `<option value="${c.id}" ${c.id === prefs.cuenta_correo_id ? 'selected' : ''}>${c.nombre}</option>`).join('');
+    el.innerHTML = `
+      <div class="gw-field"><label>Cuenta de correo</label>
+        <select id="comprasCuentaCorreo" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;width:100%">
+          <option value="">Sin elegir</option>${opciones}
+        </select>
+      </div>
+      <div class="gw-field"><label>Enviar a</label><input id="comprasDestinatario" value="${prefs.destinatario || ''}" placeholder="tu@correo.com"></div>
+      <button class="gw-save-btn" onclick="guardarComprasPrefs()">Guardar</button>`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function guardarComprasPrefs() {
+  const datos = {
+    cuenta_correo_id: document.getElementById('comprasCuentaCorreo').value,
+    destinatario: document.getElementById('comprasDestinatario').value.trim(),
+  };
+  try {
+    await fetch('/api/compras/prefs', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    mostrarToast('Preferencias guardadas', 'success');
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- App Agenda (tabla eventos) ---
+async function cargarAgendaView() {
+  const el = document.getElementById('agendaContent');
+  if (!el) return;
+  const rango = document.getElementById('agendaFiltroRango').value;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/agenda/eventos?rango=' + rango);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const lista = d.eventos || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty">Sin eventos agendados. Usa "Nuevo evento" o pídeselo al Agente de Agenda.</div>';
+      return;
+    }
+    el.innerHTML = `<div class="oport-board">${lista.map(ev => `
+      <div class="oport-card">
+        <div class="oport-card-fuente">${ev.fecha} ${ev.hora}</div>
+        <div class="oport-card-titulo">${ev.titulo}</div>
+        ${ev.descripcion ? `<div class="oport-card-nota">${ev.descripcion}</div>` : ''}
+        <div class="oport-card-meta">${ev.avisar_dia_inicio ? 'Aviso de la mañana ' : ''}${ev.avisar_1h_antes ? '· Aviso 1h antes' : ''}</div>
+        <div class="oport-card-actions" style="margin-top:8px">
+          <button onclick="cancelarEventoAgenda(${ev.id})">Cancelar</button>
+        </div>
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function abrirFormularioEvento() {
+  const el = document.getElementById('agendaFormulario');
+  const abierto = el.style.display !== 'none';
+  if (abierto) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = `
+    <div class="gw-field"><label>Título</label><input id="agTitulo" placeholder="ej. Reunión con proveedor"></div>
+    <div class="gw-field"><label>Fecha</label><input id="agFecha" type="date"></div>
+    <div class="gw-field"><label>Hora</label><input id="agHora" type="time" value="09:00"></div>
+    <div class="gw-field"><label>Descripción (opcional)</label><input id="agDescripcion"></div>
+    <div class="gw-field">
+      <label style="font-size:12px;margin-right:10px"><input type="checkbox" id="agAvisoDia"> Avisarme por WhatsApp al empezar el día</label>
+      <label style="font-size:12px"><input type="checkbox" id="agAviso1h"> Avisarme 1 hora antes</label>
+    </div>
+    <button class="gw-save-btn" style="margin-top:6px" onclick="guardarEventoAgenda()">Agendar</button>`;
+}
+
+async function guardarEventoAgenda() {
+  const titulo = document.getElementById('agTitulo').value.trim();
+  const fecha = document.getElementById('agFecha').value;
+  if (!titulo || !fecha) { mostrarToast('Falta el título o la fecha', 'error'); return; }
+  const datos = {
+    titulo, fecha,
+    hora: document.getElementById('agHora').value || '09:00',
+    descripcion: document.getElementById('agDescripcion').value.trim(),
+    avisar_dia_inicio: document.getElementById('agAvisoDia').checked,
+    avisar_1h_antes: document.getElementById('agAviso1h').checked,
+  };
+  try {
+    const r = await fetch('/api/agenda/eventos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    document.getElementById('agendaFormulario').style.display = 'none';
+    mostrarToast('Evento agendado', 'success');
+    cargarAgendaView();
+  } catch (e) {
+    mostrarToast('Error agendando: ' + e.message, 'error');
+  }
+}
+
+async function cancelarEventoAgenda(id) {
+  try {
+    await fetch(`/api/agenda/eventos/${id}/cancelar`, { method: 'POST' });
+    mostrarToast('Evento cancelado', 'success');
+    cargarAgendaView();
   } catch (e) {
     mostrarToast('Error: ' + e.message, 'error');
   }
@@ -1992,13 +2535,15 @@ async function descartarBorradorCorreo(id) {
 let ajustesSubtabActual = 'whatsapp';
 function cambiarSubtabAjustes(sub) {
   ajustesSubtabActual = sub;
-  ['whatsapp', 'perfil', 'ia', 'ayuda', 'apariencia'].forEach(s =>
+  ['whatsapp', 'perfil', 'ia', 'ayuda', 'apariencia', 'github', 'social'].forEach(s =>
     document.getElementById('ajustesSub-' + s).classList.toggle('active', sub === s));
   document.getElementById('ajustesSubcontent').innerHTML = '<div class="loading">Cargando</div>';
   if (sub === 'whatsapp') cargarGateway();
   else if (sub === 'perfil') cargarPerfilNegocio();
   else if (sub === 'ia') cargarCuentasIaView();
   else if (sub === 'apariencia') renderApariencia();
+  else if (sub === 'github') cargarCuentasGitView();
+  else if (sub === 'social') cargarCuentasSocialView();
   else renderAyudaSettings();
 }
 
@@ -2076,8 +2621,21 @@ function renderApariencia() {
         <div style="font-size:11px;color:var(--text-dim)">Sobrio y profesional, sin decoraciones.</div>
       </div>
     </div>
+    <div class="gw-field" style="margin-bottom:16px">
+      <label>Página de inicio</label>
+      <select id="paginaInicioSelect" onchange="guardarPaginaInicio()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 8px;width:100%;max-width:260px">
+        ${NAV_ITEMS.map(item => `<option value="${item.id}">${item.nombre}</option>`).join('')}
+      </select>
+    </div>
     <div id="fondoPersonalizadoBox"></div>`;
+  document.getElementById('paginaInicioSelect').value = localStorage.getItem('imrryr_pagina_inicio') || 'inicio';
   cargarFondoPersonalizado();
+}
+
+function guardarPaginaInicio() {
+  const valor = document.getElementById('paginaInicioSelect').value;
+  localStorage.setItem('imrryr_pagina_inicio', valor);
+  mostrarToast('Página de inicio guardada', 'success');
 }
 
 async function cargarFondoPersonalizado() {
@@ -2361,7 +2919,7 @@ aplicarFondoPersonalizado();
 inicializarPosicionAyuda();
 renderNavTabs();
 montarChatPanels();
-abrirApp('inicio');
+abrirApp(localStorage.getItem('imrryr_pagina_inicio') || 'inicio');
 actualizarStatus();
 setInterval(actualizarStatus, 15000);
 </script>

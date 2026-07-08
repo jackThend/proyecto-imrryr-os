@@ -104,6 +104,57 @@ CREATE TABLE IF NOT EXISTS importaciones (
     completado_at   TEXT
 );
 
+CREATE TABLE IF NOT EXISTS posts_programados (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    contenido       TEXT    NOT NULL,             -- texto del post
+    media_ruta      TEXT,                         -- ruta local a imagen/video, o NULL si es solo texto
+    plataformas     TEXT    NOT NULL,             -- comma-separated: instagram,facebook
+    programado_at   TEXT    NOT NULL,             -- ISO 8601, cuándo debe publicarse
+    estado          TEXT    DEFAULT 'pendiente',  -- pendiente, publicado, fallido, cancelado
+    error_detalle   TEXT,                         -- si estado=fallido, por qué
+    publicado_at    TEXT,
+    created_at      TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS productos_seguimiento (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    producto        TEXT    NOT NULL,             -- término de búsqueda, ej. "audífonos sony wh-1000xm5"
+    precio_min      REAL,                         -- opcional, rango objetivo
+    precio_max      REAL,
+    tiendas         TEXT    NOT NULL DEFAULT 'mercadolibre,falabella,paris,ripley',  -- comma-separated
+    activo          INTEGER DEFAULT 1,
+    ultimo_chequeo  TEXT,                         -- ISO 8601, cuándo se revisó por última vez
+    created_at      TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS ofertas_encontradas (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    seguimiento_id        INTEGER NOT NULL,
+    tienda                TEXT    NOT NULL,
+    titulo                TEXT    NOT NULL,
+    precio                REAL    NOT NULL,
+    url                   TEXT    NOT NULL,
+    encontrado_at         TEXT    DEFAULT (datetime('now')),
+    FOREIGN KEY (seguimiento_id) REFERENCES productos_seguimiento(id)
+);
+
+CREATE TABLE IF NOT EXISTS eventos (
+    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+    titulo              TEXT    NOT NULL,
+    descripcion         TEXT,
+    fecha               TEXT    NOT NULL,           -- ISO 8601: 2026-07-09
+    hora                TEXT    DEFAULT '09:00',
+    duracion_min        INTEGER DEFAULT 60,
+    todo_dia            INTEGER DEFAULT 0,
+    avisar_dia_inicio   INTEGER DEFAULT 0,           -- opt-in: incluir en el resumen diario de la mañana
+    avisar_1h_antes     INTEGER DEFAULT 0,           -- opt-in: ping 1h antes
+    aviso_1h_disparado  INTEGER DEFAULT 0,           -- evita re-disparar el aviso de 1h
+    ics_generado        TEXT,                        -- ruta al .ics si se exportó (opcional)
+    estado              TEXT    DEFAULT 'activo',    -- activo, cancelado, realizado
+    created_at          TEXT    DEFAULT (datetime('now')),
+    updated_at          TEXT    DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
 CREATE INDEX IF NOT EXISTS idx_gastos_categoria ON gastos(categoria);
 CREATE INDEX IF NOT EXISTS idx_proyectos_estado ON proyectos(estado);
@@ -112,6 +163,11 @@ CREATE INDEX IF NOT EXISTS idx_oportunidades_estado ON oportunidades_fondos(esta
 CREATE INDEX IF NOT EXISTS idx_adjuntos_semilla_id ON adjuntos_semilla(semilla_id);
 CREATE INDEX IF NOT EXISTS idx_borradores_estado ON borradores_pendientes(estado);
 CREATE INDEX IF NOT EXISTS idx_importaciones_tipo_cuenta ON importaciones(tipo, cuenta_correo_id);
+CREATE INDEX IF NOT EXISTS idx_posts_estado_fecha ON posts_programados(estado, programado_at);
+CREATE INDEX IF NOT EXISTS idx_prodseg_activo ON productos_seguimiento(activo);
+CREATE INDEX IF NOT EXISTS idx_ofertas_seguimiento ON ofertas_encontradas(seguimiento_id);
+CREATE INDEX IF NOT EXISTS idx_eventos_fecha ON eventos(fecha);
+CREATE INDEX IF NOT EXISTS idx_eventos_estado ON eventos(estado);
 """
 
 
@@ -165,7 +221,9 @@ def main() -> int:
             "DROP TABLE IF EXISTS gastos; DROP TABLE IF EXISTS proyectos; "
             "DROP TABLE IF EXISTS semillas; DROP TABLE IF EXISTS oportunidades_fondos; "
             "DROP TABLE IF EXISTS adjuntos_semilla; DROP TABLE IF EXISTS borradores_pendientes; "
-            "DROP TABLE IF EXISTS importaciones;"
+            "DROP TABLE IF EXISTS importaciones; DROP TABLE IF EXISTS posts_programados; "
+            "DROP TABLE IF EXISTS ofertas_encontradas; DROP TABLE IF EXISTS productos_seguimiento; "
+            "DROP TABLE IF EXISTS eventos;"
         )
         log("Tablas eliminadas.")
 

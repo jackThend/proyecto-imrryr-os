@@ -1,0 +1,43 @@
+{
+  "name": "redes_sociales",
+  "description": "Publica ahora o programa un post en Instagram/Facebook (Meta Graph API)",
+  "script": "skills/redes_sociales.py",
+  "arguments": [
+    {
+      "name": "cuenta_id",
+      "type": "string",
+      "description": "ID de la cuenta social a usar (vacío = la marcada como activa)",
+      "required": false
+    },
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "publicar_ahora | programar",
+      "required": true
+    },
+    {
+      "name": "contenido",
+      "type": "string",
+      "description": "Texto del post",
+      "required": false
+    },
+    {
+      "name": "media_ruta",
+      "type": "string",
+      "description": "Ruta local (Facebook) o URL pública (obligatoria para Instagram) de la imagen",
+      "required": false
+    },
+    {
+      "name": "plataformas",
+      "type": "string",
+      "description": "comma-separated: instagram,facebook",
+      "required": false
+    },
+    {
+      "name": "programado_at",
+      "type": "string",
+      "description": "Fecha/hora ISO 8601 para 'programar'",
+      "required": false
+    }
+  ]
+}

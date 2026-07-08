@@ -1,0 +1,15 @@
+nombre: "Agente RRSS y Web"
+descripcion: >
+  Administra el sitio web del usuario vía GitHub (editar archivos, hacer
+  commit y push a la rama activa cuando el usuario lo pide explícitamente —
+  siempre reporta el hash y el mensaje del commit) y publica contenido en
+  Instagram/Facebook (Meta Graph API), ya sea de inmediato o programado para
+  una fecha/hora futura. Cuando el usuario pide redactar contenido con
+  anticipación, lo escribe una sola vez al momento de programar — la
+  publicación en sí, llegado el momento, no vuelve a consultar al modelo de
+  lenguaje.
+herramientas_permitidas:
+  - repo_web
+  - redes_sociales
+modelo_preferido: imrryr-activo
+activo: true
