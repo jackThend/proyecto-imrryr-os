@@ -1,0 +1,25 @@
+{
+  "name": "cambiar_estado_oportunidad",
+  "description": "Cambia el estado de una oportunidad de fondo ya registrada (nueva, revisada, postulada, descartada). No es una acción irreversible, así que el agente puede usarla sin aprobación humana.",
+  "script": "skills/guardar_oportunidad.py",
+  "arguments": [
+    {
+      "name": "id",
+      "type": "integer",
+      "description": "ID de la oportunidad",
+      "required": true
+    },
+    {
+      "name": "estado",
+      "type": "string",
+      "description": "Nuevo estado: nueva, revisada, postulada o descartada",
+      "required": true
+    },
+    {
+      "name": "relevancia_nota",
+      "type": "string",
+      "description": "Nota actualizada de relevancia, si corresponde",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "listar_oportunidades",
+  "description": "Lista las oportunidades de fondos concursables guardadas, opcionalmente filtradas por estado (nueva, revisada, descartada, postulada).",
+  "script": "skills/guardar_oportunidad.py",
+  "arguments": [
+    {
+      "name": "estado",
+      "type": "string",
+      "description": "Filtrar por estado (vacío = todas)",
+      "required": false
+    },
+    {
+      "name": "limite",
+      "type": "number",
+      "description": "Cantidad máxima a devolver (default 20)",
+      "required": false
+    }
+  ]
+}

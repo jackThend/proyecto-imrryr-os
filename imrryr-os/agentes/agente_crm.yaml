@@ -6,5 +6,5 @@ herramientas_permitidas:
   - leer_gmail
   - consultar_memoria_vectorial
   - crear_evento
-modelo_preferido: gemini-flash
+modelo_preferido: imrryr-activo
 activo: true

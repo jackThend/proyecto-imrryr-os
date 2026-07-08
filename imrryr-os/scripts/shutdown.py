@@ -24,6 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 RUN_DIR = ROOT / ".run"
 
 PID_FILES = {
+    "Dashboard": RUN_DIR / "dashboard.pid",
     "LiteLLM": RUN_DIR / "litellm.pid",
     "OpenCode": RUN_DIR / "opencode.pid",
     "Gateway": RUN_DIR / "gateway.pid",

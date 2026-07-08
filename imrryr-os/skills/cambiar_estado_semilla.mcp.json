@@ -1,0 +1,9 @@
+{
+  "name": "cambiar_estado_semilla",
+  "description": "Cambia el estado de una idea (idea, desarrollada, proyecto, archivada). Si el nuevo estado es 'proyecto', crea automáticamente la ficha en la tabla de proyectos y la vincula. Se puede invocar por texto (dashboard) o por WhatsApp ('cambia la idea X a proyecto').",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "id", "type": "number", "description": "ID de la idea", "required": true},
+    {"name": "nuevo_estado", "type": "string", "description": "idea, desarrollada, proyecto o archivada", "required": true}
+  ]
+}

@@ -19,7 +19,19 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent
+def _detectar_root() -> Path:
+    """En el paquete distribuible (dist/), install.py vive en la raíz del
+    proyecto (lo copia scripts/package.py). En el repo fuente, en cambio,
+    vive dentro de scripts/ — un nivel más abajo. Detectamos cuál es el
+    caso mirando si 'config/' y 'requirements.txt' están junto a este
+    archivo o un nivel arriba."""
+    aqui = Path(__file__).resolve().parent
+    if (aqui / "requirements.txt").exists() or (aqui / "config").exists():
+        return aqui
+    return aqui.parent
+
+
+ROOT = _detectar_root()
 
 
 def log(msg: str) -> None:

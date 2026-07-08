@@ -40,6 +40,7 @@ from dotenv import load_dotenv
 ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = ROOT / "config"
 GATEWAY_DIR = ROOT / "gateway"
+DASHBOARD_DIR = ROOT / "dashboard"
 RUN_DIR = ROOT / ".run"
 ENV_FILE = CONFIG_DIR / ".env"
 LITELLM_CONFIG = CONFIG_DIR / "litellm_config.yaml"
@@ -52,6 +53,7 @@ LITELLM_PORT = 4000
 OPENCODE_PORT = 4040
 GATEWAY_PORT = 5050
 WHATSAPP_LOCAL_PORT = 5051
+DASHBOARD_PORT = 3000
 OPENCODE_PASSWORD = "imryyr-local-pass"  # local-only; sustituir por .env
 HEALTH_TIMEOUT = 60  # segundos máx esperando cada servicio
 
@@ -199,6 +201,24 @@ def start_whatsapp_local(env: dict[str, str], port: int, gateway_port: int) -> s
     return proc
 
 
+def start_dashboard(env: dict[str, str], port: int) -> subprocess.Popen:
+    """Levanta el Dashboard web (dashboard/server.py) en background."""
+    log_path = RUN_DIR / "dashboard.log"
+    log_path.parent.mkdir(parents=True, exist_ok=True)
+    logf = log_path.open("w", encoding="utf-8")
+    proc = subprocess.Popen(
+        [sys.executable, str(DASHBOARD_DIR / "server.py"), "--port", str(port)],
+        stdout=logf,
+        stderr=subprocess.STDOUT,
+        env={**env, "PYTHONIOENCODING": "utf-8"},
+        cwd=str(ROOT),
+        creationflags=_new_process_group(),
+    )
+    (RUN_DIR / "dashboard.pid").write_text(str(proc.pid), encoding="utf-8")
+    log(f"Dashboard arrancado (PID {proc.pid}) en http://localhost:{port}")
+    return proc
+
+
 # --------------------------------------------------------------------------
 # Healthchecks
 # --------------------------------------------------------------------------
@@ -215,6 +235,11 @@ def wait_opencode(port: int, password: str) -> bool:
 def wait_gateway(port: int) -> bool:
     url = f"http://localhost:{port}/webhook/health"
     return _wait(url, headers={}, name="Gateway")
+
+
+def wait_dashboard(port: int) -> bool:
+    url = f"http://localhost:{port}/api/status"
+    return _wait(url, headers={}, name="Dashboard")
 
 
 def _wait(url: str, headers: dict, name: str) -> bool:
@@ -247,6 +272,7 @@ def _new_process_group() -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(description="Arranca el backend Imrryr OS (headless).")
     ap.add_argument("--check-only", action="store_true", help="Solo healthcheck, no arrancar procesos.")
+    ap.add_argument("--no-browser", action="store_true", help="No abrir el navegador automáticamente al terminar.")
     args = ap.parse_args()
 
     env = load_env()
@@ -256,6 +282,7 @@ def main() -> int:
     opencode_port = int(env.get("OPENCODE_PORT") or OPENCODE_PORT)
     gateway_port = GATEWAY_PORT
     whatsapp_local_port = int(env.get("WHATSAPP_LOCAL_PORT") or WHATSAPP_LOCAL_PORT)
+    dashboard_port = int(env.get("DASHBOARD_PORT") or DASHBOARD_PORT)
     password = env.get("OPENCODE_SERVER_PASSWORD") or OPENCODE_PASSWORD
 
     if not args.check_only:
@@ -299,13 +326,26 @@ def main() -> int:
     else:
         log("Modo WhatsApp activo: cloud (sidecar local no se levanta).")
 
+    # 5. Dashboard (la cara visible; sin esto el usuario no tiene forma de usar el sistema)
+    if not _port_open(dashboard_port):
+        start_dashboard(env, dashboard_port)
+    else:
+        log(f"Puerto {dashboard_port} ocupado: asumo Dashboard ya corriendo.")
+    wait_dashboard(dashboard_port)
+
     log("=" * 60)
-    log("Imrryr OS backend operativo:")
+    log("Imrryr OS operativo:")
+    log(f"  • Dashboard (abre esto): http://localhost:{dashboard_port}")
     log(f"  • LiteLLM (traductor)  : http://localhost:{litellm_port}")
     log(f"  • OpenCode (motor)     : http://localhost:{opencode_port}")
     log(f"  • Gateway WhatsApp     : http://localhost:{gateway_port}")
     log("  • Para detener         : python scripts/shutdown.py")
     log("=" * 60)
+
+    if not args.no_browser:
+        import webbrowser
+        webbrowser.open(f"http://localhost:{dashboard_port}")
+
     return 0
 
 

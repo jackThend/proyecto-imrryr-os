@@ -1,0 +1,6 @@
+{
+  "name": "leer_perfil_negocio",
+  "description": "Devuelve el Perfil de Negocio del usuario (giro, ubicación, tamaño de empresa, características extra). Usado por el Investigador para juzgar si un fondo concursable realmente aplica.",
+  "script": "skills/perfil_negocio.py",
+  "arguments": []
+}

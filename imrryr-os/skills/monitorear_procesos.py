@@ -69,6 +69,11 @@ def listar_procesos(timeout_segundos: int = 300) -> list[dict]:
     return resultado
 
 
+def monitorear_procesos(timeout: int = 300) -> list[dict]:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return listar_procesos(timeout)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Lista procesos monitoreados y marca los atascados")
     ap.add_argument("--timeout", type=int, default=300, help="Segundos a partir de los cuales un proceso se considera atascado")

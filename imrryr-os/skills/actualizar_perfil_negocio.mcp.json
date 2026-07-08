@@ -1,0 +1,13 @@
+{
+  "name": "actualizar_perfil_negocio",
+  "description": "Actualiza el Perfil de Negocio del usuario. Se puede llamar solo con los campos que cambian; 'ubicacion' y 'caracteristicas_extra' se combinan con lo existente (permite agregar características nuevas sin perder las anteriores).",
+  "script": "skills/perfil_negocio.py",
+  "arguments": [
+    {
+      "name": "datos",
+      "type": "object",
+      "description": "Campos a actualizar: giro (lista), ubicacion (objeto region/comuna), tamano_empresa (texto), caracteristicas_extra (objeto libre clave-valor)",
+      "required": true
+    }
+  ]
+}

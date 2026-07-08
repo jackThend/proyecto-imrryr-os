@@ -44,6 +44,11 @@ def transcribir(ruta_audio: str, modelo: str = "tiny") -> str:
         return f"[transcripcion_pendiente:{path.name}]"
 
 
+def transcribir_audio(audio: str, modelo: str = "tiny") -> dict:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return {"texto": transcribir(audio, modelo)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Transcribe audio a texto")
     ap.add_argument("--audio", type=str, required=True)

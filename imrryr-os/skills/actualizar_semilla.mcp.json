@@ -1,0 +1,11 @@
+{
+  "name": "actualizar_semilla",
+  "description": "Actualiza el título, contenido o etiquetas de una idea existente. Solo se cambian los campos que se envían.",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "id", "type": "number", "description": "ID de la idea", "required": true},
+    {"name": "titulo", "type": "string", "description": "Nuevo título", "required": false},
+    {"name": "contenido", "type": "string", "description": "Nuevo contenido desarrollado", "required": false},
+    {"name": "etiquetas", "type": "array", "description": "Nueva lista de etiquetas (reemplaza la anterior)", "required": false}
+  ]
+}

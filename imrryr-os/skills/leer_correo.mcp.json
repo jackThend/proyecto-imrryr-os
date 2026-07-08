@@ -1,0 +1,10 @@
+{
+  "name": "leer_correo",
+  "description": "Lee correos recientes de una cuenta configurada (Gmail o IMAP genérico). Usado por el Agente Secretario para revisar la bandeja.",
+  "script": "skills/secretario.py",
+  "arguments": [
+    {"name": "cuenta_id", "type": "string", "description": "ID de la cuenta configurada en el dashboard", "required": true},
+    {"name": "max_resultados", "type": "number", "description": "Cantidad máxima de correos a traer (default 5)", "required": false},
+    {"name": "query", "type": "string", "description": "Filtro de búsqueda opcional", "required": false}
+  ]
+}

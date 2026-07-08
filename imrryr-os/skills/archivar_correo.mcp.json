@@ -1,0 +1,9 @@
+{
+  "name": "archivar_correo",
+  "description": "Archiva un correo (lo saca de la bandeja de entrada) en la cuenta indicada.",
+  "script": "skills/secretario.py",
+  "arguments": [
+    {"name": "cuenta_id", "type": "string", "description": "ID de la cuenta configurada", "required": true},
+    {"name": "mensaje_id", "type": "string", "description": "ID del correo a archivar", "required": true}
+  ]
+}

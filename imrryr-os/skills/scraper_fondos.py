@@ -63,6 +63,11 @@ def buscar_fondos(fuente: str | None = None) -> dict[str, list[dict[str, Any]]]:
     return {nombre: scrape_url(cfg["url"]) for nombre, cfg in fuentes.items()}
 
 
+def scraper_fondos(fuente: str | None = None) -> dict:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return buscar_fondos(fuente)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Busca fondos concursables")
     ap.add_argument("--fuente", choices=list(FUENTES.keys()), help="Fuente específica")

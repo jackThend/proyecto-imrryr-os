@@ -4,11 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Imrryr OS</title>
+<link rel="icon" type="image/png" href="/static/logo.png">
 <style>
   :root {
     --bg: #0f0f12;
     --surface: #1a1a20;
     --surface2: #22222b;
+    --surface-rgb: 26, 26, 32;
     --border: #2a2a35;
     --text: #c8c8d0;
     --text-dim: #7a7a8a;
@@ -18,34 +20,67 @@
     --yellow: #ffd93d;
     --radius: 10px;
     --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-display: Georgia, Cambria, 'Times New Roman', serif;
+    --glow: 0 0 24px rgba(124,111,240,0.18);
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { background: var(--bg); }
   body {
-    background: var(--bg);
+    position: relative;
     color: var(--text);
     font-family: var(--font);
-    padding: 16px;
+    font-size: 14px;
+    padding: 20px;
     min-height: 100vh;
   }
+  /* --- Fondo "aurora": mesh de gradientes que respira lento (2026: ambiente vivo, no ruido) --- */
+  .aurora-bg { position: fixed; inset: 0; z-index: -1; overflow: hidden; pointer-events: none; }
+  .aurora-blob {
+    position: absolute; border-radius: 50%; filter: blur(90px); opacity: .55;
+    animation: auroraDrift 22s ease-in-out infinite;
+  }
+  .aurora-blob.a1 { width: 620px; height: 620px; top: -220px; left: -120px; background: radial-gradient(circle, var(--accent), transparent 70%); }
+  .aurora-blob.a2 { width: 560px; height: 560px; top: -160px; right: -160px; background: radial-gradient(circle, var(--accent2), transparent 70%); animation-delay: -7s; animation-duration: 26s; }
+  .aurora-blob.a3 { width: 480px; height: 480px; bottom: -220px; left: 30%; background: radial-gradient(circle, #b06fe0, transparent 70%); animation-delay: -14s; animation-duration: 30s; }
+  @keyframes auroraDrift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(4%, 3%) scale(1.08); }
+    66% { transform: translate(-3%, 4%) scale(0.96); }
+  }
+  .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; vertical-align: -3px; flex-shrink: 0; }
+  .icon-lg { width: 34px; height: 34px; }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
 
   .header {
     display: flex; justify-content: space-between; align-items: center;
-    padding: 8px 16px; margin-bottom: 16px;
+    padding: 16px 20px; margin-bottom: 26px;
     border-bottom: 1px solid var(--border);
   }
-  .header h1 {
-    font-size: 16px; font-weight: 500; letter-spacing: 1.5px;
-    background: linear-gradient(135deg, var(--accent), var(--accent2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  .header-brand { display: flex; align-items: center; gap: 16px; }
+  .header-logo {
+    width: 56px; height: 56px; border-radius: 50%; object-fit: cover;
+    border: 1px solid rgba(255,255,255,0.12);
+    animation: moonGlow 5s ease-in-out infinite;
   }
+  @keyframes moonGlow {
+    0%, 100% { box-shadow: 0 0 14px rgba(124,111,240,0.4), 0 0 30px rgba(78,205,196,0.16); }
+    50% { box-shadow: 0 0 24px rgba(124,111,240,0.6), 0 0 46px rgba(78,205,196,0.3); }
+  }
+  .header h1 {
+    font-family: var(--font-display);
+    font-size: 30px; font-weight: 600; letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2) 60%, #b06fe0);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .header-tagline { font-size: 12px; color: var(--text-dim); letter-spacing: .8px; margin-top: 2px; }
   .status-bar { display: flex; gap: 12px; align-items: center; }
   .status-item {
-    display: flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 0.3px;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-dim); text-transform: uppercase;
+    letter-spacing: 0.4px; cursor: help;
   }
   .status-dot {
     width: 7px; height: 7px; border-radius: 50%;
@@ -53,6 +88,7 @@
   }
   .status-dot.on { background: var(--accent2); box-shadow: 0 0 5px var(--accent2); }
   .status-dot.off { background: var(--red); }
+  .status-dot.warn { background: var(--yellow); box-shadow: 0 0 5px var(--yellow); }
 
   .grid {
     display: grid;
@@ -152,7 +188,9 @@
   .loading {
     display: flex; align-items: center; justify-content: center;
     height: 100%; color: var(--text-dim); font-size: 11px;
+    animation: pulseFade 1.4s ease-in-out infinite;
   }
+  @keyframes pulseFade { 0%, 100% { opacity: .45; } 50% { opacity: 1; } }
   .loading::after {
     content: ''; width: 10px; height: 10px; margin-left: 6px;
     border: 2px solid var(--border); border-top-color: var(--accent);
@@ -206,19 +244,391 @@
   .gw-save-btn:hover { opacity: 0.85; }
   .gw-qr { text-align: center; margin: 8px 0; }
   .gw-qr img { max-width: 160px; border-radius: 6px; border: 1px solid var(--border); background: #fff; padding: 4px; }
+  .gw-inline-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px; color: var(--text); font-size: 12px; outline: none;
+  }
+  .gw-inline-input:focus { border-color: var(--accent); }
+
+  .nav-tabs { display: flex; gap: 6px; margin: 0 16px 12px; flex-wrap: wrap; }
+  .nav-tab {
+    display: flex; align-items: center; gap: 7px;
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 9px 18px; border-radius: 10px; font-size: 13px; cursor: pointer;
+    transition: color .15s, border-color .15s, background .15s;
+  }
+  .nav-tab .icon { transition: transform .2s ease; }
+  .nav-tab:hover { color: var(--text); border-color: var(--text-dim); }
+  .nav-tab:hover .icon { transform: scale(1.15); }
+  .nav-tab.active { color: var(--accent); border-color: var(--accent); background: rgba(124,111,240,0.08); }
+  .nav-tab.active .icon { transform: scale(1.1); }
+  .view { display: none; animation: fadeIn .25s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* --- Home: hero + asistente + secundaria --- */
+  @keyframes cardIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .home-hero { display: grid; grid-template-columns: repeat(3, 1fr); gap: 22px; padding: 0 20px; margin-bottom: 22px; }
+  .hero-card {
+    background: rgba(var(--surface-rgb), 0.5);
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.08); border-radius: 24px; padding: 30px;
+    cursor: pointer; text-decoration: none; color: var(--text); display: flex; flex-direction: column;
+    transition: border-color .18s, box-shadow .18s, transform .18s;
+    min-height: 220px;
+    animation: cardIn .5s ease both;
+    position: relative; overflow: hidden;
+  }
+  .hero-card::before {
+    content: ''; position: absolute; inset: 0; opacity: 0; transition: opacity .3s;
+    background: radial-gradient(circle at 85% -10%, rgba(124,111,240,0.25), transparent 60%);
+    pointer-events: none;
+  }
+  .hero-card:hover::before { opacity: 1; }
+  .hero-card:nth-child(1) { animation-delay: .02s; }
+  .hero-card:nth-child(2) { animation-delay: .09s; }
+  .hero-card:nth-child(3) { animation-delay: .16s; }
+  .hero-card:hover { border-color: var(--accent); box-shadow: 0 0 0 1px rgba(124,111,240,0.4), 0 20px 60px -10px rgba(124,111,240,0.35); transform: translateY(-4px); }
+  .hero-card:hover .hero-card-icon { transform: scale(1.12) rotate(-4deg); }
+  .hero-card-icon {
+    width: 64px; height: 64px; border-radius: 18px; display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, rgba(124,111,240,0.28), rgba(78,205,196,0.14));
+    box-shadow: inset 0 1px 1px rgba(255,255,255,0.12);
+    color: var(--accent); margin-bottom: 18px;
+    transition: transform .25s ease;
+  }
+  .hero-card-icon .icon { width: 30px; height: 30px; }
+  .hero-card-title { font-family: var(--font-display); font-size: 22px; font-weight: 600; margin-bottom: 10px; }
+  .hero-card-metric {
+    font-family: var(--font-display); font-size: 48px; font-weight: 700; margin-bottom: 4px; line-height: 1;
+    background: linear-gradient(135deg, var(--accent2), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+  }
+  .hero-card-sub { font-size: 13px; color: var(--text-dim); flex: 1; line-height: 1.4; }
+  .hero-card-cta { font-size: 13px; color: var(--accent); margin-top: 16px; display: flex; align-items: center; gap: 5px; transition: gap .15s; font-weight: 500; }
+  .hero-card:hover .hero-card-cta { gap: 9px; }
+  .hero-preview-row { display: flex; gap: 8px; margin-top: 10px; }
+  .hero-preview-thumb { width: 42px; height: 42px; border-radius: 8px; object-fit: cover; background: var(--surface2); border: 1px solid var(--border); }
+
+  .home-assistant {
+    margin: 0 20px 22px; background: rgba(var(--surface-rgb), 0.5);
+    backdrop-filter: blur(18px) saturate(150%); -webkit-backdrop-filter: blur(18px) saturate(150%);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px; padding: 22px; display: flex; flex-direction: column; height: 300px;
+    animation: cardIn .5s ease .22s both;
+  }
+  .home-assistant-title { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .home-assistant-title span { font-family: var(--font-display); font-size: 19px; font-weight: 600; }
+
+  .home-secondary { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; padding: 0 20px 20px; }
+  .mini-card {
+    background: rgba(var(--surface-rgb), 0.45);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.07); border-radius: 16px;
+    padding: 16px; cursor: pointer; transition: border-color .15s, transform .15s;
+    display: flex; align-items: center; gap: 14px;
+    animation: cardIn .4s ease both;
+  }
+  .mini-card:nth-child(1) { animation-delay: .28s; }
+  .mini-card:nth-child(2) { animation-delay: .33s; }
+  .mini-card:nth-child(3) { animation-delay: .38s; }
+  .mini-card:nth-child(4) { animation-delay: .43s; }
+  .mini-card:hover { border-color: var(--accent2); transform: translateY(-2px); }
+  .mini-card:hover .mini-card-icon { transform: scale(1.15); }
+  .mini-card-icon {
+    width: 42px; height: 42px; border-radius: 13px; flex-shrink: 0;
+    background: linear-gradient(135deg, rgba(78,205,196,0.24), rgba(124,111,240,0.1));
+    color: var(--accent2); display: flex; align-items: center; justify-content: center;
+    transition: transform .25s ease;
+  }
+  .mini-card-icon .icon { width: 20px; height: 20px; }
+  .mini-card-body { min-width: 0; }
+  .mini-card-title { font-family: var(--font-display); font-size: 15px; font-weight: 600; }
+  .mini-card-sub { font-size: 11px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+
+  /* --- Oportunidades --- */
+  .oport-board { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+  .oport-col-title { font-size: 11px; text-transform: uppercase; letter-spacing: .5px; color: var(--text-dim); margin-bottom: 8px; }
+  .oport-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 10px; margin-bottom: 8px; font-size: 12px;
+  }
+  .oport-card-fuente { font-size: 10px; text-transform: uppercase; color: var(--accent2); letter-spacing: .4px; }
+  .oport-card-titulo { font-weight: 600; margin: 3px 0 5px; }
+  .oport-card-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .oport-card-nota { font-size: 11px; color: var(--text-dim); font-style: italic; margin-bottom: 6px; }
+  .oport-card-actions { display: flex; gap: 5px; flex-wrap: wrap; }
+  .oport-card-actions button {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text-dim);
+    border-radius: 6px; padding: 3px 8px; font-size: 10px; cursor: pointer;
+  }
+  .oport-card-actions button:hover { color: var(--accent); border-color: var(--accent); }
+
+  .app-layout { display: flex; gap: 12px; padding: 0 16px 16px; align-items: flex-start; }
+  .app-chat-panel {
+    width: 280px; flex-shrink: 0;
+    background: rgba(var(--surface-rgb), 0.55);
+    backdrop-filter: blur(14px) saturate(140%); -webkit-backdrop-filter: blur(14px) saturate(140%);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: var(--radius); padding: 14px; display: flex; flex-direction: column;
+    height: calc(100vh - 140px); position: sticky; top: 16px;
+  }
+  .app-chat-panel .widget-title { display: block; margin-bottom: 8px; }
+  .app-main { flex: 1; min-width: 0; }
+  .app-toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 8px; flex-wrap: wrap; }
+  .app-subtabs { display: flex; gap: 6px; margin-bottom: 12px; }
+  .app-subtab {
+    background: none; border: 1px solid var(--border); color: var(--text-dim);
+    padding: 5px 12px; border-radius: 7px; font-size: 11px; cursor: pointer; transition: color .15s, border-color .15s;
+  }
+  .app-subtab.active { color: var(--accent2); border-color: var(--accent2); }
+  .app-title-row { display: flex; align-items: center; gap: 14px; margin: 4px 20px 20px; }
+  .app-title-row h2 { font-family: var(--font-display); font-weight: 600; font-size: 30px; letter-spacing: .3px; }
+  .app-title-row .icon-lg { color: var(--accent); }
+  .idea-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .idea-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden; cursor: pointer; transition: border-color 0.15s; display: flex; flex-direction: column;
+  }
+  .idea-card:hover { border-color: var(--accent); }
+  .idea-card-img { width: 100%; height: 100px; object-fit: cover; background: var(--surface2); }
+  .idea-card-noimg {
+    width: 100%; height: 100px; background: var(--surface2); display: flex;
+    align-items: center; justify-content: center; color: var(--text-dim); font-size: 24px;
+  }
+  .idea-card-body { padding: 10px; }
+  .idea-card-title { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+  .idea-card-snippet {
+    font-size: 11px; color: var(--text-dim); margin-bottom: 6px;
+    max-height: 32px; overflow: hidden;
+  }
+  .estado-badge {
+    display: inline-block; font-size: 9px; padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.3px;
+  }
+  .estado-idea { background: rgba(122,122,138,0.2); color: var(--text-dim); }
+  .estado-desarrollada { background: rgba(78,205,196,0.15); color: var(--accent2); }
+  .estado-proyecto { background: rgba(124,111,240,0.2); color: var(--accent); }
+  .estado-archivada { background: rgba(255,107,107,0.15); color: var(--red); }
+
+  .detalle-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    display: flex; align-items: center; justify-content: center; z-index: 200;
+  }
+  .detalle-panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    width: 520px; max-width: 92vw; max-height: 88vh; overflow-y: auto; padding: 20px;
+  }
+  .detalle-panel input, .detalle-panel textarea, .detalle-panel select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text); font-size: 13px; padding: 8px;
+    font-family: inherit; resize: vertical; margin-bottom: 10px;
+  }
+  .detalle-adjuntos { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+  .detalle-adjuntos img {
+    width: 60px; height: 60px; object-fit: cover; border-radius: 6px; border: 1px solid var(--border);
+  }
+
+  /* --- Modo Ayuda: tooltips explicativos, CSS puro (posición ajustada por JS vía --tip-shift para no salirse de la pantalla) --- */
+  body.ayuda-on [data-ayuda] { position: relative; }
+  body.ayuda-on [data-ayuda]:hover { outline: 1px dashed rgba(124,111,240,0.5); outline-offset: 3px; border-radius: 6px; }
+  body.ayuda-on [data-ayuda]:hover::after {
+    content: attr(data-ayuda);
+    position: absolute; left: calc(50% + var(--tip-shift, 0px)); bottom: calc(100% + 10px); transform: translateX(-50%);
+    width: max-content; max-width: min(260px, 78vw);
+    background: #16161c; color: var(--text); border: 1px solid var(--accent);
+    border-radius: 8px; padding: 10px 12px; font-size: 12px; line-height: 1.45;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.5); z-index: 300; pointer-events: none;
+    animation: ayudaFadeIn .15s ease;
+  }
+  body.ayuda-on [data-ayuda].ayuda-below:hover::after { bottom: auto; top: calc(100% + 10px); }
+  body.ayuda-on [data-ayuda]:hover::before {
+    content: ''; position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%);
+    border: 5px solid transparent; border-top-color: var(--accent); margin-bottom: 0px;
+    z-index: 300; pointer-events: none;
+  }
+  body.ayuda-on [data-ayuda].ayuda-below:hover::before { bottom: auto; top: 100%; border-top-color: transparent; border-bottom-color: var(--accent); }
+  @keyframes ayudaFadeIn { from { opacity: 0; transform: translateX(-50%) translateY(4px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+  .ayuda-switch {
+    width: 40px; height: 22px; border-radius: 12px; background: var(--surface2);
+    border: 1px solid var(--border); display: inline-flex; align-items: center;
+    padding: 2px; transition: background .2s, border-color .2s; flex-shrink: 0;
+  }
+  .ayuda-switch.on { background: var(--accent); border-color: var(--accent); }
+  .ayuda-switch-knob {
+    width: 16px; height: 16px; border-radius: 50%; background: #fff;
+    transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+  }
+  .ayuda-switch.on .ayuda-switch-knob { transform: translateX(18px); }
+
+  /* Media queries al final para que siempre ganen sobre las reglas base */
+  @media print {
+    .header, .nav-tabs, .app-chat-panel, .app-toolbar button, .app-subtabs { display: none !important; }
+    .app-layout { display: block; }
+    body { padding: 0; background: #fff; color: #000; }
+  }
 
   @media (max-width: 768px) {
     .grid { grid-template-columns: 1fr; }
     .header { flex-direction: column; gap: 8px; align-items: flex-start; }
+    .home-hero { grid-template-columns: 1fr; }
+    .app-layout { flex-direction: column; }
+    .app-chat-panel { width: 100%; height: 320px; position: static; }
   }
 </style>
 </head>
 <body>
+<div class="aurora-bg"><div class="aurora-blob a1"></div><div class="aurora-blob a2"></div><div class="aurora-blob a3"></div></div>
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="icon-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7"/><path d="M5 9v10h14V9"/></symbol>
+  <symbol id="icon-mail" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></symbol>
+  <symbol id="icon-trophy" viewBox="0 0 24 24"><path d="M8 3h8v5a4 4 0 0 1-8 0V3z"/><path d="M8 5H5a3 3 0 0 0 3 3"/><path d="M16 5h3a3 3 0 0 1-3 3"/><path d="M12 12v3"/><path d="M9 19h6"/><path d="M10 16h4v3h-4z"/></symbol>
+  <symbol id="icon-bulb" viewBox="0 0 24 24"><path d="M9 18h6"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3 11.2c.5.3.8.9.8 1.5v.3h4.4v-.3c0-.6.3-1.2.8-1.5A6 6 0 0 0 12 3z"/></symbol>
+  <symbol id="icon-chart" viewBox="0 0 24 24"><path d="M4 20V10"/><path d="M10 20V4"/><path d="M16 20v-7"/><path d="M3 20h18"/></symbol>
+  <symbol id="icon-chat" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M7 17l-2 4 5-4"/></symbol>
+  <symbol id="icon-gear" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1"/></symbol>
+  <symbol id="icon-phone" viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></symbol>
+  <symbol id="icon-briefcase" viewBox="0 0 24 24"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M3 12h18"/></symbol>
+  <symbol id="icon-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/></symbol>
+  <symbol id="icon-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2 20c0-3 3-5 7-5"/><circle cx="17" cy="8" r="3"/><path d="M22 20c0-3-3-5-7-5"/></symbol>
+  <symbol id="icon-code" viewBox="0 0 24 24"><path d="M8 6l-5 6 5 6"/><path d="M16 6l5 6-5 6"/></symbol>
+  <symbol id="icon-arrow-right" viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M13 5l7 7-7 7"/></symbol>
+  <symbol id="icon-download" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M4 20h16"/></symbol>
+  <symbol id="icon-filter" viewBox="0 0 24 24"><path d="M3 4h18l-7 8v6l-4 2v-8z"/></symbol>
+  <symbol id="icon-plus" viewBox="0 0 24 24"><path d="M12 4v16"/><path d="M4 12h16"/></symbol>
+  <symbol id="icon-x" viewBox="0 0 24 24"><path d="M5 5l14 14"/><path d="M19 5L5 19"/></symbol>
+  <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M4 20l4-1 11-11-3-3L5 16z"/><path d="M14 6l3 3"/></symbol>
+  <symbol id="icon-trash" viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V4h6v3"/><path d="M6 7l1 13h10l1-13"/></symbol>
+  <symbol id="icon-print" viewBox="0 0 24 24"><rect x="6" y="3" width="12" height="6"/><rect x="4" y="9" width="16" height="8" rx="1"/><rect x="7" y="14" width="10" height="6"/></symbol>
+</svg>
+
 <div class="header">
-  <h1>IMRRYR OS</h1>
+  <div class="header-brand">
+    <img class="header-logo" src="/static/logo.png" alt="Imrryr OS">
+    <div>
+      <h1>IMRRYR OS</h1>
+      <div class="header-tagline">tu sistema operativo de agentes</div>
+    </div>
+  </div>
   <div class="status-bar" id="statusBar"></div>
 </div>
-<div class="grid" id="widgetGrid"></div>
+<div class="nav-tabs" id="navTabs"></div>
+
+<div class="view active" id="view-inicio">
+  <div class="home-hero" id="homeHero"></div>
+  <div class="home-assistant">
+    <div class="home-assistant-title"><svg class="icon-lg" style="color:var(--accent)"><use href="#icon-chat"/></svg><span>Asistente principal</span></div>
+    <div class="chat-area">
+      <div class="chat-msgs" id="chatMsgs_inicio"></div>
+      <div class="chat-box">
+        <input type="text" id="chatInp_inicio" placeholder="Pídeme lo que necesites..." autocomplete="off">
+        <button id="chatBtn_inicio">Enviar</button>
+      </div>
+    </div>
+  </div>
+  <div class="home-secondary" id="homeSecondary"></div>
+</div>
+
+<div class="view" id="view-ideas">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-bulb"/></svg><h2>Ideas</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="ideas"></div>
+    <div class="app-main">
+      <div class="app-toolbar">
+        <select id="ideasFiltroEstado" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 8px">
+          <option value="">Todas</option>
+          <option value="idea">Idea</option>
+          <option value="desarrollada">Desarrollada</option>
+          <option value="proyecto">Proyecto</option>
+          <option value="archivada">Archivada</option>
+        </select>
+        <button class="gw-save-btn" onclick="abrirDetalleIdea(null)"><svg class="icon"><use href="#icon-plus"/></svg> Nueva idea</button>
+      </div>
+      <div class="idea-grid" id="ideaGrid"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-correo">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-mail"/></svg><h2>Correo</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="correo"></div>
+    <div class="app-main">
+      <div class="app-subtabs">
+        <button class="app-subtab active" id="correoSub-bandeja" onclick="cambiarSubtabCorreo('bandeja')">Bandeja</button>
+        <button class="app-subtab" id="correoSub-borradores" onclick="cambiarSubtabCorreo('borradores')">Borradores</button>
+      </div>
+      <div id="correoSubcontent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-oportunidades">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-trophy"/></svg><h2>Oportunidades</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="oportunidades"></div>
+    <div class="app-main">
+      <div class="app-toolbar">
+        <select id="oportFiltroEstado" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 8px" onchange="cargarOportunidadesView()">
+          <option value="">Todas</option>
+          <option value="nueva">Nueva</option>
+          <option value="revisada">Revisada</option>
+          <option value="postulada">Postulada</option>
+          <option value="descartada">Descartada</option>
+        </select>
+      </div>
+      <div id="oportContent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-finanzas">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-chart"/></svg><h2>Finanzas</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="finanzas"></div>
+    <div class="app-main">
+      <div class="app-subtabs">
+        <button class="app-subtab active" id="finSub-actual" onclick="cambiarSubtabFinanzas('actual')" data-ayuda="Tus gastos recientes y el total por categoría.">Actual</button>
+        <button class="app-subtab" id="finSub-historico" onclick="cambiarSubtabFinanzas('historico')" data-ayuda="Evolución mes a mes por año, con exportar CSV e imprimir.">Histórico</button>
+      </div>
+      <div id="finanzasSubcontent"></div>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-crm">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-users"/></svg><h2>CRM</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="crm"></div>
+    <div class="app-main">
+      <p style="font-size:12px;color:var(--text-dim)">Gestiona clientes potenciales: lee correos de consultas, busca proyectos previos en la memoria vectorial y genera propuestas y cotizaciones. Conversa con el agente para pedirle una propuesta o revisar una consulta.</p>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-seguridad">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-shield"/></svg><h2>Guardia de Seguridad</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="seguridad"></div>
+    <div class="app-main">
+      <p style="font-size:12px;color:var(--text-dim)">Módulo silencioso de observabilidad. Monitorea procesos, detecta bucles infinitos o consumo excesivo de tokens y detiene tareas atascadas.</p>
+    </div>
+  </div>
+</div>
+
+<div class="view" id="view-ajustes">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-gear"/></svg><h2>Ajustes</h2></div>
+  <div class="app-toolbar" style="margin:0 16px 12px">
+    <button class="app-subtab active" id="ajustesSub-whatsapp" onclick="cambiarSubtabAjustes('whatsapp')" data-ayuda="Conecta tu WhatsApp para que los agentes te hablen por ahí."><svg class="icon"><use href="#icon-phone"/></svg> WhatsApp</button>
+    <button class="app-subtab" id="ajustesSub-perfil" onclick="cambiarSubtabAjustes('perfil')" data-ayuda="Cuéntale a Imrryr sobre tu negocio para que el Investigador filtre mejor los fondos."><svg class="icon"><use href="#icon-briefcase"/></svg> Perfil de Negocio</button>
+    <button class="app-subtab" id="ajustesSub-ia" onclick="cambiarSubtabAjustes('ia')" data-ayuda="Elige qué proveedor de IA (Gemini, OpenAI, Claude, etc.) usan todos tus agentes."><svg class="icon"><use href="#icon-chat"/></svg> Cuentas de IA</button>
+    <button class="app-subtab" id="ajustesSub-ayuda" onclick="cambiarSubtabAjustes('ayuda')" data-ayuda="Prende o apaga las explicaciones que aparecen al pasar el mouse."><svg class="icon"><use href="#icon-bulb"/></svg> Ayuda</button>
+  </div>
+  <div style="padding:0 16px" id="ajustesSubcontent"></div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -232,141 +642,551 @@ function mostrarToast(msg, tipo) {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3500);
 }
 
-// --- Drag & Drop ---
-let dragSrc = null;
-document.addEventListener('dragstart', e => {
-  const w = e.target.closest('.widget');
-  if (!w) return;
-  w.classList.add('dragging'); dragSrc = w;
-  e.dataTransfer.effectAllowed = 'move';
-});
-document.addEventListener('dragend', () => {
-  document.querySelectorAll('.widget').forEach(w => w.classList.remove('dragging', 'drag-over'));
-});
-document.addEventListener('dragover', e => {
-  e.preventDefault();
-  const w = e.target.closest('.widget');
-  if (w && w !== dragSrc) w.classList.add('drag-over');
-});
-document.addEventListener('dragleave', e => {
-  e.target.closest('.widget')?.classList.remove('drag-over');
-});
-document.addEventListener('drop', e => {
-  e.preventDefault();
-  const w = e.target.closest('.widget');
-  if (!w || w === dragSrc) return;
-  w.classList.remove('drag-over');
-  const g = document.getElementById('widgetGrid');
-  const kids = [...g.children];
-  if (kids.indexOf(dragSrc) < kids.indexOf(w))
-    w.insertAdjacentElement('afterend', dragSrc);
-  else
-    w.insertAdjacentElement('beforebegin', dragSrc);
-  guardarOrden();
-});
-function guardarOrden() {
-  const orden = [...document.getElementById('widgetGrid').children].map(w => w.dataset.id);
-  localStorage.setItem('imrryr_order', JSON.stringify(orden));
-}
-function cargarOrden() {
-  try { return JSON.parse(localStorage.getItem('imrryr_order')); } catch { return null; }
+// --- Registro de Apps (cada sección es su propia app, con su agente) ---
+const APPS = [
+  { id: 'correo', nombre: 'Correo', icono: 'mail', agente: 'secretario', chatLabel: 'Agente Secretario', ayuda: 'Lee tu correo, resume lo importante y redacta respuestas — pero nunca envía nada sin que tú apruetes el borrador.' },
+  { id: 'oportunidades', nombre: 'Oportunidades', icono: 'trophy', agente: 'investigador', chatLabel: 'Agente Investigador', ayuda: 'Busca fondos concursables y convocatorias relevantes para tu negocio.' },
+  { id: 'ideas', nombre: 'Ideas', icono: 'bulb', agente: 'creativo', chatLabel: 'Agente Creativo', ayuda: 'Guarda y desarrolla tus ideas, como un Pinterest personal — de idea suelta a proyecto.' },
+  { id: 'finanzas', nombre: 'Finanzas', icono: 'chart', agente: 'financiero', chatLabel: 'Asistente Financiero', ayuda: 'Lleva el control de tus gastos: los registra, los ordena por categoría y te da reportes.' },
+  { id: 'crm', nombre: 'CRM', icono: 'users', agente: 'crm', chatLabel: 'Agente Comercial', ayuda: 'Gestiona clientes potenciales y te ayuda a redactar propuestas y cotizaciones.' },
+  { id: 'seguridad', nombre: 'Seguridad', icono: 'shield', agente: 'guardia_seguridad', chatLabel: 'Guardia de Seguridad', ayuda: 'Vigila que los demás agentes no se atasquen ni gasten de más — funciona en silencio.' },
+  { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
+];
+const NAV_ITEMS = [{ id: 'inicio', nombre: 'Inicio', icono: 'home', ayuda: 'El punto de partida: un vistazo rápido a todo.' }, ...APPS];
+function appPorId(id) { return APPS.find(a => a.id === id); }
+
+function renderNavTabs() {
+  document.getElementById('navTabs').innerHTML = NAV_ITEMS.map(a =>
+    `<button class="nav-tab${a.id === 'inicio' ? ' active' : ''}" id="tab-${a.id}" onclick="abrirApp('${a.id}')" data-ayuda="${(a.ayuda || '').replace(/"/g,'&quot;')}"><svg class="icon"><use href="#icon-${a.icono}"/></svg>${a.nombre}</button>`
+  ).join('');
 }
 
-// --- Cargar widgets ---
-async function cargarWidgets() {
-  const grid = document.getElementById('widgetGrid');
+// --- Chat genérico (reusado por el asistente principal y cada app-chat-panel) ---
+const chatHistoriales = {};
+const chatInicializados = new Set();
+const chatOnSuccess = {};
+
+function montarChatPanels() {
+  document.querySelectorAll('.app-chat-panel[data-app]').forEach(panel => {
+    const app = appPorId(panel.dataset.app);
+    if (!app || !app.agente) return;
+    panel.innerHTML = `
+      <span class="widget-title">${app.chatLabel}</span>
+      <div class="chat-area">
+        <div class="chat-msgs" id="chatMsgs_${app.id}"></div>
+        <div class="chat-box">
+          <input type="text" id="chatInp_${app.id}" placeholder="Escribe un mensaje..." autocomplete="off">
+          <button id="chatBtn_${app.id}">Enviar</button>
+        </div>
+      </div>`;
+  });
+}
+
+function initChat(appId, agente, onSuccess) {
+  if (onSuccess) chatOnSuccess[appId] = onSuccess;
+  if (chatInicializados.has(appId)) return;
+  chatInicializados.add(appId);
+  const inp = document.getElementById('chatInp_' + appId);
+  const btn = document.getElementById('chatBtn_' + appId);
+  if (!inp || !btn) return;
+  inp.addEventListener('keydown', e => { if (e.key === 'Enter') enviarChatGenerico(appId, agente); });
+  btn.addEventListener('click', () => enviarChatGenerico(appId, agente));
+}
+
+function renderChatGenerico(appId) {
+  const el = document.getElementById('chatMsgs_' + appId);
+  if (!el) return;
+  const hist = chatHistoriales[appId] || [];
+  el.innerHTML = hist.map(m => `<div class="${m.role}">${m.role === 'user' ? '> ' : ''}${m.text}</div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+async function enviarChatGenerico(appId, agente) {
+  const inp = document.getElementById('chatInp_' + appId);
+  const btn = document.getElementById('chatBtn_' + appId);
+  const texto = inp.value.trim();
+  if (!texto || btn.disabled) return;
+  inp.value = '';
+  const hist = chatHistoriales[appId] = chatHistoriales[appId] || [];
+  hist.push({ role: 'user', text: texto });
+  hist.push({ role: 'thinking', text: 'Pensando...' });
+  renderChatGenerico(appId);
+  btn.disabled = true;
   try {
-    const r = await fetch('/api/widgets');
+    const r = await fetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensaje: texto, agente }),
+      signal: AbortSignal.timeout(120000),
+    });
     const data = await r.json();
-    const base = [
-      { id: 'finanzas', nombre: 'Finanzas' },
-      { id: 'chat', nombre: 'Terminal' },
-      { id: 'semillas', nombre: 'Semillas' },
-      { id: 'gateway', nombre: 'Gateway WhatsApp' },
-      ...data.widgets.map(w => ({ id: w.id, nombre: w.nombre, desc: w.descripcion, tools: w.herramientas }))
-    ];
-    const orden = cargarOrden();
-    if (orden) base.sort((a,b) => (orden.indexOf(a.id)<0?999:orden.indexOf(a.id)) - (orden.indexOf(b.id)<0?999:orden.indexOf(b.id)));
-    grid.innerHTML = '';
-    for (const w of base) {
-      const div = document.createElement('div');
-      div.className = 'widget'; div.draggable = true; div.dataset.id = w.id;
-      div.innerHTML = `<div class="widget-header"><span class="widget-title">${w.nombre}</span></div><div class="widget-content" id="w-${w.id}"><div class="loading">Cargando</div></div>`;
-      grid.appendChild(div);
-      switch (w.id) {
-        case 'finanzas': cargarFinanzas(); break;
-        case 'chat': cargarChat(); break;
-        case 'semillas': cargarSemillas(); break;
-        case 'gateway': cargarGateway(); break;
-        default: cargarWidgetGen(w); break;
-      }
-    }
-  } catch (e) {
-    grid.innerHTML = `<div class="widget" style="cursor:default;grid-column:1/-1;align-items:center;justify-content:center;min-height:200px"><div class="widget-error">Error al conectar con el servidor: ${e.message}</div></div>`;
-  }
-}
-
-// --- Finanzas ---
-let finanzasTimer = null;
-async function cargarFinanzas() {
-  const el = document.getElementById('w-finanzas');
-  if (!el) return;
-  try {
-    const r = await fetch('/api/finanzas');
-    if (!r.ok) throw new Error('HTTP ' + r.status);
-    const d = await r.json();
-    const cats = Object.entries(d.por_categoria || {}).slice(0, 5);
-    const max = Math.max(...cats.map(([,v]) => v.subtotal), 1);
-    let html = `<div class="metric-row"><span class="metric-label">Total gastos</span><span class="metric-value">$${(d.total||0).toFixed(0)}</span></div>`;
-    if (cats.length) {
-      html += '<div style="margin-top:6px">';
-      for (const [cat, info] of cats) {
-        const pct = (info.subtotal / max * 100).toFixed(0);
-        html += `<div class="bar"><span class="bar-label">${cat}</span><div class="bar-fill" style="width:${pct}%"></div><span class="bar-value">$${info.subtotal.toFixed(0)}</span></div>`;
-      }
-      html += '</div>';
+    hist.pop();
+    if (data.error) {
+      hist.push({ role: 'error', text: 'Error: ' + data.error });
     } else {
-      html += '<div class="empty">Sin gastos registrados</div>';
+      hist.push({ role: 'assistant', text: data.respuesta || '(sin respuesta)' });
+      if (chatOnSuccess[appId]) chatOnSuccess[appId]();
     }
-    if (d.gastos && d.gastos.length) {
-      html += `<div style="margin-top:6px;font-size:11px;color:var(--text-dim)">Ultimo: ${d.gastos[0].comercio} — $${d.gastos[0].monto.toFixed(0)}</div>`;
-    }
-    el.innerHTML = html;
-    // Auto-refresh cada 30s
-    clearTimeout(finanzasTimer);
-    finanzasTimer = setTimeout(cargarFinanzas, 30000);
   } catch (e) {
-    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+    hist.pop();
+    hist.push({ role: 'error', text: 'Error de conexión: ' + e.message });
+  }
+  renderChatGenerico(appId);
+  btn.disabled = false;
+  inp.focus();
+  if (hist.length > 40) chatHistoriales[appId] = hist.slice(-40);
+}
+
+// --- Navegación entre apps ---
+const vistasInicializadas = new Set();
+
+function abrirApp(id) {
+  document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.id === 'tab-' + id));
+  document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
+  if (!vistasInicializadas.has(id)) {
+    inicializarVista(id);
+    vistasInicializadas.add(id);
+  }
+  cargarVista(id);
+}
+
+function inicializarVista(id) {
+  switch (id) {
+    case 'inicio': initChat('inicio', 'build'); break;
+    case 'ideas':
+      initChat('ideas', 'creativo', cargarIdeasView);
+      document.getElementById('ideasFiltroEstado').addEventListener('change', () => cargarIdeasView());
+      break;
+    case 'correo': initChat('correo', 'secretario'); break;
+    case 'oportunidades': initChat('oportunidades', 'investigador', cargarOportunidadesView); break;
+    case 'finanzas': initChat('finanzas', 'financiero'); break;
+    case 'crm': initChat('crm', 'crm'); break;
+    case 'seguridad': initChat('seguridad', 'guardia_seguridad'); break;
   }
 }
 
-// --- Semillas ---
-async function cargarSemillas() {
-  const el = document.getElementById('w-semillas');
-  if (!el) return;
+function cargarVista(id) {
+  switch (id) {
+    case 'inicio': cargarHome(); break;
+    case 'ideas': cargarIdeasView(); break;
+    case 'correo': cambiarSubtabCorreo(correoSubtabActual); break;
+    case 'oportunidades': cargarOportunidadesView(); break;
+    case 'finanzas': cargarFinanzasView(); break;
+    case 'ajustes': cambiarSubtabAjustes(ajustesSubtabActual); break;
+  }
+}
+
+// --- Home ---
+function pintarHomeHeroEsqueleto() {
+  document.getElementById('homeHero').innerHTML = `
+    <div class="hero-card" id="hero-correo" onclick="abrirApp('correo')" data-ayuda="Tu bandeja y los borradores que el Secretario redactó, esperando tu aprobación."><div class="loading">Cargando</div></div>
+    <div class="hero-card" id="hero-oportunidades" onclick="abrirApp('oportunidades')" data-ayuda="Fondos y concursos que el Investigador encontró para tu negocio."><div class="loading">Cargando</div></div>
+    <div class="hero-card" id="hero-ideas" onclick="abrirApp('ideas')" data-ayuda="Tus ideas guardadas, como un Pinterest personal."><div class="loading">Cargando</div></div>`;
+}
+
+async function cargarHome() {
+  pintarHomeHeroEsqueleto();
+  cargarHeroCorreo();
+  cargarHeroOportunidades();
+  cargarHeroIdeas();
+  cargarHomeSecundaria();
+}
+
+const CTA_HTML = '<div class="hero-card-cta">Entrar <svg class="icon"><use href="#icon-arrow-right"/></svg></div>';
+
+async function cargarHeroCorreo() {
+  const el = document.getElementById('hero-correo');
+  try {
+    const r = await fetch('/api/correo/borradores?estado=pendiente');
+    const d = await r.json();
+    const n = (d.borradores || []).length;
+    el.innerHTML = `<div class="hero-card-icon"><svg class="icon"><use href="#icon-mail"/></svg></div>
+      <div class="hero-card-title">Correo</div>
+      <div class="hero-card-metric">${n}</div>
+      <div class="hero-card-sub">${n === 1 ? 'borrador esperando tu revisión' : 'borradores esperando tu revisión'}</div>${CTA_HTML}`;
+  } catch (e) {
+    el.innerHTML = `<div class="hero-card-title">Correo</div><div class="hero-card-sub">Sin conexión</div>${CTA_HTML}`;
+  }
+}
+
+async function cargarHeroOportunidades() {
+  const el = document.getElementById('hero-oportunidades');
+  try {
+    const r = await fetch('/api/oportunidades?estado=nueva');
+    const d = await r.json();
+    const n = (d.oportunidades || []).length;
+    el.innerHTML = `<div class="hero-card-icon"><svg class="icon"><use href="#icon-trophy"/></svg></div>
+      <div class="hero-card-title">Oportunidades</div>
+      <div class="hero-card-metric">${n}</div>
+      <div class="hero-card-sub">${n === 1 ? 'fondo nuevo por revisar' : 'fondos nuevos por revisar'}</div>${CTA_HTML}`;
+  } catch (e) {
+    el.innerHTML = `<div class="hero-card-title">Oportunidades</div><div class="hero-card-sub">Sin conexión</div>${CTA_HTML}`;
+  }
+}
+
+async function cargarHeroIdeas() {
+  const el = document.getElementById('hero-ideas');
   try {
     const r = await fetch('/api/semillas');
+    const d = await r.json();
+    const todas = d.semillas || [];
+    const thumbs = todas.slice(0, 4).map(s => s.primer_adjunto
+      ? `<img class="hero-preview-thumb" src="${s.primer_adjunto}">`
+      : `<div class="hero-preview-thumb" style="display:flex;align-items:center;justify-content:center">&#128161;</div>`
+    ).join('');
+    el.innerHTML = `<div class="hero-card-icon"><svg class="icon"><use href="#icon-bulb"/></svg></div>
+      <div class="hero-card-title">Ideas</div>
+      <div class="hero-card-metric">${todas.length}</div>
+      <div class="hero-card-sub">ideas guardadas</div>
+      <div class="hero-preview-row">${thumbs}</div>${CTA_HTML}`;
+  } catch (e) {
+    el.innerHTML = `<div class="hero-card-title">Ideas</div><div class="hero-card-sub">Sin conexión</div>${CTA_HTML}`;
+  }
+}
+
+async function cargarHomeSecundaria() {
+  document.getElementById('homeSecondary').innerHTML = `
+    <div class="mini-card" onclick="abrirApp('finanzas')" data-ayuda="Tus gastos, ordenados por categoría, con gráficos e informes descargables.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-chart"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Finanzas</div><div class="mini-card-sub" id="miniFinanzasSub">Cargando…</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('crm')" data-ayuda="Clientes potenciales y propuestas comerciales.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-users"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">CRM</div><div class="mini-card-sub">Clientes y propuestas</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('ajustes')" data-ayuda="Configuración: WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-gear"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Ajustes</div><div class="mini-card-sub">WhatsApp y Perfil de Negocio</div></div>
+    </div>
+    <div class="mini-card" onclick="abrirApp('seguridad')" data-ayuda="Vigila en silencio que los agentes no se atasquen ni gasten de más.">
+      <div class="mini-card-icon"><svg class="icon"><use href="#icon-shield"/></svg></div>
+      <div class="mini-card-body"><div class="mini-card-title">Seguridad</div><div class="mini-card-sub">Observabilidad del sistema</div></div>
+    </div>`;
+  try {
+    const r = await fetch('/api/finanzas');
+    const d = await r.json();
+    document.getElementById('miniFinanzasSub').textContent = `Total registrado: $${(d.total || 0).toFixed(0)}`;
+  } catch {
+    document.getElementById('miniFinanzasSub').textContent = 'Sin datos';
+  }
+}
+
+// --- Helper de gráficos propio (sin dependencias externas) ---
+function dibujarBarras(el, datos) {
+  if (!datos.length) { el.innerHTML = '<div class="empty">Sin datos</div>'; return; }
+  const max = Math.max(...datos.map(d => d.valor), 1);
+  el.innerHTML = '<div style="display:flex;flex-direction:column;gap:7px">' + datos.map(d => {
+    const pct = Math.max((d.valor / max) * 100, 2);
+    return `<div style="display:flex;align-items:center;gap:8px">
+      <div style="width:100px;font-size:11px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${d.etiqueta}</div>
+      <div style="flex:1;background:var(--surface2);border-radius:4px;overflow:hidden;height:16px">
+        <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px"></div>
+      </div>
+      <div style="width:70px;text-align:right;font-size:11px">$${d.valor.toFixed(0)}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function dibujarLineas(el, datos) {
+  if (!datos.length) { el.innerHTML = '<div class="empty">Sin datos</div>'; return; }
+  const ancho = 600, alto = 150, pad = 30;
+  const max = Math.max(...datos.map(d => d.valor), 1);
+  const pasoX = datos.length > 1 ? (ancho - pad * 2) / (datos.length - 1) : 0;
+  const puntos = datos.map((d, i) => [pad + i * pasoX, alto - pad - (d.valor / max) * (alto - pad * 2)]);
+  const linea = puntos.map(([x, y]) => `${x},${y}`).join(' ');
+  const area = `${pad},${alto - pad} ${linea} ${puntos[puntos.length - 1][0]},${alto - pad}`;
+  const etiquetas = datos.map((d, i) => `<text x="${puntos[i][0]}" y="${alto - 8}" font-size="9" fill="var(--text-dim)" text-anchor="middle">${(d.etiqueta || '').slice(5)}</text>`).join('');
+  const circulos = puntos.map(([x, y]) => `<circle cx="${x}" cy="${y}" r="3" fill="var(--accent2)"/>`).join('');
+  el.innerHTML = `<svg viewBox="0 0 ${ancho} ${alto}" style="width:100%;height:150px">
+    <polygon points="${area}" fill="rgba(124,111,240,0.15)" stroke="none"/>
+    <polyline points="${linea}" fill="none" stroke="var(--accent)" stroke-width="2"/>
+    ${circulos}${etiquetas}
+  </svg>`;
+}
+
+// --- Finanzas (app completa: sub-tabs Actual/Histórico, edición inline) ---
+// El filtro de año elegido se guarda en localStorage: es la "vista guardada"
+// (no una página congelada — siempre consulta SQLite en vivo, así que nunca
+// queda desactualizada ni hay que recalcular nada con IA).
+let finanzasSubtabActual = 'actual';
+let finanzasFiltroAnio = localStorage.getItem('imrryr_finanzas_anio') || '';
+let gastoEnEdicionId = null;
+
+function cargarFinanzasView() {
+  cambiarSubtabFinanzas(finanzasSubtabActual);
+}
+
+function cambiarSubtabFinanzas(sub) {
+  finanzasSubtabActual = sub;
+  document.getElementById('finSub-actual').classList.toggle('active', sub === 'actual');
+  document.getElementById('finSub-historico').classList.toggle('active', sub === 'historico');
+  gastoEnEdicionId = null;
+  if (sub === 'actual') cargarFinanzasActual(); else cargarFinanzasHistorico();
+}
+
+async function cargarFinanzasActual() {
+  const el = document.getElementById('finanzasSubcontent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/finanzas?limite=15');
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
-    if (!d.semillas || !d.semillas.length) {
-      el.innerHTML = '<div class="empty">Sin semillas. Crea un .md en /semillas</div>';
-      return;
-    }
-    el.innerHTML = d.semillas.slice(0, 12).map(s =>
-      `<div class="seed-item" onclick="mostrarToast('${s.nombre.replace(/'/g,"\\'")}','')" title="${s.contenido.replace(/"/g,'&quot;').slice(0,200)}">${s.nombre}</div>`
-    ).join('');
+    const cats = Object.entries(d.por_categoria || {});
+    let html = '<div id="finImportadorBox" style="margin-bottom:14px"></div>';
+    html += `<div class="metric-row"><span class="metric-label">Total registrado</span><span class="metric-value" style="font-size:22px;font-family:var(--font-display)">$${(d.total||0).toFixed(0)}</span></div>`;
+    html += cats.length ? '<div id="finCategoriasChart" style="margin:14px 0"></div>' : '<div class="empty">Sin gastos registrados</div>';
+    html += tablaGastosHtml(d.gastos || []);
+    el.innerHTML = html;
+    if (cats.length) dibujarBarras(document.getElementById('finCategoriasChart'), cats.map(([cat, info]) => ({ etiqueta: cat, valor: info.subtotal })));
+    cargarImportadorFinanzas();
   } catch (e) {
     el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
   }
 }
 
-// --- Gateway WhatsApp (Local/QR o Cloud API) ---
+// --- Importación histórica de correos bancarios (ver finanzas/importador_historico.py) ---
+let finImportadorPollTimer = null;
+
+async function cargarImportadorFinanzas() {
+  const box = document.getElementById('finImportadorBox');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/finanzas/importar/estado');
+    const d = await r.json();
+    renderImportadorFinanzas(d.importacion);
+  } catch (e) {
+    box.innerHTML = '';
+  }
+}
+
+function renderImportadorFinanzas(importacion) {
+  const box = document.getElementById('finImportadorBox');
+  if (!box) return;
+  clearTimeout(finImportadorPollTimer);
+
+  if (!importacion || importacion.estado === 'cancelada') {
+    box.innerHTML = `
+      <div class="seed-item" style="display:block">
+        <div style="font-weight:600;margin-bottom:4px">¿Importar tu historial bancario?</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Podemos revisar tus correos bancarios y traer todos tus gastos pasados, no solo los nuevos. Primero calculamos cuántos correos hay antes de empezar — no se importa nada todavía.</div>
+        <div id="finImportadorEstimadoBox"></div>
+        <button class="gw-save-btn" onclick="estimarImportacionFinanzas()" data-ayuda="Calcula cuántos correos bancarios hay, sin traerlos todavía.">Calcular cuántos hay</button>
+      </div>`;
+    return;
+  }
+
+  if (importacion.estado === 'en_progreso' || importacion.estado === 'pendiente') {
+    const pct = importacion.total_estimado ? Math.min(100, Math.round(importacion.procesados / importacion.total_estimado * 100)) : 0;
+    box.innerHTML = `
+      <div class="seed-item" style="display:block">
+        <div style="font-weight:600;margin-bottom:6px">Importando tu historial bancario…</div>
+        <div style="background:var(--surface2);border-radius:6px;overflow:hidden;height:10px;margin-bottom:6px">
+          <div style="width:${pct}%;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2))"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-dim)">Procesados ${importacion.procesados} de ~${importacion.total_estimado} — ${importacion.agregados} gastos agregados</div>
+        <button class="gw-modo-btn" style="margin-top:8px" onclick="cancelarImportacionFinanzas(${importacion.id})" data-ayuda="Detiene la importación. Lo que ya se agregó queda guardado.">Cancelar</button>
+      </div>`;
+    finImportadorPollTimer = setTimeout(cargarImportadorFinanzas, 4000);
+    return;
+  }
+
+  if (importacion.estado === 'pausada_cuota') {
+    box.innerHTML = `
+      <div class="seed-item" style="display:block">
+        <div style="font-weight:600;margin-bottom:6px;color:var(--yellow)">Pausado por el límite de tu proveedor de IA</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">Llevamos ${importacion.procesados} de ~${importacion.total_estimado} correos (${importacion.agregados} gastos agregados). Va a seguir solo más tarde — o puedes activar temporalmente una cuenta de pago en <b>Ajustes → Cuentas de IA</b> para que termine altiro.</div>
+        <button class="gw-save-btn" onclick="reintentarImportacionFinanzas()">Reintentar ahora</button>
+      </div>`;
+    finImportadorPollTimer = setTimeout(cargarImportadorFinanzas, 15000);
+    return;
+  }
+
+  if (importacion.estado === 'completada') {
+    cargarInformeImportacionFinanzas(importacion);
+  }
+}
+
+async function cargarInformeImportacionFinanzas(importacion) {
+  const box = document.getElementById('finImportadorBox');
+  if (!box) return;
+  try {
+    const r = await fetch('/api/finanzas/importar/informe');
+    const d = await r.json();
+    const bancos = d.bancos || [];
+    box.innerHTML = `
+      <div class="seed-item" style="display:block">
+        <div style="font-weight:600;margin-bottom:4px">Historial importado ✓</div>
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">${importacion.agregados} gastos agregados de ${importacion.procesados} correos revisados.</div>
+        ${bancos.length ? bancos.map(b => `<div style="display:flex;justify-content:space-between;font-size:12px;padding:3px 0"><span>${b.banco}</span><span>${b.cantidad} · $${(b.total||0).toFixed(0)}</span></div>`).join('') : ''}
+        <button class="gw-modo-btn" style="margin-top:8px" onclick="iniciarImportacionFinanzas()" data-ayuda="Busca correos bancarios nuevos que hayan llegado después.">Buscar correos nuevos</button>
+      </div>`;
+  } catch (e) {
+    box.innerHTML = '';
+  }
+}
+
+async function estimarImportacionFinanzas() {
+  const cont = document.getElementById('finImportadorEstimadoBox');
+  if (cont) cont.innerHTML = '<div class="loading">Calculando</div>';
+  try {
+    const r = await fetch('/api/finanzas/importar/estimar', { method: 'POST' });
+    const d = await r.json();
+    if (!d.ok) {
+      if (cont) cont.innerHTML = `<div class="empty">${d.error || 'No se pudo calcular'}</div>`;
+      return;
+    }
+    const mensaje = d.estimado > 150
+      ? `Encontramos ~${d.estimado} correos. Con el límite gratuito de IA esto puede tomar varios días — seguirá solo y avisamos el avance cada vez que entres. Si quieres que sea inmediato, activa una cuenta de pago en Ajustes → Cuentas de IA.`
+      : `Encontramos ~${d.estimado} correos. Esto debería tardar solo unos minutos.`;
+    if (cont) cont.innerHTML = `<div style="font-size:12px;margin:8px 0">${mensaje}</div><button class="gw-save-btn" onclick="iniciarImportacionFinanzas()">Importar ahora</button>`;
+  } catch (e) {
+    if (cont) cont.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function iniciarImportacionFinanzas() {
+  try {
+    await fetch('/api/finanzas/importar/iniciar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}),
+    });
+    mostrarToast('Importación iniciada', 'success');
+    cargarImportadorFinanzas();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function reintentarImportacionFinanzas() {
+  await iniciarImportacionFinanzas();
+}
+
+async function cancelarImportacionFinanzas(id) {
+  try {
+    await fetch('/api/finanzas/importar/cancelar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ importacion_id: id }),
+    });
+    mostrarToast('Importación cancelada', 'success');
+    cargarImportadorFinanzas();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function cargarFinanzasHistorico() {
+  const el = document.getElementById('finanzasSubcontent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const qs = (finanzasFiltroAnio ? `desde=${finanzasFiltroAnio}-01-01&hasta=${finanzasFiltroAnio}-12-31&` : '') + 'limite=100000';
+    const r = await fetch('/api/finanzas?' + qs);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const anios = d.anios_disponibles || [];
+    const meses = Object.entries(d.por_mes || {});
+
+    let html = '<div class="app-toolbar">';
+    if (anios.length) {
+      html += `<select id="finAnioSel" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:5px 8px">
+        <option value="">Todos los años</option>
+        ${anios.map(a => `<option value="${a}" ${a === finanzasFiltroAnio ? 'selected' : ''}>${a}</option>`).join('')}
+      </select>`;
+    }
+    html += `<button class="gw-save-btn" onclick="exportarFinanzasCsv()" data-ayuda="Descarga estos gastos en una planilla CSV."><svg class="icon"><use href="#icon-download"/></svg> Exportar CSV</button>`;
+    html += `<button class="gw-save-btn" onclick="window.print()" data-ayuda="Abre el diálogo de impresión con un informe limpio — puedes guardarlo como PDF."><svg class="icon"><use href="#icon-print"/></svg> Imprimir informe</button>`;
+    html += '</div>';
+    html += `<div class="metric-row"><span class="metric-label">Total${finanzasFiltroAnio ? ' ' + finanzasFiltroAnio : ''}</span><span class="metric-value" style="font-size:22px;font-family:var(--font-display)">$${(d.total||0).toFixed(0)}</span></div>`;
+    html += meses.length ? '<div id="finMensualChart" style="margin:14px 0"></div>' : '<div class="empty">Sin datos mensuales</div>';
+    html += tablaGastosHtml(d.gastos || []);
+    el.innerHTML = html;
+
+    if (meses.length) dibujarLineas(document.getElementById('finMensualChart'), meses.map(([mes, valor]) => ({ etiqueta: mes, valor })));
+
+    const sel = document.getElementById('finAnioSel');
+    if (sel) sel.addEventListener('change', () => {
+      finanzasFiltroAnio = sel.value;
+      localStorage.setItem('imrryr_finanzas_anio', finanzasFiltroAnio);
+      cargarFinanzasHistorico();
+    });
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function exportarFinanzasCsv() {
+  const qs = finanzasFiltroAnio ? `?desde=${finanzasFiltroAnio}-01-01&hasta=${finanzasFiltroAnio}-12-31` : '';
+  window.location.href = '/api/finanzas/export' + qs;
+}
+
+function tablaGastosHtml(gastos) {
+  if (!gastos.length) return '';
+  return `<div style="margin-top:10px"><span class="widget-title">Gastos</span><div style="margin-top:6px">` +
+    gastos.map(g => filaGastoHtml(g)).join('') + `</div></div>`;
+}
+
+function filaGastoHtml(g) {
+  if (gastoEnEdicionId === g.id) {
+    return `<div class="seed-item" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+      <input id="edComercio_${g.id}" value="${(g.comercio || '').replace(/"/g,'&quot;')}" style="width:130px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 6px">
+      <input id="edCategoria_${g.id}" value="${(g.categoria || '').replace(/"/g,'&quot;')}" style="width:110px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 6px">
+      <input id="edMonto_${g.id}" type="number" value="${g.monto}" style="width:90px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:4px 6px">
+      <button class="gw-save-btn" onclick="guardarEdicionGasto(${g.id})">Guardar</button>
+      <button class="gw-modo-btn" onclick="cancelarEdicionGasto()">Cancelar</button>
+    </div>`;
+  }
+  return `<div class="seed-item" style="display:flex;justify-content:space-between;align-items:center;gap:6px">
+    <div><b>${g.comercio}</b> — $${g.monto.toFixed(0)} <span style="color:var(--text-dim)">(${g.categoria}, ${g.fecha})</span></div>
+    <div style="display:flex;gap:4px;flex-shrink:0">
+      <button class="gw-modo-btn" onclick="editarGasto(${g.id})" data-ayuda="Corrige el nombre, la categoría o el monto de este gasto."><svg class="icon"><use href="#icon-edit"/></svg></button>
+      <button class="gw-modo-btn" onclick="borrarGasto(${g.id})" data-ayuda="Elimina este gasto por completo."><svg class="icon"><use href="#icon-trash"/></svg></button>
+    </div>
+  </div>`;
+}
+
+function editarGasto(id) {
+  gastoEnEdicionId = id;
+  if (finanzasSubtabActual === 'actual') cargarFinanzasActual(); else cargarFinanzasHistorico();
+}
+
+function cancelarEdicionGasto() {
+  gastoEnEdicionId = null;
+  if (finanzasSubtabActual === 'actual') cargarFinanzasActual(); else cargarFinanzasHistorico();
+}
+
+async function guardarEdicionGasto(id) {
+  const comercio = document.getElementById(`edComercio_${id}`).value.trim();
+  const categoria = document.getElementById(`edCategoria_${id}`).value.trim();
+  const monto = parseFloat(document.getElementById(`edMonto_${id}`).value);
+  try {
+    const r = await fetch(`/api/finanzas/gastos/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ comercio, categoria, monto }),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    gastoEnEdicionId = null;
+    mostrarToast('Gasto actualizado', 'success');
+    if (finanzasSubtabActual === 'actual') cargarFinanzasActual(); else cargarFinanzasHistorico();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function borrarGasto(id) {
+  try {
+    await fetch(`/api/finanzas/gastos/${id}`, { method: 'DELETE' });
+    mostrarToast('Gasto eliminado', 'success');
+    if (finanzasSubtabActual === 'actual') cargarFinanzasActual(); else cargarFinanzasHistorico();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Gateway WhatsApp (Local/QR o Cloud API) — vive dentro de Ajustes ---
 const GATEWAY_URL = 'http://localhost:5050';
 let gwConfigActual = null;
 let gwRefreshTimer = null;
 
 async function cargarGateway() {
-  const el = document.getElementById('w-gateway');
+  const el = document.getElementById('ajustesSubcontent');
   if (!el) return;
   try {
     const r = await fetch(GATEWAY_URL + '/api/gateway/config');
@@ -379,7 +1199,7 @@ async function cargarGateway() {
 }
 
 function renderGateway() {
-  const el = document.getElementById('w-gateway');
+  const el = document.getElementById('ajustesSubcontent');
   if (!el || !gwConfigActual) return;
   const modo = gwConfigActual.modo;
   let html = `<div style="display:flex;gap:6px;margin-bottom:10px">
@@ -406,7 +1226,8 @@ function renderGateway() {
   el.innerHTML = html;
 
   clearTimeout(gwRefreshTimer);
-  if (modo === 'local' && !(gwConfigActual.local && gwConfigActual.local.conectado)) {
+  const vistaActiva = document.getElementById('view-ajustes').classList.contains('active') && ajustesSubtabActual === 'whatsapp';
+  if (vistaActiva && modo === 'local' && !(gwConfigActual.local && gwConfigActual.local.conectado)) {
     gwRefreshTimer = setTimeout(cargarGateway, 5000);
   }
 }
@@ -445,71 +1266,481 @@ async function guardarGatewayCloud() {
   }
 }
 
-// --- Chat ---
-let chatHistorial = [];
-function cargarChat() {
-  const el = document.getElementById('w-chat');
+// --- Perfil de Negocio (usado por el Investigador para filtrar fondos relevantes) ---
+let perfilNegocioActual = null;
+
+async function cargarPerfilNegocio() {
+  const el = document.getElementById('ajustesSubcontent');
   if (!el) return;
-  el.style.display = 'flex'; el.style.flexDirection = 'column';
-  el.innerHTML = `<div class="chat-area">
-    <div class="chat-msgs" id="chatMsgs"></div>
-    <div class="chat-box">
-      <input type="text" id="chatInp" placeholder="Escribe un mensaje..." autocomplete="off">
-      <button id="chatBtn">Enviar</button>
-    </div>
-  </div>`;
-  document.getElementById('chatInp').addEventListener('keydown', e => { if (e.key === 'Enter') enviarChat(); });
-  document.getElementById('chatBtn').addEventListener('click', enviarChat);
-  if (chatHistorial.length) renderChat();
-}
-function renderChat() {
-  const el = document.getElementById('chatMsgs');
-  if (!el) return;
-  el.innerHTML = chatHistorial.map(m => `<div class="${m.role}">${m.role === 'user' ? '> ' : ''}${m.text}</div>`).join('');
-  el.scrollTop = el.scrollHeight;
-}
-async function enviarChat() {
-  const inp = document.getElementById('chatInp');
-  const btn = document.getElementById('chatBtn');
-  const texto = inp.value.trim();
-  if (!texto || btn.disabled) return;
-  inp.value = '';
-  chatHistorial.push({ role: 'user', text: texto });
-  chatHistorial.push({ role: 'thinking', text: 'Pensando...' });
-  renderChat();
-  btn.disabled = true;
   try {
-    const r = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ mensaje: texto }),
-      signal: AbortSignal.timeout(120000),
-    });
-    const data = await r.json();
-    chatHistorial.pop();
-    if (data.error) {
-      chatHistorial.push({ role: 'error', text: 'Error: ' + data.error });
-    } else {
-      chatHistorial.push({ role: 'assistant', text: data.respuesta || '(sin respuesta)' });
-    }
+    const r = await fetch('/api/perfil-negocio');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
   } catch (e) {
-    chatHistorial.pop();
-    chatHistorial.push({ role: 'error', text: 'Error de conexion: ' + e.message });
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
   }
-  renderChat();
-  btn.disabled = false;
-  inp.focus();
-  // Mantener solo ultimos 20 mensajes
-  if (chatHistorial.length > 40) chatHistorial = chatHistorial.slice(-40);
 }
 
-// --- Widget generico (desde YAML) ---
-function cargarWidgetGen(w) {
-  const el = document.getElementById('w-' + w.id);
+function renderPerfilNegocio() {
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el || !perfilNegocioActual) return;
+  const p = perfilNegocioActual;
+  const extras = Object.entries(p.caracteristicas_extra || {});
+  let html = `
+    <div class="gw-field"><label>Giro (separado por comas)</label><input id="pnGiro" value="${(p.giro || []).join(', ')}"></div>
+    <div class="gw-field"><label>Región</label><input id="pnRegion" value="${(p.ubicacion && p.ubicacion.region) || ''}"></div>
+    <div class="gw-field"><label>Comuna</label><input id="pnComuna" value="${(p.ubicacion && p.ubicacion.comuna) || ''}"></div>
+    <div class="gw-field"><label>Tamaño de empresa</label><input id="pnTamano" value="${p.tamano_empresa || ''}" placeholder="micro, pequeña, mediana..."></div>
+  `;
+  if (extras.length) {
+    html += '<div style="margin:6px 0">' + extras.map(([k, v]) =>
+      `<span class="tag">${k}: ${v} <span style="cursor:pointer" onclick="quitarCaracteristica('${k.replace(/'/g, "\\'")}')">&times;</span></span>`
+    ).join('') + '</div>';
+  }
+  html += `
+    <div style="display:flex;gap:6px;margin-top:6px">
+      <input id="pnNuevaClave" placeholder="característica" class="gw-inline-input">
+      <input id="pnNuevoValor" placeholder="valor" class="gw-inline-input">
+      <button class="gw-save-btn" onclick="agregarCaracteristica()">+</button>
+    </div>
+    <button class="gw-save-btn" style="margin-top:8px" onclick="guardarPerfilNegocio()">Guardar perfil</button>
+  `;
+  el.innerHTML = html;
+}
+
+async function guardarPerfilNegocio() {
+  const datos = {
+    giro: document.getElementById('pnGiro').value.split(',').map(s => s.trim()).filter(Boolean),
+    ubicacion: {
+      region: document.getElementById('pnRegion').value.trim(),
+      comuna: document.getElementById('pnComuna').value.trim(),
+    },
+    tamano_empresa: document.getElementById('pnTamano').value.trim(),
+  };
+  try {
+    const r = await fetch('/api/perfil-negocio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
+    mostrarToast('Perfil de negocio guardado', 'success');
+  } catch (e) {
+    mostrarToast('Error guardando perfil: ' + e.message, 'error');
+  }
+}
+
+async function agregarCaracteristica() {
+  const clave = document.getElementById('pnNuevaClave').value.trim();
+  const valor = document.getElementById('pnNuevoValor').value.trim();
+  if (!clave) return;
+  try {
+    const r = await fetch('/api/perfil-negocio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caracteristicas_extra: { [clave]: valor } }),
+    });
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function quitarCaracteristica(clave) {
+  try {
+    const r = await fetch('/api/perfil-negocio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caracteristicas_extra: { [clave]: null } }),
+    });
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Cuentas de IA (qué proveedor/modelo usan todos los agentes) ---
+let cuentasIaLista = [];
+let cuentasIaProveedores = {};
+let cuentasIaMostrarForm = false;
+
+async function cargarCuentasIaView() {
+  const el = document.getElementById('ajustesSubcontent');
   if (!el) return;
-  let html = w.desc ? `<p style="font-size:12px;color:var(--text-dim)">${w.desc}</p>` : '';
-  if (w.tools && w.tools.length) html += '<div style="margin-top:6px">' + w.tools.map(t => `<span class="tag">${t}</span>`).join('') + '</div>';
-  el.innerHTML = html || '<div class="empty">Sin informacion</div>';
+  try {
+    const r = await fetch('/api/ajustes/cuentas-ia');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    cuentasIaLista = d.cuentas || [];
+    cuentasIaProveedores = d.proveedores || {};
+    renderCuentasIaView();
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCuentasIaView() {
+  const el = document.getElementById('ajustesSubcontent');
+  if (!el) return;
+  let html = '<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Elige qué proveedor de IA usan todos tus agentes (Gemini, OpenAI, Claude, DeepSeek, un modelo local con Ollama, u otro). Solo una cuenta puede estar activa a la vez.</p>';
+
+  html += cuentasIaLista.length ? '<div style="margin-bottom:10px">' + cuentasIaLista.map(c => `
+    <div class="seed-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
+      <div>
+        <b>${c.nombre}</b> <span class="tag">${(cuentasIaProveedores[c.proveedor] || {}).nombre || c.proveedor}</span>
+        ${c.activa ? '<span class="estado-badge estado-proyecto" style="margin-left:6px">activa</span>' : ''}
+      </div>
+      <div style="display:flex;gap:6px">
+        ${!c.activa ? `<button class="gw-save-btn" onclick="activarCuentaIa('${c.id}')" data-ayuda="Todos tus agentes empezarán a usar esta cuenta.">Usar esta</button>` : ''}
+        <button class="gw-save-btn" onclick="eliminarCuentaIa('${c.id}')">Eliminar</button>
+      </div>
+    </div>`).join('') + '</div>' : '<div class="empty">Sin cuentas de IA configuradas todavía</div>';
+
+  html += `<button class="gw-save-btn" onclick="toggleCuentaIaForm()">${cuentasIaMostrarForm ? 'Cancelar' : '+ Cuenta de IA'}</button>`;
+
+  if (cuentasIaMostrarForm) {
+    const opciones = Object.entries(cuentasIaProveedores).map(([id, p]) => `<option value="${id}">${p.nombre}</option>`).join('');
+    html += `
+      <div style="margin-top:10px">
+        <div class="gw-field"><label>Nombre</label><input id="ciNombre" placeholder="ej. Mi cuenta de OpenAI"></div>
+        <div class="gw-field"><label>Proveedor</label>
+          <select id="ciProveedor" onchange="renderCuentaIaCampos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;width:100%">
+            ${opciones}
+          </select>
+        </div>
+        <div id="ciCampos"></div>
+        <button class="gw-save-btn" style="margin-top:6px" onclick="guardarCuentaIa()">Guardar cuenta</button>
+      </div>`;
+  }
+  el.innerHTML = html;
+  if (cuentasIaMostrarForm) renderCuentaIaCampos();
+}
+
+function renderCuentaIaCampos() {
+  const proveedorId = document.getElementById('ciProveedor').value;
+  const prov = cuentasIaProveedores[proveedorId] || {};
+  const el = document.getElementById('ciCampos');
+  let html = '';
+  if (proveedorId === 'otro') {
+    html += `<div class="gw-field"><label>Modelo LiteLLM (ej. mistral/mistral-large-latest)</label><input id="ciModelo" placeholder="proveedor/modelo"></div>`;
+  }
+  if (proveedorId === 'ollama') {
+    html += `<div class="gw-field"><label>Host (api_base)</label><input id="ciApiBase" value="http://localhost:11434"></div>`;
+  }
+  if (prov.requiere_key) {
+    html += `<div class="gw-field"><label>API key</label><input id="ciApiKey" type="password"></div>`;
+  }
+  el.innerHTML = html;
+}
+
+async function guardarCuentaIa() {
+  const nombre = document.getElementById('ciNombre').value.trim();
+  const proveedor = document.getElementById('ciProveedor').value;
+  if (!nombre) { mostrarToast('Falta el nombre de la cuenta', 'error'); return; }
+  const id = nombre.toLowerCase().replace(/[^a-z0-9]+/g, '_').slice(0, 40) + '_' + Date.now().toString(36);
+  const datos = { id, nombre, proveedor };
+  const modeloEl = document.getElementById('ciModelo');
+  if (modeloEl) datos.modelo = modeloEl.value.trim();
+  const apiBaseEl = document.getElementById('ciApiBase');
+  if (apiBaseEl) datos.api_base = apiBaseEl.value.trim();
+  const apiKeyEl = document.getElementById('ciApiKey');
+  if (apiKeyEl && apiKeyEl.value.trim()) datos.api_key = apiKeyEl.value.trim();
+  try {
+    const r = await fetch('/api/ajustes/cuentas-ia', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    cuentasIaMostrarForm = false;
+    mostrarToast('Cuenta de IA guardada', 'success');
+    cargarCuentasIaView();
+  } catch (e) {
+    mostrarToast('Error guardando cuenta: ' + e.message, 'error');
+  }
+}
+
+function toggleCuentaIaForm() {
+  cuentasIaMostrarForm = !cuentasIaMostrarForm;
+  renderCuentasIaView();
+}
+
+async function activarCuentaIa(id) {
+  mostrarToast('Activando cuenta y reiniciando el motor de IA...', '');
+  try {
+    const r = await fetch(`/api/ajustes/cuentas-ia/${id}/activar`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) mostrarToast(d.litellm_reiniciado ? 'Cuenta activada' : 'Cuenta activada, pero el motor de IA no respondió al reiniciar', d.litellm_reiniciado ? 'success' : 'error');
+    else mostrarToast('Error: ' + (d.error || 'no se pudo activar'), 'error');
+    cargarCuentasIaView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function eliminarCuentaIa(id) {
+  try {
+    await fetch(`/api/ajustes/cuentas-ia/${id}`, { method: 'DELETE' });
+    mostrarToast('Cuenta eliminada', 'success');
+    cargarCuentasIaView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Correo (app completa: sub-tabs Bandeja / Borradores) ---
+let correoCuentas = [];
+let correoCuentaSel = localStorage.getItem('imrryr_correo_cuenta') || '';
+let correoMostrarForm = false;
+let correoSubtabActual = 'bandeja';
+
+function cambiarSubtabCorreo(sub) {
+  correoSubtabActual = sub;
+  document.getElementById('correoSub-bandeja').classList.toggle('active', sub === 'bandeja');
+  document.getElementById('correoSub-borradores').classList.toggle('active', sub === 'borradores');
+  if (sub === 'bandeja') cargarBandejaSubtab(); else cargarBorradoresSubtab();
+}
+
+async function cargarBandejaSubtab() {
+  const el = document.getElementById('correoSubcontent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/correo/cuentas');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    correoCuentas = d.cuentas || [];
+    renderBandejaSubtab();
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderBandejaSubtab() {
+  const el = document.getElementById('correoSubcontent');
+  if (!el) return;
+  let html = '<div style="display:flex;gap:6px;align-items:center;margin-bottom:10px">';
+  html += `<select id="correoCuentaSel" style="flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:5px 8px">
+    <option value="">Selecciona una cuenta...</option>
+    ${correoCuentas.map(c => `<option value="${c.id}" ${c.id === correoCuentaSel ? 'selected' : ''}>${c.id} (${c.proveedor})</option>`).join('')}
+  </select>`;
+  html += `<button class="gw-save-btn" onclick="toggleCorreoForm()">${correoMostrarForm ? 'Cancelar' : '+ Cuenta'}</button>`;
+  if (correoCuentaSel) html += `<button class="gw-save-btn" onclick="eliminarCuentaCorreo()">Eliminar</button>`;
+  html += '</div>';
+
+  if (correoMostrarForm) {
+    html += `
+      <div class="gw-field"><label>ID de la cuenta</label><input id="ccId" placeholder="ej. gmail_principal, hosting_web"></div>
+      <div class="gw-field"><label>Proveedor</label>
+        <select id="ccProveedor" onchange="renderCorreoFormCampos()" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:5px 8px;width:100%">
+          <option value="gmail">Gmail (OAuth)</option>
+          <option value="imap">IMAP genérico (hosting, Outlook, etc.)</option>
+        </select>
+      </div>
+      <div class="gw-field"><label>Email</label><input id="ccEmail" placeholder="cuenta@dominio.com"></div>
+      <div id="ccCamposImap"></div>
+      <button class="gw-save-btn" style="margin-top:6px" onclick="guardarCuentaCorreo()">Guardar cuenta</button>
+    `;
+  }
+
+  html += '<div id="correoBandejaLista" style="margin-top:10px">' +
+    (correoCuentaSel ? '<div class="loading">Cargando bandeja</div>' : '<div class="empty">Elige una cuenta para ver su bandeja</div>') +
+    '</div>';
+
+  el.innerHTML = html;
+  document.getElementById('correoCuentaSel').addEventListener('change', (e) => {
+    correoCuentaSel = e.target.value;
+    localStorage.setItem('imrryr_correo_cuenta', correoCuentaSel);
+    cargarBandejaMensajes();
+  });
+  if (correoMostrarForm) renderCorreoFormCampos();
+  if (correoCuentaSel) cargarBandejaMensajes();
+}
+
+async function cargarBorradoresSubtab() {
+  const el = document.getElementById('correoSubcontent');
+  if (!el) return;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/correo/borradores?estado=pendiente');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const borradores = d.borradores || [];
+    if (!borradores.length) { el.innerHTML = '<div class="empty">Sin borradores pendientes</div>'; return; }
+    el.innerHTML = borradores.map(b => `
+      <div class="seed-item" style="display:block">
+        <div><b>Para:</b> ${b.destinatario} — <b>Asunto:</b> ${b.asunto || '(sin asunto)'}</div>
+        <div style="font-size:11px;color:var(--text-dim);margin:4px 0">${(b.cuerpo || '').slice(0, 200)}</div>
+        <div style="display:flex;gap:6px">
+          <button class="gw-save-btn" onclick="enviarBorradorCorreo(${b.id})" data-ayuda="Envía este correo tal cual. El Secretario nunca lo hace solo — el envío final siempre es tu decisión.">Enviar</button>
+          <button class="gw-save-btn" onclick="descartarBorradorCorreo(${b.id})" data-ayuda="Descarta este borrador sin enviarlo.">Descartar</button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+function renderCorreoFormCampos() {
+  const proveedor = document.getElementById('ccProveedor').value;
+  const el = document.getElementById('ccCamposImap');
+  if (proveedor === 'imap') {
+    el.innerHTML = `
+      <div class="gw-field"><label>Servidor IMAP</label><input id="ccImapHost" placeholder="mail.midominio.com"></div>
+      <div class="gw-field"><label>Servidor SMTP</label><input id="ccSmtpHost" placeholder="mail.midominio.com"></div>
+      <div class="gw-field"><label>Usuario</label><input id="ccUsuario" placeholder="usuario de acceso"></div>
+      <div class="gw-field"><label>Contraseña</label><input id="ccPassword" type="password"></div>
+    `;
+  } else {
+    el.innerHTML = '<div class="empty" style="margin:4px 0">Gmail usa OAuth (config/gmail_secretario_credentials.json). Guarda la cuenta y sigue las instrucciones de autorización.</div>';
+  }
+}
+
+function toggleCorreoForm() {
+  correoMostrarForm = !correoMostrarForm;
+  cargarBandejaSubtab();
+}
+
+async function guardarCuentaCorreo() {
+  const id = document.getElementById('ccId').value.trim();
+  const proveedor = document.getElementById('ccProveedor').value;
+  const email = document.getElementById('ccEmail').value.trim();
+  if (!id) { mostrarToast('Falta el ID de la cuenta', 'error'); return; }
+  const datos = { id, proveedor, email };
+  if (proveedor === 'imap') {
+    datos.imap_host = document.getElementById('ccImapHost').value.trim();
+    datos.smtp_host = document.getElementById('ccSmtpHost').value.trim();
+    datos.usuario = document.getElementById('ccUsuario').value.trim();
+    const pass = document.getElementById('ccPassword').value.trim();
+    if (pass) datos.password = pass;
+  }
+  try {
+    const r = await fetch('/api/correo/cuentas', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(datos),
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    correoMostrarForm = false;
+    correoCuentaSel = id;
+    localStorage.setItem('imrryr_correo_cuenta', id);
+    mostrarToast('Cuenta de correo guardada', 'success');
+    cargarBandejaSubtab();
+  } catch (e) {
+    mostrarToast('Error guardando cuenta: ' + e.message, 'error');
+  }
+}
+
+async function eliminarCuentaCorreo() {
+  if (!correoCuentaSel) return;
+  try {
+    const r = await fetch('/api/correo/cuentas/' + encodeURIComponent(correoCuentaSel), { method: 'DELETE' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    correoCuentaSel = '';
+    localStorage.removeItem('imrryr_correo_cuenta');
+    mostrarToast('Cuenta eliminada', 'success');
+    cargarBandejaSubtab();
+  } catch (e) {
+    mostrarToast('Error eliminando cuenta: ' + e.message, 'error');
+  }
+}
+
+async function cargarBandejaMensajes() {
+  const el = document.getElementById('correoBandejaLista');
+  if (!el) return;
+  if (!correoCuentaSel) { el.innerHTML = '<div class="empty">Elige una cuenta para ver su bandeja</div>'; return; }
+  el.innerHTML = '<div class="loading">Cargando bandeja</div>';
+  try {
+    const r = await fetch(`/api/correo/bandeja?cuenta_id=${encodeURIComponent(correoCuentaSel)}&max_resultados=10`);
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const correos = d.correos || [];
+    if (!correos.length) {
+      el.innerHTML = '<div class="empty">Sin correos recientes (o cuenta sin credenciales configuradas)</div>';
+      return;
+    }
+    el.innerHTML = correos.map(c => `
+      <div class="seed-item" style="display:block">
+        <div><b>${(c.remitente || '').replace(/</g,'&lt;')}</b></div>
+        <div style="font-size:11px">${c.asunto || '(sin asunto)'}</div>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function enviarBorradorCorreo(id) {
+  try {
+    const r = await fetch(`/api/correo/borradores/${id}/enviar`, { method: 'POST' });
+    const d = await r.json();
+    if (d.ok) { mostrarToast('Correo enviado', 'success'); } else { mostrarToast('Error: ' + (d.error || 'no se pudo enviar'), 'error'); }
+    cargarBorradoresSubtab();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function descartarBorradorCorreo(id) {
+  try {
+    await fetch(`/api/correo/borradores/${id}/descartar`, { method: 'POST' });
+    mostrarToast('Borrador descartado', 'success');
+    cargarBorradoresSubtab();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+// --- Ajustes (WhatsApp, Perfil de Negocio, Cuentas de IA, Ayuda: sub-tabs) ---
+let ajustesSubtabActual = 'whatsapp';
+function cambiarSubtabAjustes(sub) {
+  ajustesSubtabActual = sub;
+  ['whatsapp', 'perfil', 'ia', 'ayuda'].forEach(s =>
+    document.getElementById('ajustesSub-' + s).classList.toggle('active', sub === s));
+  document.getElementById('ajustesSubcontent').innerHTML = '<div class="loading">Cargando</div>';
+  if (sub === 'whatsapp') cargarGateway();
+  else if (sub === 'perfil') cargarPerfilNegocio();
+  else if (sub === 'ia') cargarCuentasIaView();
+  else renderAyudaSettings();
+}
+
+// --- Modo Ayuda (tooltips contextuales, ver atributos data-ayuda) ---
+function aplicarModoAyuda(valor) {
+  document.body.classList.toggle('ayuda-on', valor);
+  localStorage.setItem('imrryr_ayuda_on', valor ? '1' : '0');
+}
+
+// El tooltip es CSS puro (::after con attr(data-ayuda)), pero su posición
+// horizontal se corrige aquí para que nunca se salga de la pantalla en los
+// elementos cerca de los bordes, y se muestra debajo en vez de arriba para
+// los elementos pegados al techo (ej. la barra de navegación).
+function inicializarPosicionAyuda() {
+  document.addEventListener('mouseover', (e) => {
+    const el = e.target.closest('[data-ayuda]');
+    if (!el) return;
+    const rect = el.getBoundingClientRect();
+    const anchoTip = Math.min(260, window.innerWidth * 0.78);
+    const margen = 14;
+    const centroX = rect.left + rect.width / 2;
+    const desbordeDerecha = (centroX + anchoTip / 2) - (window.innerWidth - margen);
+    const desbordeIzquierda = margen - (centroX - anchoTip / 2);
+    let corrimiento = 0;
+    if (desbordeDerecha > 0) corrimiento = -desbordeDerecha;
+    else if (desbordeIzquierda > 0) corrimiento = desbordeIzquierda;
+    el.style.setProperty('--tip-shift', corrimiento + 'px');
+    el.classList.toggle('ayuda-below', rect.top < 70);
+  }, true);
+}
+
+function renderAyudaSettings() {
+  const activo = localStorage.getItem('imrryr_ayuda_on') === '1';
+  document.getElementById('ajustesSubcontent').innerHTML = `
+    <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Cuando está activo, al pasar el mouse por botones y secciones aparece una explicación simple de para qué sirven — pensado para quien no usa este tipo de sistemas todos los días.</p>
+    <label style="display:flex;align-items:center;gap:10px;cursor:pointer">
+      <span class="ayuda-switch ${activo ? 'on' : ''}" id="ayudaSwitch" onclick="toggleAyudaSwitch()"><span class="ayuda-switch-knob"></span></span>
+      <span style="font-size:13px">Explicar secciones al pasar el mouse</span>
+    </label>`;
+}
+
+function toggleAyudaSwitch() {
+  const nuevo = localStorage.getItem('imrryr_ayuda_on') !== '1';
+  aplicarModoAyuda(nuevo);
+  renderAyudaSettings();
 }
 
 // --- Status dots ---
@@ -520,16 +1751,215 @@ async function actualizarStatus() {
     if (!r.ok) throw new Error('');
     const d = await r.json();
     const svc = d.servicios || {};
-    bar.innerHTML = ['litellm','opencode','gateway'].map(s =>
-      `<div class="status-item"><span class="status-dot ${svc[s]?'on':'off'}"></span>${s}</div>`
-    ).join('');
+    // opencode/litellm son el motor (sin ellos nada funciona); gateway solo
+    // afecta WhatsApp — por eso su ausencia es "warn", no "off".
+    const critico = svc.litellm && svc.opencode;
+    const clase = critico ? (svc.gateway ? 'on' : 'warn') : 'off';
+    const detalle = `Motor de IA (LiteLLM): ${svc.litellm ? 'activo' : 'apagado'}. Agentes (OpenCode): ${svc.opencode ? 'activo' : 'apagado'}. WhatsApp (Gateway): ${svc.gateway ? 'activo' : 'apagado'}.`;
+    bar.innerHTML = `<div class="status-item" data-ayuda="${detalle.replace(/"/g,'&quot;')}"><span class="status-dot ${clase}"></span>Sistema</div>`;
   } catch {
-    bar.innerHTML = '<div class="status-item" style="color:var(--red)">sin conexion</div>';
+    bar.innerHTML = '<div class="status-item" style="color:var(--red)">sin conexión</div>';
+  }
+}
+
+// --- Vista Ideas/Proyectos ("Pinterest de ideas") ---
+let ideaDetalleActualId = null; // null = creando una idea nueva
+
+async function cargarIdeasView() {
+  const grid = document.getElementById('ideaGrid');
+  const estado = document.getElementById('ideasFiltroEstado').value;
+  try {
+    const r = await fetch('/api/semillas' + (estado ? '?estado=' + estado : ''));
+    const d = await r.json();
+    renderIdeaGrid(d.semillas || []);
+  } catch (e) {
+    grid.innerHTML = `<div class="widget-error">Error cargando ideas: ${e.message}</div>`;
+  }
+}
+
+function renderIdeaGrid(lista) {
+  const grid = document.getElementById('ideaGrid');
+  if (!lista.length) {
+    grid.innerHTML = '<div class="empty">Sin ideas todavía. Usa "+ Nueva idea" o cuéntale una al Agente Creativo.</div>';
+    return;
+  }
+  grid.innerHTML = lista.map(idea => {
+    const img = (idea.primer_adjunto)
+      ? `<img class="idea-card-img" src="${idea.primer_adjunto}">`
+      : '<div class="idea-card-noimg">&#128161;</div>';
+    const snippet = (idea.descripcion || '').slice(0, 90);
+    const tags = (idea.etiquetas || []).map(t => `<span class="tag">${t}</span>`).join('');
+    return `<div class="idea-card" onclick="abrirDetalleIdea(${idea.id})">
+      ${img}
+      <div class="idea-card-body">
+        <span class="estado-badge estado-${idea.estado}">${idea.estado}</span>
+        <div class="idea-card-title">${idea.titulo}</div>
+        <div class="idea-card-snippet">${snippet}</div>
+        <div>${tags}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function abrirDetalleIdea(id) {
+  ideaDetalleActualId = id;
+  let idea = { titulo: '', descripcion: '', etiquetas: [], estado: 'idea', adjuntos: [] };
+  if (id) {
+    try {
+      const r = await fetch(`/api/semillas/${id}`);
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      idea = await r.json();
+    } catch (e) {
+      mostrarToast('Error cargando la idea: ' + e.message, 'error');
+      return;
+    }
+  }
+
+  const overlay = document.createElement('div');
+  overlay.className = 'detalle-overlay';
+  overlay.id = 'detalleOverlay';
+  overlay.onclick = (e) => { if (e.target === overlay) cerrarDetalleIdea(); };
+
+  const adjuntosHtml = (idea.adjuntos || []).map(a => `<img src="${a.ruta_archivo}">`).join('');
+  const estados = ['idea', 'desarrollada', 'proyecto', 'archivada'];
+  const opcionesEstado = estados.map(e => `<option value="${e}" ${e === idea.estado ? 'selected' : ''}>${e}</option>`).join('');
+
+  overlay.innerHTML = `
+    <div class="detalle-panel">
+      <span class="widget-title">${id ? 'Editar idea #' + id : 'Nueva idea'}</span>
+      <div style="margin-top:10px">
+        <label style="font-size:10px;color:var(--text-dim)">TÍTULO</label>
+        <input id="detTitulo" value="${(idea.titulo || '').replace(/"/g, '&quot;')}">
+        <label style="font-size:10px;color:var(--text-dim)">CONTENIDO</label>
+        <textarea id="detContenido" rows="6">${idea.descripcion || ''}</textarea>
+        <label style="font-size:10px;color:var(--text-dim)">ETIQUETAS (separadas por coma)</label>
+        <input id="detEtiquetas" value="${(idea.etiquetas || []).join(', ')}">
+        ${id ? `<label style="font-size:10px;color:var(--text-dim)">ESTADO</label>
+        <select id="detEstado">${opcionesEstado}</select>` : ''}
+        <div class="detalle-adjuntos" id="detAdjuntos">${adjuntosHtml}</div>
+        ${id ? `<input type="file" id="detArchivo" accept="image/*" style="margin-bottom:10px">` : ''}
+        <div style="display:flex;gap:8px;margin-top:6px">
+          <button class="gw-save-btn" onclick="guardarDetalleIdea()">Guardar</button>
+          <button class="gw-modo-btn" onclick="cerrarDetalleIdea()">Cancelar</button>
+        </div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  if (id) {
+    document.getElementById('detArchivo').addEventListener('change', (e) => subirAdjuntoIdea(id, e.target.files[0]));
+  }
+}
+
+function cerrarDetalleIdea() {
+  const overlay = document.getElementById('detalleOverlay');
+  if (overlay) overlay.remove();
+  ideaDetalleActualId = null;
+}
+
+async function guardarDetalleIdea() {
+  const titulo = document.getElementById('detTitulo').value.trim();
+  const contenido = document.getElementById('detContenido').value.trim();
+  const etiquetas = document.getElementById('detEtiquetas').value.split(',').map(s => s.trim()).filter(Boolean);
+  const estadoEl = document.getElementById('detEstado');
+
+  try {
+    if (ideaDetalleActualId) {
+      await fetch(`/api/semillas/${ideaDetalleActualId}`, {
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, contenido, etiquetas }),
+      });
+      if (estadoEl) {
+        await fetch(`/api/semillas/${ideaDetalleActualId}/estado`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ estado: estadoEl.value }),
+        });
+      }
+    } else {
+      if (!titulo || !contenido) {
+        mostrarToast('Falta título o contenido', 'error');
+        return;
+      }
+      await fetch('/api/semillas', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ titulo, contenido, etiquetas }),
+      });
+    }
+    mostrarToast('Idea guardada', 'success');
+    cerrarDetalleIdea();
+    cargarIdeasView();
+  } catch (e) {
+    mostrarToast('Error guardando: ' + e.message, 'error');
+  }
+}
+
+async function subirAdjuntoIdea(id, archivo) {
+  if (!archivo) return;
+  const formData = new FormData();
+  formData.append('archivo', archivo);
+  try {
+    const r = await fetch(`/api/semillas/${id}/adjunto`, { method: 'POST', body: formData });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    mostrarToast('Adjunto subido', 'success');
+    cerrarDetalleIdea();
+    abrirDetalleIdea(id);
+  } catch (e) {
+    mostrarToast('Error subiendo adjunto: ' + e.message, 'error');
+  }
+}
+
+// --- Oportunidades / Concursos ---
+async function cargarOportunidadesView() {
+  const el = document.getElementById('oportContent');
+  if (!el) return;
+  const estado = document.getElementById('oportFiltroEstado').value;
+  el.innerHTML = '<div class="loading">Cargando</div>';
+  try {
+    const r = await fetch('/api/oportunidades' + (estado ? '?estado=' + estado : ''));
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const lista = d.oportunidades || [];
+    if (!lista.length) {
+      el.innerHTML = '<div class="empty">Sin oportunidades registradas todavía. Pídele al Agente Investigador que busque fondos.</div>';
+      return;
+    }
+    const badgeDe = (estado) => ({ nueva: 'idea', revisada: 'desarrollada', postulada: 'proyecto', descartada: 'archivada' }[estado] || 'idea');
+    el.innerHTML = `<div class="oport-board">${lista.map(o => `
+      <div class="oport-card">
+        <div class="oport-card-fuente">${o.fuente}</div>
+        <div class="oport-card-titulo">${o.hallazgo}</div>
+        <div class="oport-card-meta">${o.monto_estimado ? 'Monto: ' + o.monto_estimado + ' — ' : ''}${o.fecha_cierre ? 'Cierra: ' + o.fecha_cierre : ''}</div>
+        ${o.relevancia_nota ? `<div class="oport-card-nota">${o.relevancia_nota}</div>` : ''}
+        <span class="estado-badge estado-${badgeDe(o.estado)}">${o.estado}</span>
+        <div class="oport-card-actions" style="margin-top:8px">
+          ${o.estado !== 'revisada' ? `<button onclick="cambiarEstadoOportunidad(${o.id},'revisada')" data-ayuda="Marca que ya revisaste este fondo.">Marcar revisada</button>` : ''}
+          ${o.estado !== 'postulada' ? `<button onclick="cambiarEstadoOportunidad(${o.id},'postulada')" data-ayuda="Marca que ya postulaste a este fondo.">Postulada</button>` : ''}
+          ${o.estado !== 'descartada' ? `<button onclick="cambiarEstadoOportunidad(${o.id},'descartada')" data-ayuda="Descarta este fondo, no te interesa.">Descartar</button>` : ''}
+        </div>
+      </div>`).join('')}</div>`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function cambiarEstadoOportunidad(id, estado) {
+  try {
+    await fetch(`/api/oportunidades/${id}/estado`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ estado }),
+    });
+    mostrarToast('Oportunidad actualizada', 'success');
+    cargarOportunidadesView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
   }
 }
 
 // --- Init ---
-cargarWidgets();
+aplicarModoAyuda(localStorage.getItem('imrryr_ayuda_on') === '1');
+inicializarPosicionAyuda();
+renderNavTabs();
+montarChatPanels();
+abrirApp('inicio');
 actualizarStatus();
 setInterval(actualizarStatus, 15000);
 </script>

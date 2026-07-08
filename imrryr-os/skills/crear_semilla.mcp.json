@@ -1,0 +1,12 @@
+{
+  "name": "crear_semilla",
+  "description": "Guarda una idea nueva (estado inicial 'idea'). 'contenido' debe ser la versión ya desarrollada y bien escrita que redactaste a partir de lo que te contó el usuario; 'contenido_original' es el texto tal cual te lo mandó.",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "titulo", "type": "string", "description": "Título corto de la idea", "required": true},
+    {"name": "contenido", "type": "string", "description": "Versión desarrollada/enriquecida de la idea", "required": true},
+    {"name": "contenido_original", "type": "string", "description": "Texto original tal cual lo mandó el usuario", "required": false},
+    {"name": "etiquetas", "type": "array", "description": "Lista de etiquetas", "required": false},
+    {"name": "fuente", "type": "string", "description": "manual, whatsapp o web", "required": false}
+  ]
+}

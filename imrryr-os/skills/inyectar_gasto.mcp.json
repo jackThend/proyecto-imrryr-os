@@ -26,6 +26,12 @@
       "type": "string",
       "description": "Descripción opcional del gasto",
       "required": false
+    },
+    {
+      "name": "fuente_id",
+      "type": "string",
+      "description": "ID del correo o transacción de origen (ej. el ID del mensaje de Gmail). Si ya existe un gasto con este id, se omite el duplicado.",
+      "required": false
     }
   ]
 }

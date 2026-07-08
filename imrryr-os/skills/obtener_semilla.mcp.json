@@ -1,0 +1,8 @@
+{
+  "name": "obtener_semilla",
+  "description": "Devuelve el detalle completo de una idea (incluyendo sus adjuntos) para discutirla o desarrollarla con el usuario.",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "id", "type": "number", "description": "ID de la idea", "required": true}
+  ]
+}

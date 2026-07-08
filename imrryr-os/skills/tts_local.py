@@ -73,6 +73,11 @@ def text_to_speech(texto: str, output: str | None = None, voz: str = "es-CL") ->
         return ""
 
 
+def tts_local(text: str, voz: str = "es-CL") -> dict:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return {"archivo": text_to_speech(text, None, voz)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Texto a voz local")
     ap.add_argument("--text", type=str, required=True)

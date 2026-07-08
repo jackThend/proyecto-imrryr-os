@@ -1,0 +1,10 @@
+{
+  "name": "adjuntar_archivo_semilla",
+  "description": "Vincula un archivo (imagen u otro) ya guardado en disco a una idea existente.",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "id", "type": "number", "description": "ID de la idea", "required": true},
+    {"name": "ruta_archivo", "type": "string", "description": "Ruta o URL del archivo ya guardado", "required": true},
+    {"name": "tipo", "type": "string", "description": "Tipo de adjunto (imagen, documento, etc.)", "required": false}
+  ]
+}

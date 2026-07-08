@@ -53,6 +53,31 @@ def get_service():
     return build("gmail", "v1", credentials=creds)
 
 
+def _extraer_correo(service, msg_id: str) -> dict:
+    msg_data = service.users().messages().get(userId="me", id=msg_id, format="full").execute()
+    headers = {h["name"]: h["value"] for h in msg_data["payload"].get("headers", [])}
+
+    body = ""
+    if "parts" in msg_data["payload"]:
+        for part in msg_data["payload"]["parts"]:
+            if part.get("mimeType") == "text/plain":
+                data = part["body"].get("data", "")
+                if data:
+                    body = base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
+                break
+    elif msg_data["payload"]["body"].get("data"):
+        body = base64.urlsafe_b64decode(msg_data["payload"]["body"]["data"]).decode("utf-8", errors="replace")
+
+    return {
+        "id": msg_id,
+        "from": headers.get("From", ""),
+        "subject": headers.get("Subject", ""),
+        "date": headers.get("Date", ""),
+        "snippet": msg_data.get("snippet", ""),
+        "body": body[:1000],
+    }
+
+
 def read_emails(max_results: int = 5, query: str = "") -> list[dict]:
     service = get_service()
     if not service:
@@ -60,33 +85,40 @@ def read_emails(max_results: int = 5, query: str = "") -> list[dict]:
 
     results = service.users().messages().list(userId="me", maxResults=max_results, q=query).execute()
     messages = results.get("messages", [])
-    emails = []
+    return [_extraer_correo(service, msg["id"]) for msg in messages]
 
-    for msg in messages:
-        msg_data = service.users().messages().get(userId="me", id=msg["id"], format="full").execute()
-        headers = {h["name"]: h["value"] for h in msg_data["payload"].get("headers", [])}
 
-        body = ""
-        if "parts" in msg_data["payload"]:
-            for part in msg_data["payload"]["parts"]:
-                if part.get("mimeType") == "text/plain":
-                    data = part["body"].get("data", "")
-                    if data:
-                        body = base64.urlsafe_b64decode(data).decode("utf-8", errors="replace")
-                    break
-        elif msg_data["payload"]["body"].get("data"):
-            body = base64.urlsafe_b64decode(msg_data["payload"]["body"]["data"]).decode("utf-8", errors="replace")
+def leer_gmail(max_results: int = 5, query: str = "") -> list[dict]:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return read_emails(max_results, query)
 
-        emails.append({
-            "id": msg["id"],
-            "from": headers.get("From", ""),
-            "subject": headers.get("Subject", ""),
-            "date": headers.get("Date", ""),
-            "snippet": msg_data.get("snippet", ""),
-            "body": body[:1000],
-        })
 
-    return emails
+def contar_correos(query: str = "") -> dict:
+    """Estimación barata (sin traer los correos) de cuántos coinciden con la
+    búsqueda — se usa para mostrarle al usuario "encontramos ~N correos"
+    antes de comprometerse a una importación histórica completa."""
+    service = get_service()
+    if not service:
+        return {"ok": False, "error": "Sin credenciales de Gmail configuradas", "estimado": 0}
+    resultado = service.users().messages().list(userId="me", maxResults=1, q=query).execute()
+    return {"ok": True, "estimado": resultado.get("resultSizeEstimate", 0)}
+
+
+def leer_gmail_paginado(query: str = "", cursor: str | None = None, tamano_pagina: int = 25) -> dict:
+    """Como leer_gmail, pero siguiendo la paginación real de Gmail (nextPageToken)
+    en vez de traer solo una página — necesario para importar el historial
+    completo, no solo los últimos N correos. Devuelve {mensajes, siguiente_cursor};
+    siguiente_cursor es None cuando ya no quedan más páginas."""
+    service = get_service()
+    if not service:
+        return {"mensajes": [], "siguiente_cursor": None}
+
+    kwargs = {"userId": "me", "maxResults": tamano_pagina, "q": query}
+    if cursor:
+        kwargs["pageToken"] = cursor
+    resultados = service.users().messages().list(**kwargs).execute()
+    mensajes = [_extraer_correo(service, m["id"]) for m in resultados.get("messages", [])]
+    return {"mensajes": mensajes, "siguiente_cursor": resultados.get("nextPageToken")}
 
 
 def main() -> int:

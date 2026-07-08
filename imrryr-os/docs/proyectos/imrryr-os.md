@@ -1,6 +1,6 @@
 # Estado del Proyecto: imrryr-os
 
-> Generado: 2026-07-04
+> Generado: 2026-07-05
 > Autodocumentación automática (scripts/autodoc.py)
 
 ## Tecnologías detectadas
@@ -9,7 +9,9 @@
 - JSON
 - JavaScript
 - Markdown
+- PowerShell
 - Python
+- Shell
 - YAML
 
 ## Commits recientes (últimas 24h)
@@ -23,6 +25,8 @@
 - dashboard/
 - docs/
 - gateway/
+- install.ps1
+- install.sh
 - mcp_server/
 - profiles/
 - requirements.txt
@@ -32,4 +36,4 @@
 - vault/
 
 ---
-_Actualizado: 2026-07-04 por Imrryr OS_
+_Actualizado: 2026-07-05 por Imrryr OS_

@@ -1,0 +1,37 @@
+{
+  "name": "guardar_oportunidad",
+  "description": "Registra una oportunidad de fondo concursable (no es un gasto). Usado por el Agente Investigador tras evaluar relevancia contra el Perfil de Negocio.",
+  "script": "skills/guardar_oportunidad.py",
+  "arguments": [
+    {
+      "name": "fuente",
+      "type": "string",
+      "description": "Portal de origen (ej. sercotec, corfo)",
+      "required": true
+    },
+    {
+      "name": "hallazgo",
+      "type": "string",
+      "description": "Descripción del fondo/convocatoria encontrada",
+      "required": true
+    },
+    {
+      "name": "monto_estimado",
+      "type": "string",
+      "description": "Monto de financiamiento estimado, si se conoce",
+      "required": false
+    },
+    {
+      "name": "fecha_cierre",
+      "type": "string",
+      "description": "Fecha límite de postulación, si se conoce",
+      "required": false
+    },
+    {
+      "name": "relevancia_nota",
+      "type": "string",
+      "description": "Nota del agente explicando por qué sirve (o no) para este negocio, según el Perfil de Negocio",
+      "required": false
+    }
+  ]
+}

@@ -4,7 +4,10 @@ descripcion: >
   scraping diario en portales públicos para detectar nuevas convocatorias.
 herramientas_permitidas:
   - scraper_fondos
-  - inyectar_gasto
+  - guardar_oportunidad
+  - listar_oportunidades
+  - cambiar_estado_oportunidad
+  - leer_perfil_negocio
 cron: "0 8 * * *"
-modelo_preferido: gemini-flash
+modelo_preferido: imrryr-activo
 activo: true

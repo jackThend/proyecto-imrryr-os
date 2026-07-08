@@ -45,6 +45,18 @@ def generar_ics(titulo: str, fecha: date, hora: str = "09:00", duracion_min: int
     return "\r\n".join(lines)
 
 
+def crear_evento(
+    titulo: str,
+    fecha: str | None = None,
+    hora: str = "09:00",
+    duracion: int = 60,
+    descripcion: str = "",
+) -> dict:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    fecha_obj = date.fromisoformat(fecha) if fecha else date.today()
+    return {"archivo": generar_ics(titulo, fecha_obj, hora, duracion, False, descripcion)}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Genera archivos .ics de calendario")
     ap.add_argument("--titulo", type=str, required=True)

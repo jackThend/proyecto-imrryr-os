@@ -63,6 +63,11 @@ def consultar(query: str, n_resultados: int = 5) -> list[dict]:
     return fragmentos
 
 
+def consultar_memoria_vectorial(query: str, n: int = 5) -> list[dict]:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py)."""
+    return consultar(query, n)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Consulta la memoria vectorial (ChromaDB)")
     ap.add_argument("--query", type=str, required=True)

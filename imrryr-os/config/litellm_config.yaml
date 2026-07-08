@@ -34,6 +34,13 @@ model_list:
   #     model: ollama/qwen2.5
   #     api_base: os.environ/OLLAMA_HOST
 
+  # --- IMRRYR-ACTIVO (autogenerado por Cuentas de IA, no editar a mano) ---
+  - model_name: imrryr-activo
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      api_key: os.environ/IMRRYR_ACTIVE_API_KEY
+  # --- FIN IMRRYR-ACTIVO ---
+
 litellm_settings:
   drop_params: true
   telemetry: false                   # privacidad: no reportar uso a LiteLLM

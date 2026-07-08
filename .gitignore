@@ -11,6 +11,13 @@
 .env.*
 !.env.example
 imrryr-os/gateway/gateway_config.json
+imrryr-os/config/perfil_negocio.json
+imrryr-os/config/gmail_credentials.json
+imrryr-os/config/gmail_token.pickle
+imrryr-os/config/gmail_secretario_credentials.json
+imrryr-os/config/gmail_secretario_token.pickle
+imrryr-os/correo/cuentas.json
+imrryr-os/config/cuentas_ia.json
 
 # --- Fork de OpenCode (se gestiona en su propio repo) ---
 opencode/

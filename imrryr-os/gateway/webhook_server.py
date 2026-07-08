@@ -299,6 +299,37 @@ def _texto_a_audio(texto: str) -> str | None:
 # ---------------------------------------------------------------------------
 # Puente con OpenCode
 # ---------------------------------------------------------------------------
+def _esperar_texto_final(port: int, headers: dict, sid: str, intentos: int = 8, espera: float = 1.5) -> str:
+    """Cuando el agente encadena llamadas a herramientas (tool -> tool -> texto),
+    el POST /session/{id}/message puede devolver antes de que el mensaje final
+    con texto exista todavía — la acción de las herramientas ya se ejecutó, solo
+    falta que redacte la respuesta. Se sondea la sesión unos segundos hasta
+    encontrar el último turno del asistente con texto."""
+    import time
+
+    import httpx
+
+    for _ in range(intentos):
+        r = httpx.get(
+            f"http://localhost:{port}/session/{sid}/message",
+            headers=headers,
+            params={"order": "desc", "limit": 5},
+            timeout=15,
+        )
+        r.raise_for_status()
+        cuerpo = r.json()
+        mensajes = cuerpo.get("data", []) if isinstance(cuerpo, dict) else cuerpo
+        for msg in mensajes:
+            if msg.get("info", {}).get("role") != "assistant":
+                continue
+            texto = "".join(p.get("text", "") for p in msg.get("parts", []) if p.get("type") == "text")
+            if texto:
+                return texto
+            break
+        time.sleep(espera)
+    return ""
+
+
 def _reenviar_a_opencode(texto: str) -> str:
     """Reenvía el texto al motor de OpenCode y devuelve la respuesta del agente.
 
@@ -339,7 +370,10 @@ def _reenviar_a_opencode(texto: str) -> str:
         )
         r.raise_for_status()
         data = r.json()
-        return "".join(p.get("text", "") for p in data.get("parts", []) if p.get("type") == "text")
+        respuesta = "".join(p.get("text", "") for p in data.get("parts", []) if p.get("type") == "text")
+        if not respuesta:
+            respuesta = _esperar_texto_final(port, headers, sid)
+        return respuesta
     except Exception as e:
         log.warning(f"No se pudo reenviar a OpenCode: {e}")
         return ""

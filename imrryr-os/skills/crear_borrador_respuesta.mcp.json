@@ -1,0 +1,12 @@
+{
+  "name": "crear_borrador_respuesta",
+  "description": "Redacta una respuesta y la deja como BORRADOR PENDIENTE DE APROBACIÓN — nunca la envía. El usuario la revisa y la envía con un clic desde el dashboard.",
+  "script": "skills/secretario.py",
+  "arguments": [
+    {"name": "cuenta_id", "type": "string", "description": "ID de la cuenta configurada", "required": true},
+    {"name": "destinatario", "type": "string", "description": "Email del destinatario", "required": true},
+    {"name": "cuerpo", "type": "string", "description": "Texto de la respuesta redactada", "required": true},
+    {"name": "asunto", "type": "string", "description": "Asunto del correo", "required": false},
+    {"name": "mensaje_id_original", "type": "string", "description": "ID del correo al que responde, si aplica", "required": false}
+  ]
+}

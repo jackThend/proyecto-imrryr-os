@@ -113,6 +113,23 @@ def _notificar(mensaje: str):
         log(f"No se pudo notificar (¿está corriendo el gateway en :5050?): {e}")
 
 
+def recordatorios(
+    crear: str | None = None,
+    cuando: str | None = None,
+    ejecutar: bool = False,
+    listar: bool = False,
+) -> dict:
+    """Punto de entrada MCP (nombre = nombre de la skill, ver mcp_server/skills_server.py).
+    Crea, lista o dispara recordatorios pendientes según qué parámetros vengan."""
+    if crear and cuando:
+        return {"creado": crear_recordatorio(crear, cuando)}
+    if ejecutar:
+        return {"disparados": ejecutar_vencidos()}
+    if listar:
+        return {"pendientes": listar_pendientes()}
+    return {"error": "especifica crear+cuando, ejecutar=true o listar=true"}
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Gestor de recordatorios")
     ap.add_argument("--crear", type=str, help="Mensaje del recordatorio")

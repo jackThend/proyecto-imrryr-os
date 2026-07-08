@@ -1,0 +1,8 @@
+{
+  "name": "listar_semillas",
+  "description": "Lista las ideas guardadas, opcionalmente filtradas por estado (idea, desarrollada, proyecto, archivada). Úsalo para conocer el banco de ideas antes de discutirlas con el usuario.",
+  "script": "skills/semillas.py",
+  "arguments": [
+    {"name": "estado", "type": "string", "description": "Filtrar por estado (vacío = todas)", "required": false}
+  ]
+}

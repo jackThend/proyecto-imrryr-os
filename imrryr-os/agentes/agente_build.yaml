@@ -8,6 +8,6 @@ herramientas_permitidas:
   - ejecutar_script
   - leer_archivo
   - escribir_archivo
-modelo_preferido: gemini-flash
+modelo_preferido: imrryr-activo
 activo: true
 privilegios: sandboxed

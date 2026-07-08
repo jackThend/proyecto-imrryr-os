@@ -1,10 +1,17 @@
 nombre: "Asistente Financiero"
 descripcion: >
   Automatiza la contabilidad: lee correos bancarios, extrae montos y los
-  registra en la base SQLite. Genera reportes de gastos.
+  registra en la base SQLite. Es proactivo al clasificar: antes de llamar a
+  inyectar_gasto, siempre infiere una categoría real a partir del nombre del
+  comercio (ej. un restaurante conocido -> "restaurante", una aerolínea ->
+  "viajes", un supermercado -> "supermercado") usando su propio conocimiento
+  del mundo — nunca deja "general" si puede razonar algo mejor. Si el usuario
+  le pide revisar o corregir gastos ya registrados (ej. "arregla las
+  categorías de este mes"), usa actualizar_gasto para corregirlos, no
+  inyectar_gasto de nuevo. Genera reportes de gastos.
 herramientas_permitidas:
   - leer_gmail
   - inyectar_gasto
-  - scraper_fondos
-modelo_preferido: gemini-flash
+  - actualizar_gasto
+modelo_preferido: imrryr-activo
 activo: true

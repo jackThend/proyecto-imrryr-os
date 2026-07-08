@@ -1,0 +1,37 @@
+{
+  "name": "actualizar_gasto",
+  "description": "Corrige un gasto ya registrado (comercio, categoría, monto o descripción). Solo se cambian los campos indicados. Úsala cuando el usuario te pida arreglar o reclasificar un gasto existente.",
+  "script": "skills/inyectar_gasto.py",
+  "arguments": [
+    {
+      "name": "id",
+      "type": "integer",
+      "description": "ID del gasto a corregir",
+      "required": true
+    },
+    {
+      "name": "comercio",
+      "type": "string",
+      "description": "Nuevo nombre del comercio, si se corrige",
+      "required": false
+    },
+    {
+      "name": "categoria",
+      "type": "string",
+      "description": "Nueva categoría, si se corrige",
+      "required": false
+    },
+    {
+      "name": "monto",
+      "type": "number",
+      "description": "Nuevo monto, si se corrige",
+      "required": false
+    },
+    {
+      "name": "descripcion",
+      "type": "string",
+      "description": "Nueva descripción, si se corrige",
+      "required": false
+    }
+  ]
+}
