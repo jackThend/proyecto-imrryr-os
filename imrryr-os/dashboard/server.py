@@ -70,6 +70,8 @@ Endpoints:
     GET  /api/agenda/eventos?rango=hoy|semana|mes → Lista eventos activos (sin pasar por el LLM)
     POST /api/agenda/eventos                  → Crea un evento nuevo (avisos: "08:00,17:00")
     POST /api/agenda/eventos/{id}/cancelar    → Cancela un evento
+    GET  /api/navegacion/ultimo-audio     → Último audio TTS generado (para reproducirlo)
+    POST /api/navegacion/transcribir      → Sube audio del micrófono, devuelve texto (Whisper local)
     GET  /api/pendientes                  → Lista la lista de pendientes
     POST /api/pendientes                  → Crea un pendiente
     POST /api/pendientes/{id}/hecho       → Marca (des)hecho un pendiente
@@ -83,6 +85,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 from pathlib import Path
 
@@ -591,6 +594,7 @@ ICONOS_POR_MODULO = {
     "agente_financiero": "chart", "agente_creativo": "bulb", "agente_crm": "users",
     "agente_investigador": "trophy", "agente_secretario": "mail", "guardia_seguridad": "shield",
     "agente_rrss_web": "globe", "agente_compras": "cart", "agente_agenda": "calendar",
+    "agente_navegacion": "search",
 }
 DESCRIPCION_DATOS_POR_MODULO = {
     "agente_financiero": "Gastos registrados y el progreso de importación bancaria (tablas gastos, importaciones).",
@@ -600,6 +604,7 @@ DESCRIPCION_DATOS_POR_MODULO = {
     "agente_rrss_web": "Posts programados para redes sociales (tabla posts_programados). Las credenciales de GitHub/Meta se gestionan en Ajustes y no se borran con el módulo.",
     "agente_compras": "Productos en seguimiento y ofertas encontradas (tablas productos_seguimiento, ofertas_encontradas).",
     "agente_agenda": "Eventos agendados (tabla eventos). Los recordatorios puntuales siguen en la tabla recordatorios, compartida con otras funciones del sistema.",
+    "agente_navegacion": "No guarda datos propios — solo el último audio generado (archivo temporal, se reemplaza en cada lectura).",
 }
 TABLAS_POR_MODULO = {
     "agente_financiero": ["gastos", "importaciones"],
@@ -609,6 +614,7 @@ TABLAS_POR_MODULO = {
     "agente_rrss_web": ["posts_programados"],
     "agente_compras": ["productos_seguimiento", "ofertas_encontradas"],
     "agente_agenda": ["eventos"],
+    "agente_navegacion": [],
 }
 
 
@@ -839,6 +845,32 @@ async def eliminar_pendiente_endpoint(pendiente_id: int):
 async def cancelar_evento_agenda(evento_id: int):
     from skills.agenda import agenda as agenda_skill
     return agenda_skill(accion="cancelar", evento_id=evento_id)
+
+
+ULTIMO_AUDIO_PATH = ROOT / "config" / "ultimo_audio.json"
+AUDIOS_TEMP_DIR = ROOT / "vault" / "audios_temp"
+
+
+@app.get("/api/navegacion/ultimo-audio")
+async def get_ultimo_audio():
+    if not ULTIMO_AUDIO_PATH.exists():
+        return {"url": None}
+    return json.loads(ULTIMO_AUDIO_PATH.read_text(encoding="utf-8"))
+
+
+@app.post("/api/navegacion/transcribir")
+async def transcribir_audio_navegacion(archivo: UploadFile = File(...)):
+    from skills.transcribir_audio import transcribir
+
+    AUDIOS_TEMP_DIR.mkdir(parents=True, exist_ok=True)
+    extension = Path(archivo.filename).suffix or ".webm"
+    ruta_temp = AUDIOS_TEMP_DIR / f"grabacion_{int(time.time() * 1000)}{extension}"
+    ruta_temp.write_bytes(await archivo.read())
+    try:
+        texto = transcribir(str(ruta_temp))
+        return {"ok": True, "texto": texto}
+    finally:
+        ruta_temp.unlink(missing_ok=True)
 
 
 COMPRAS_PREFS_PATH = ROOT / "config" / "compras_prefs.json"

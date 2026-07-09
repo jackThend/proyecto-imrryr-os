@@ -1,0 +1,19 @@
+{
+  "name": "leer_en_voz",
+  "description": "Convierte texto a audio para que el dashboard lo reproduzca en voz alta",
+  "script": "skills/leer_en_voz.py",
+  "arguments": [
+    {
+      "name": "texto",
+      "type": "string",
+      "description": "Texto a leer en voz alta",
+      "required": true
+    },
+    {
+      "name": "voz",
+      "type": "string",
+      "description": "Locale de voz: es-CL, es-ES, es-MX, en-US (default es-CL)",
+      "required": false
+    }
+  ]
+}

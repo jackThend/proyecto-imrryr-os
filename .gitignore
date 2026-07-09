@@ -72,6 +72,11 @@ imrryr-os/semillas/**/*.md
 imrryr-os/dashboard/static/fondos/*
 !imrryr-os/dashboard/static/fondos/.gitkeep
 
+# --- Audios TTS generados por el módulo de Navegación ---
+imrryr-os/dashboard/static/audios/*
+!imrryr-os/dashboard/static/audios/.gitkeep
+imrryr-os/config/ultimo_audio.json
+
 # --- Logs / temporales / PID ---
 *.log
 logs/

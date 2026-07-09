@@ -7,25 +7,36 @@ markup, bloqueo anti-bot), no debe tumbar la consulta a las otras.
 
 Estado real verificado durante el desarrollo (no todas las tiendas quedaron
 igual de confiables — se documenta acá para no sorprender más adelante):
-  - Falabella: funciona. Sirve HTML con los resultados ya renderizados en el
-    servidor (data-pod="catalyst-pod"), con precio, marca y título en
-    atributos estables.
+  - Falabella: funciona con el método rápido (httpx). Sirve HTML con los
+    resultados ya renderizados en el servidor (data-pod="catalyst-pod"), con
+    precio, marca y título en atributos estables. No necesita navegador.
   - MercadoLibre: bloqueado. Tanto pedir la página de listado como su API
     pública de búsqueda (api.mercadolibre.com/sites/MLC/search) devuelven
     403 a peticiones anónimas — MercadoLibre lo cerró detrás de una app/token
-    autenticado. Sin credenciales de su Developer Program esto no funciona;
-    queda como best-effort (devuelve lista vacía) hasta que se agregue esa
-    integración.
-  - Paris: su página de búsqueda es una SPA que renderiza los productos por
-    JavaScript en el cliente — el HTML que llega por HTTP no trae productos
-    todavía ("Has visto 0 de 0 productos"). Scrapearlo de verdad requeriría
-    un navegador headless (Playwright), que este proyecto no usa hoy. Queda
-    como best-effort.
-  - Ripley: devuelve 403 (bloqueo anti-bot) incluso con headers de navegador
-    real. Queda como best-effort.
+    autenticado. Un navegador headless no cambia esto (es un bloqueo de
+    cuenta/token, no de JavaScript); queda como best-effort sin importar el
+    método.
+  - Ripley: httpx directo devuelve 403 (bloqueo anti-bot por fingerprint,
+    no un desafío tipo Cloudflare — se verificó que no hay challenge, solo
+    rechaza clientes no-navegador). Con Playwright (navegador headless real)
+    la página SÍ carga con código 200 y trae los resultados completos
+    embebidos en su JSON de Next.js (__NEXT_DATA__ →
+    props.pageProps.findabilityProps.data.products) — se probó en vivo y
+    trajo 58 productos reales con precio. Por eso Ripley SÍ tiene fallback
+    con navegador (usar_navegador=True), y es el método recomendado para
+    esta tienda en particular.
+  - Paris: su página de búsqueda no trae productos ni siquiera con
+    Playwright — se probó en vivo (navegador real, esperando a que la red
+    quede en reposo) y la página renderiza "0 de 0 productos". No hay ni
+    siquiera un intento de llamada a una API de búsqueda en la red capturada,
+    lo que sugiere que su buscador necesita un paso previo (selección de
+    tienda/despacho, cookie de sesión, etc.) que un navegador "en frío" no
+    dispara. Un navegador headless no resuelve este caso hoy; queda como
+    best-effort igual que el método rápido.
 
 Uso:
     python skills/scraper_tiendas.py --producto "notebook" --tiendas falabella,mercadolibre
+    python skills/scraper_tiendas.py --producto "notebook" --tiendas ripley --usar-navegador
 """
 from __future__ import annotations
 
@@ -156,6 +167,51 @@ def _buscar_ripley(query: str) -> list[dict[str, Any]]:
     return resultados
 
 
+def _buscar_ripley_navegador(query: str) -> list[dict[str, Any]]:
+    """Fallback con Playwright — httpx recibe 403 de Ripley, pero un navegador
+    headless real sí pasa, y la página trae los productos ya armados en su
+    JSON de Next.js (mucho más confiable que parsear selectores CSS)."""
+    resultados: list[dict[str, Any]] = []
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        log("Ripley (navegador) falló: playwright no está instalado")
+        return resultados
+
+    url = f"https://simple.ripley.cl/search/{quote(query)}?source=search"
+    try:
+        with sync_playwright() as p:
+            navegador = p.chromium.launch(headless=True)
+            try:
+                pagina = navegador.new_page(user_agent=HEADERS["User-Agent"])
+                pagina.goto(url, wait_until="domcontentloaded", timeout=25000)
+                pagina.wait_for_timeout(3000)
+                html = pagina.content()
+            finally:
+                navegador.close()
+
+        m = re.search(r'<script id="__NEXT_DATA__" type="application/json">(.*?)</script>', html, re.S)
+        if not m:
+            log("Ripley (navegador) falló: no se encontró __NEXT_DATA__ en la página")
+            return resultados
+        data = json.loads(m.group(1))
+        productos = (
+            data.get("props", {}).get("pageProps", {})
+            .get("findabilityProps", {}).get("data", {}).get("products", [])
+        )
+        for p in productos:
+            sku = p.get("sku", "")
+            resultados.append({
+                "titulo": p.get("name") or p.get("description") or "",
+                "precio": float(p.get("priceNumber") or 0) or None,
+                "url": f"https://simple.ripley.cl/p/{sku}" if sku else url,
+            })
+        resultados = [r for r in resultados if r["precio"]]
+    except Exception as e:
+        log(f"Ripley (navegador) falló: {e}")
+    return resultados
+
+
 _BUSCADORES = {
     "falabella": _buscar_falabella,
     "mercadolibre": _buscar_mercadolibre,
@@ -163,12 +219,30 @@ _BUSCADORES = {
     "ripley": _buscar_ripley,
 }
 
+# Tiendas para las que existe un fallback con navegador headless, y que de
+# verdad cambia el resultado (Paris/MercadoLibre no mejoran con Playwright —
+# ver docstring — así que no tiene sentido pagar el costo de abrir un
+# navegador para ellas).
+_BUSCADORES_NAVEGADOR = {
+    "ripley": _buscar_ripley_navegador,
+}
 
-def scraper_tiendas(producto: str, tiendas: str = "mercadolibre,falabella,paris,ripley") -> dict:
+
+def scraper_tiendas(producto: str, tiendas: str = "mercadolibre,falabella,paris,ripley", usar_navegador: bool = False) -> dict:
     """Punto de entrada MCP. Devuelve {tienda: [ofertas...]} — el fallo de una
-    tienda no impide devolver resultados de las demás."""
+    tienda no impide devolver resultados de las demás.
+
+    usar_navegador=True: para las tiendas donde el método rápido (httpx) está
+    bloqueado pero SÍ existe un fallback con navegador headless que funciona
+    de verdad (hoy solo Ripley), usa ese en vez del método rápido. Es más
+    lento (abre un Chromium real) — pensado para ofrecerlo como opción
+    cuando el método rápido no trajo resultados, no como default.
+    """
     resultado: dict[str, list[dict[str, Any]]] = {}
     for tienda in [t.strip() for t in tiendas.split(",") if t.strip()]:
+        if usar_navegador and tienda in _BUSCADORES_NAVEGADOR:
+            resultado[tienda] = _BUSCADORES_NAVEGADOR[tienda](producto)
+            continue
         buscador = _BUSCADORES.get(tienda)
         if not buscador:
             resultado[tienda] = []
@@ -181,8 +255,9 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Busca un producto en tiendas chilenas")
     ap.add_argument("--producto", type=str, required=True)
     ap.add_argument("--tiendas", type=str, default="mercadolibre,falabella,paris,ripley")
+    ap.add_argument("--usar-navegador", action="store_true", dest="usar_navegador")
     args = ap.parse_args()
-    print(scraper_tiendas(args.producto, args.tiendas))
+    print(scraper_tiendas(args.producto, args.tiendas, args.usar_navegador))
     return 0
 
 

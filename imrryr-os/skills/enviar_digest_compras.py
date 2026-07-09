@@ -50,7 +50,11 @@ def _prefs() -> dict:
 
 
 def _revisar_seguimiento(conn: sqlite3.Connection, fila: sqlite3.Row) -> list[dict]:
-    resultados = scraper_tiendas(fila["producto"], fila["tiendas"])
+    # usar_navegador=True: esto corre 1 vez al día en segundo plano (no hay
+    # usuario esperando la respuesta), así que conviene usar siempre el
+    # método más completo disponible por tienda (hoy le suma Ripley, que con
+    # el método rápido no trae nada).
+    resultados = scraper_tiendas(fila["producto"], fila["tiendas"], usar_navegador=True)
     nuevas = []
     for tienda, ofertas in resultados.items():
         for oferta in ofertas:

@@ -188,6 +188,10 @@
   }
   .chat-box button:disabled { opacity: 0.5; cursor: not-allowed; }
   .chat-box button:not(:disabled):hover { opacity: 0.85; }
+  .chat-box button[id^="micBtn_"] { background: var(--surface2); padding: 7px 10px; }
+  .chat-box button[id^="micBtn_"] .icon { vertical-align: -2px; }
+  .chat-box button[id^="micBtn_"].grabando { background: var(--red); animation: micPulse 1s ease-in-out infinite; }
+  @keyframes micPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.5); } 50% { box-shadow: 0 0 0 6px rgba(255,107,107,0); } }
 
   .seed-item {
     padding: 5px 0; border-bottom: 1px solid var(--border);
@@ -641,6 +645,8 @@
   <symbol id="icon-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.8 2.4 4.2 5.6 4.2 9s-1.4 6.6-4.2 9c-2.8-2.4-4.2-5.6-4.2-9s1.4-6.6 4.2-9z"/><circle class="icon-accent-dot" cx="18.5" cy="7" r="1.1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="icon-cart" viewBox="0 0 24 24"><path d="M3 4h2l2.4 11.2A2 2 0 0 0 9.35 17H18a2 2 0 0 0 1.96-1.6L21 8H6"/><circle cx="9.5" cy="20" r="1.3"/><circle cx="17.5" cy="20" r="1.3"/><circle class="icon-accent-dot" cx="17" cy="11" r="1.1" fill="currentColor" stroke="none"/></symbol>
   <symbol id="icon-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><circle class="icon-accent-dot" cx="12" cy="15.5" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M20 20l-5.2-5.2"/><circle class="icon-accent-dot" cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="icon-mic" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/><path d="M9 21h6"/><circle class="icon-accent-dot" cx="12" cy="8" r="1" fill="currentColor" stroke="none"/></symbol>
 </svg>
 
 <div class="header">
@@ -815,6 +821,16 @@
   </div>
 </div>
 
+<div class="view" id="view-navegacion">
+  <div class="app-title-row"><svg class="icon-lg"><use href="#icon-search"/></svg><h2>Navegación</h2></div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="navegacion"></div>
+    <div class="app-main">
+      <p style="font-size:12px;color:var(--text-dim)">Pídele que busque algo, que abra una página y te resuma qué dice, o que te lo lea en voz alta (aparece un reproductor abajo del chat) — escribiendo o grabando tu voz con el botón del micrófono. Ej: "búscame noticias de tecnología y léemelas".</p>
+    </div>
+  </div>
+</div>
+
 <div class="view" id="view-ajustes">
   <div class="app-title-row"><svg class="icon-lg"><use href="#icon-gear"/></svg><h2>Ajustes</h2></div>
   <div class="app-toolbar" style="margin:0 16px 12px">
@@ -858,6 +874,7 @@ const APPS = [
   { id: 'rrss', nombre: 'RRSS y Web', icono: 'globe', agente: 'rrss_web', chatLabel: 'Agente RRSS y Web', ayuda: 'Actualiza tu sitio web por GitHub y programa publicaciones en Instagram y Facebook.' },
   { id: 'compras', nombre: 'Compras', icono: 'cart', agente: 'compras', chatLabel: 'Agente de Compras', ayuda: 'Sigue el precio de productos en tiendas chilenas y te avisa por correo cuando encuentra ofertas.' },
   { id: 'agenda', nombre: 'Agenda', icono: 'calendar', agente: 'agenda', chatLabel: 'Agente de Agenda', ayuda: 'Agenda tus actividades y te dice qué tienes hoy, mañana o esta semana — puede avisarte por WhatsApp si se lo pides.' },
+  { id: 'navegacion', nombre: 'Navegación', icono: 'search', agente: 'navegacion', chatLabel: 'Agente de Navegación', ayuda: 'Busca y lee contenido web, y te lo puede leer en voz alta mientras trabajas en otra parte del sistema.' },
   { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
   { id: 'modulos', nombre: 'Módulos', icono: 'modulos', agente: null, ayuda: 'Activa, desactiva o elimina agentes — protegido con contraseña.' },
 ];
@@ -879,16 +896,87 @@ function montarChatPanels() {
   document.querySelectorAll('.app-chat-panel[data-app]').forEach(panel => {
     const app = appPorId(panel.dataset.app);
     if (!app || !app.agente) return;
+    const micBtn = app.id === 'navegacion'
+      ? `<button id="micBtn_${app.id}" onclick="toggleGrabacionMic('${app.id}')" title="Grabar voz" data-ayuda="Graba tu voz y la transcribe para pedírselo al agente sin escribir."><svg class="icon"><use href="#icon-mic"/></svg></button>`
+      : '';
+    const audioPlayer = app.id === 'navegacion' ? `<div id="audioPlayer_${app.id}" style="margin-top:8px"></div>` : '';
     panel.innerHTML = `
       <span class="widget-title">${app.chatLabel}</span>
       <div class="chat-area">
         <div class="chat-msgs" id="chatMsgs_${app.id}"></div>
         <div class="chat-box">
           <input type="text" id="chatInp_${app.id}" placeholder="Escribe un mensaje..." autocomplete="off">
+          ${micBtn}
           <button id="chatBtn_${app.id}">Enviar</button>
         </div>
+        ${audioPlayer}
       </div>`;
   });
+}
+
+// --- Micrófono (módulo de Navegación): graba, transcribe con Whisper local y envía ---
+let grabadorMicActivo = null;
+let chunksGrabacionMic = [];
+
+async function toggleGrabacionMic(appId) {
+  const btn = document.getElementById('micBtn_' + appId);
+  if (grabadorMicActivo && grabadorMicActivo.state === 'recording') {
+    grabadorMicActivo.stop();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    grabadorMicActivo = new MediaRecorder(stream);
+    chunksGrabacionMic = [];
+    grabadorMicActivo.ondataavailable = e => chunksGrabacionMic.push(e.data);
+    grabadorMicActivo.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      btn.classList.remove('grabando');
+      const blob = new Blob(chunksGrabacionMic, { type: 'audio/webm' });
+      await transcribirYEnviarMic(appId, blob);
+    };
+    grabadorMicActivo.start();
+    btn.classList.add('grabando');
+  } catch (e) {
+    mostrarToast('No se pudo acceder al micrófono: ' + e.message, 'error');
+  }
+}
+
+async function transcribirYEnviarMic(appId, blob) {
+  const inp = document.getElementById('chatInp_' + appId);
+  const placeholderOriginal = inp.placeholder;
+  inp.placeholder = 'Transcribiendo...';
+  inp.disabled = true;
+  try {
+    const formData = new FormData();
+    formData.append('archivo', blob, 'grabacion.webm');
+    const r = await fetch('/api/navegacion/transcribir', { method: 'POST', body: formData });
+    const d = await r.json();
+    inp.disabled = false;
+    if (d.ok && d.texto && d.texto.trim()) {
+      inp.value = d.texto.trim();
+      enviarChatGenerico(appId, 'navegacion');
+    } else {
+      mostrarToast('No se entendió el audio, intenta de nuevo', 'error');
+    }
+  } catch (e) {
+    inp.disabled = false;
+    mostrarToast('Error transcribiendo: ' + e.message, 'error');
+  } finally {
+    inp.placeholder = placeholderOriginal;
+  }
+}
+
+async function revisarUltimoAudioNavegacion() {
+  const el = document.getElementById('audioPlayer_navegacion');
+  if (!el) return;
+  try {
+    const r = await fetch('/api/navegacion/ultimo-audio');
+    const d = await r.json();
+    if (!d.url || el.dataset.url === d.url) return;
+    el.dataset.url = d.url;
+    el.innerHTML = `<audio controls autoplay src="${d.url}" style="width:100%"></audio>`;
+  } catch (e) { /* silencioso: no interrumpir el chat por esto */ }
 }
 
 function initChat(appId, agente, onSuccess) {
@@ -982,6 +1070,7 @@ function inicializarVista(id) {
     case 'rrss': initChat('rrss', 'rrss_web', cargarRrssView); break;
     case 'compras': initChat('compras', 'compras', cargarComprasView); break;
     case 'agenda': initChat('agenda', 'agenda', cargarAgendaView); break;
+    case 'navegacion': initChat('navegacion', 'navegacion', revisarUltimoAudioNavegacion); break;
   }
 }
 
@@ -1006,7 +1095,7 @@ function cargarVista(id) {
 // igual que el tema o el modo ayuda — no hace falta ida y vuelta al servidor). ---
 const INICIO_PREFS_DEFAULT = {
   hero: ['correo', 'oportunidades', 'ideas'],
-  secundaria: ['finanzas', 'crm', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda'],
+  secundaria: ['finanzas', 'crm', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda', 'navegacion'],
 };
 
 function leerInicioPrefs() {
@@ -1027,7 +1116,7 @@ const HERO_LOADERS = { correo: cargarHeroCorreoImpl, oportunidades: cargarHeroOp
 const SECUNDARIA_SUB_ESTATICO = {
   crm: 'Clientes y propuestas', ajustes: 'WhatsApp y Perfil de Negocio', seguridad: 'Observabilidad del sistema',
   modulos: 'Gestiona tus agentes', rrss: 'GitHub + Instagram/Facebook', compras: 'Cotizador de productos',
-  agenda: 'Tus actividades del día',
+  agenda: 'Tus actividades del día', navegacion: 'Busca y lee la web en voz alta',
 };
 const SECUNDARIA_LOADERS = { finanzas: cargarMiniFinanzasImpl };
 

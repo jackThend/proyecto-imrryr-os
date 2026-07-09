@@ -1,0 +1,37 @@
+{
+  "name": "navegar_web",
+  "description": "Busca en la web (DuckDuckGo) o abre y lee el contenido principal de una URL (navegador headless)",
+  "script": "skills/navegar_web.py",
+  "arguments": [
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "buscar | leer",
+      "required": true
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "description": "Término de búsqueda (para 'buscar')",
+      "required": false
+    },
+    {
+      "name": "url",
+      "type": "string",
+      "description": "URL a abrir y leer (para 'leer')",
+      "required": false
+    },
+    {
+      "name": "max_resultados",
+      "type": "integer",
+      "description": "Máximo de resultados de búsqueda a devolver, default 5",
+      "required": false
+    },
+    {
+      "name": "max_caracteres",
+      "type": "integer",
+      "description": "Máximo de caracteres de texto a extraer al leer, default 4000",
+      "required": false
+    }
+  ]
+}

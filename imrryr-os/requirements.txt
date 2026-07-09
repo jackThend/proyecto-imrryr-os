@@ -37,6 +37,13 @@ pymupdf>=1.24.0
 # --- Web scraping (Fase 3.1, Tanda Q: scraper_tiendas.py) ---
 beautifulsoup4>=4.12.0
 
+# --- Navegador headless (Tanda W: skills/navegar_web.py, y fallback opcional
+# en scraper_tiendas.py para tiendas que renderizan por JavaScript) ---
+# Primera dependencia "pesada" del proyecto: además de este paquete, hace
+# falta correr una vez `python -m playwright install chromium` para bajar
+# el binario del navegador (~110MB) — no ocurre solo con pip install.
+playwright>=1.47.0
+
 # --- Text-to-Speech local (Fase 3.2, skills/tts_local.py) ---
 edge-tts>=6.1.0
 pyttsx3>=2.90

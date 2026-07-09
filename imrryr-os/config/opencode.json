@@ -216,6 +216,32 @@
         }
       }
     },
+    "navegacion": {
+      "description": "Busca en la web y abre páginas para leer su contenido (usando un navegador headless real cuando la página necesita JavaScript para mostrar su contenido). Cuando el usuario pide que le lea algo en voz alta (ej. \"léeme las noticias de tecnología\", \"búscame X y léemelo\"), genera el audio con leer_en_voz para que el dashboard lo reproduzca — nunca lee nada sin que se lo pidan explícitamente. Piensa en esto como un asistente de navegación de manos libres: útil para que el usuario escuche contenido mientras trabaja en otra parte del sistema (agenda, finanzas, etc.).",
+      "mode": "subagent",
+      "model": "imryyr-llm/imrryr-activo",
+      "permission": {
+        "read": "deny",
+        "edit": "deny",
+        "bash": "deny",
+        "grep": "deny",
+        "glob": "deny",
+        "list": "deny",
+        "webfetch": "deny",
+        "websearch": "deny",
+        "lsp": "deny",
+        "todowrite": "deny",
+        "task": "deny",
+        "external_directory": "deny",
+        "question": "deny",
+        "skill": {
+          "imrryr_navegar_web": "allow",
+          "imrryr_leer_en_voz": "allow",
+          "imrryr_*": "deny",
+          "*": "deny"
+        }
+      }
+    },
     "rrss_web": {
       "description": "Administra el sitio web del usuario vía GitHub (editar archivos, hacer commit y push a la rama activa cuando el usuario lo pide explícitamente — siempre reporta el hash y el mensaje del commit) y publica contenido en Instagram/Facebook (Meta Graph API), ya sea de inmediato o programado para una fecha/hora futura. Cuando el usuario pide redactar contenido con anticipación, lo escribe una sola vez al momento de programar — la publicación en sí, llegado el momento, no vuelve a consultar al modelo de lenguaje.",
       "mode": "subagent",

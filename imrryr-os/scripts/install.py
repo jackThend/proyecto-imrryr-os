@@ -118,6 +118,17 @@ def install_deps() -> bool:
         log(f"ERROR instalando dependencias: {result.stderr[-500:]}")
         return False
     log("Dependencias instaladas")
+
+    log("Descargando Chromium para Playwright (navegador headless, ~110MB, una sola vez)...")
+    python_exe = str(venv_dir / "Scripts" / "python.exe") if os.name == "nt" else str(venv_dir / "bin" / "python")
+    resultado_pw = subprocess.run(
+        [python_exe, "-m", "playwright", "install", "chromium"],
+        capture_output=True, text=True, timeout=300,
+    )
+    if resultado_pw.returncode != 0:
+        log(f"WARN: no se pudo instalar Chromium para Playwright: {resultado_pw.stderr[-500:]} — el módulo de Navegación no funcionará hasta correr 'python -m playwright install chromium' a mano")
+    else:
+        log("Chromium instalado")
     return True
 
 

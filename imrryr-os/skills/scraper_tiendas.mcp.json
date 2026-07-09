@@ -1,6 +1,6 @@
 {
   "name": "scraper_tiendas",
-  "description": "Busca un producto en tiendas chilenas (Falabella funciona bien; MercadoLibre/Paris/Ripley son best-effort, ver docstring)",
+  "description": "Busca un producto en tiendas chilenas (Falabella funciona bien con el método rápido; Ripley funciona bien pero solo con usar_navegador=true; MercadoLibre/Paris son best-effort sin importar el método, ver docstring)",
   "script": "skills/scraper_tiendas.py",
   "arguments": [
     {
@@ -13,6 +13,12 @@
       "name": "tiendas",
       "type": "string",
       "description": "comma-separated: mercadolibre,falabella,paris,ripley",
+      "required": false
+    },
+    {
+      "name": "usar_navegador",
+      "type": "boolean",
+      "description": "Usa un navegador headless real para las tiendas donde el método rápido está bloqueado pero sí funciona con navegador (hoy solo Ripley) — más lento, ofrécelo como opción cuando el método rápido no trajo resultados de esa tienda, no lo actives por defecto",
       "required": false
     }
   ]
