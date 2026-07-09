@@ -1,19 +1,21 @@
 #!/usr/bin/env python3
 """
-agenda.py — Skill: Agenda del usuario (tabla eventos)
-=========================================================
+agenda.py — Skill: Agenda del usuario (tabla eventos + avisos_evento)
+=========================================================================
 Distinto de skills/recordatorios.py: `recordatorios` es para avisos puntuales
 de una sola vez sin una "actividad" real detrás (ej. "recuérdame llamar a X
 en 2 horas"); `eventos` es la agenda de verdad — actividades con fecha/hora,
-consultables por "qué tengo hoy/mañana/esta semana" o "qué hice ayer". No se
-fusionan las tablas porque tienen semánticas distintas (recordatorio = disparo
-único con flag `disparado`; evento = entidad con estado propio y hasta dos
-avisos independientes: al inicio del día y 1h antes).
+consultables por "qué tengo hoy/mañana/esta semana/este mes" o "qué hice
+ayer". No se fusionan las tablas porque tienen semánticas distintas.
 
-Los avisos por WhatsApp (`enviar_resumen_diario`, `avisar_eventos_1h_antes`)
-son 100% deterministas — sin IA — y los llama scripts/scheduler.py; nunca se
-disparan si el usuario no activó el flag correspondiente para ese evento
-("solo si se lo pides").
+Cada evento puede tener CUALQUIER cantidad de avisos a horas libres (tabla
+avisos_evento) — no dos flags fijos como antes. Así "mándame un mensaje a
+las 8 y a las 5 este jueves, tengo médico a las 6" se traduce en un evento
+("médico", jueves 18:00) con dos filas en avisos_evento (08:00 y 17:00).
+
+Los avisos por WhatsApp (`avisar_eventos_programados`) son 100% deterministas
+— sin IA — y los llama scripts/scheduler.py cada minuto; nunca se disparan
+si el usuario no pidió explícitamente ese aviso para ese evento.
 
 skills/crear_evento.py (generación de archivos .ics) se reusa tal cual como
 utilidad de exportación opcional, no se reemplaza.
@@ -24,6 +26,7 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import calendar
 import sqlite3
 import sys
 from datetime import date, datetime, timedelta
@@ -64,9 +67,22 @@ def _resolver_fecha(cuando: str, fecha: str) -> str | None:
     return None
 
 
+def _con_avisos(conn: sqlite3.Connection, filas: list[sqlite3.Row]) -> list[dict]:
+    eventos = []
+    for f in filas:
+        ev = dict(f)
+        avisos = conn.execute(
+            "SELECT hora_aviso, disparado FROM avisos_evento WHERE evento_id = ? ORDER BY hora_aviso",
+            (ev["id"],),
+        ).fetchall()
+        ev["avisos"] = [dict(a) for a in avisos]
+        eventos.append(ev)
+    return eventos
+
+
 def _crear(
     titulo: str, fecha: str, hora: str, duracion_min: int, descripcion: str,
-    avisar_dia_inicio: bool, avisar_1h_antes: bool, exportar_ics: bool,
+    avisos: list[str], exportar_ics: bool,
 ) -> dict[str, Any]:
     if not titulo or not fecha:
         return {"ok": False, "error": "faltan 'titulo' y/o 'fecha'"}
@@ -87,20 +103,22 @@ def _crear(
     conn = _conn()
     try:
         cur = conn.execute(
-            """INSERT INTO eventos (titulo, descripcion, fecha, hora, duracion_min,
-               avisar_dia_inicio, avisar_1h_antes, ics_generado)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
-            (titulo, descripcion, fecha, hora, duracion_min,
-             int(avisar_dia_inicio), int(avisar_1h_antes), ics_ruta or None),
+            "INSERT INTO eventos (titulo, descripcion, fecha, hora, duracion_min, ics_generado) VALUES (?, ?, ?, ?, ?, ?)",
+            (titulo, descripcion, fecha, hora, duracion_min, ics_ruta or None),
         )
+        evento_id = cur.lastrowid
+        for hora_aviso in avisos:
+            conn.execute(
+                "INSERT INTO avisos_evento (evento_id, hora_aviso) VALUES (?, ?)", (evento_id, hora_aviso)
+            )
         conn.commit()
-        log(f"Evento creado #{cur.lastrowid}: {titulo} el {fecha} {hora}")
-        return {"ok": True, "id": cur.lastrowid}
+        log(f"Evento creado #{evento_id}: {titulo} el {fecha} {hora}" + (f" (avisos: {', '.join(avisos)})" if avisos else ""))
+        return {"ok": True, "id": evento_id}
     finally:
         conn.close()
 
 
-def _que_tengo(cuando: str) -> dict[str, Any]:
+def _que_tengo(cuando: str, anio: int | None, mes: int | None) -> dict[str, Any]:
     hoy = date.today()
     conn = _conn()
     try:
@@ -110,12 +128,22 @@ def _que_tengo(cuando: str) -> dict[str, Any]:
                 "SELECT * FROM eventos WHERE estado='activo' AND fecha BETWEEN ? AND ? ORDER BY fecha, hora",
                 (desde, hasta),
             ).fetchall()
+        elif cuando == "mes":
+            anio_ = anio or hoy.year
+            mes_ = mes or hoy.month
+            ultimo_dia = calendar.monthrange(anio_, mes_)[1]
+            desde = date(anio_, mes_, 1).isoformat()
+            hasta = date(anio_, mes_, ultimo_dia).isoformat()
+            filas = conn.execute(
+                "SELECT * FROM eventos WHERE estado='activo' AND fecha BETWEEN ? AND ? ORDER BY fecha, hora",
+                (desde, hasta),
+            ).fetchall()
         else:
             fecha = _resolver_fecha(cuando, "")
             filas = conn.execute(
                 "SELECT * FROM eventos WHERE estado='activo' AND fecha = ? ORDER BY hora", (fecha,)
             ).fetchall()
-        return {"ok": True, "eventos": [dict(f) for f in filas]}
+        return {"ok": True, "eventos": _con_avisos(conn, filas)}
     finally:
         conn.close()
 
@@ -125,7 +153,7 @@ def _que_hice(cuando: str) -> dict[str, Any]:
     conn = _conn()
     try:
         filas = conn.execute("SELECT * FROM eventos WHERE fecha = ? ORDER BY hora", (ayer,)).fetchall()
-        return {"ok": True, "eventos": [dict(f) for f in filas]}
+        return {"ok": True, "eventos": _con_avisos(conn, filas)}
     finally:
         conn.close()
 
@@ -174,50 +202,27 @@ def _notificar_whatsapp(texto: str) -> bool:
         return False
 
 
-def enviar_resumen_diario() -> dict:
-    """Determinista, sin IA — llamado por el scheduler. Solo incluye eventos
-    que el usuario marcó explícitamente con avisar_dia_inicio=1; si no hay
-    ninguno hoy, no manda nada."""
-    hoy = date.today().isoformat()
-    conn = _conn()
-    try:
-        filas = conn.execute(
-            "SELECT * FROM eventos WHERE estado='activo' AND fecha = ? AND avisar_dia_inicio = 1 ORDER BY hora",
-            (hoy,),
-        ).fetchall()
-    finally:
-        conn.close()
-    if not filas:
-        return {"enviado": False, "motivo": "sin eventos marcados para avisar hoy"}
-
-    lineas = ["Tu agenda de hoy:", ""]
-    for f in filas:
-        lineas.append(f"• {f['hora']} — {f['titulo']}")
-    enviado = _notificar_whatsapp("\n".join(lineas))
-    return {"enviado": enviado, "eventos": len(filas)}
-
-
-def avisar_eventos_1h_antes() -> int:
-    """Determinista, sin IA — llamado por el scheduler cada minuto. Ventana de
-    tolerancia de ±5 min alrededor de 'ahora + 1h' para no depender de que el
-    tick caiga exactamente en el minuto exacto."""
+def avisar_eventos_programados() -> int:
+    """Determinista, sin IA — llamado por el scheduler cada minuto. Revisa
+    avisos_evento por hora exacta (HH:MM) contra eventos activos de hoy;
+    cada aviso es de una sola vez (se marca disparado=1 al enviarse)."""
     ahora = datetime.now()
-    objetivo = ahora + timedelta(hours=1)
-    ventana_inicio = (objetivo - timedelta(minutes=5)).strftime("%H:%M")
-    ventana_fin = (objetivo + timedelta(minutes=5)).strftime("%H:%M")
+    hora_actual = ahora.strftime("%H:%M")
     hoy = ahora.date().isoformat()
 
     conn = _conn()
     try:
         filas = conn.execute(
-            """SELECT * FROM eventos WHERE estado='activo' AND avisar_1h_antes = 1
-               AND aviso_1h_disparado = 0 AND fecha = ? AND hora BETWEEN ? AND ?""",
-            (hoy, ventana_inicio, ventana_fin),
+            """SELECT av.id AS aviso_id, av.hora_aviso, e.titulo, e.hora AS hora_evento
+               FROM avisos_evento av JOIN eventos e ON av.evento_id = e.id
+               WHERE av.disparado = 0 AND e.estado = 'activo' AND e.fecha = ? AND av.hora_aviso = ?""",
+            (hoy, hora_actual),
         ).fetchall()
         avisados = 0
         for f in filas:
-            if _notificar_whatsapp(f"En una hora: {f['titulo']} ({f['hora']})"):
-                conn.execute("UPDATE eventos SET aviso_1h_disparado = 1 WHERE id = ?", (f["id"],))
+            texto = f"Recordatorio de tu agenda: {f['titulo']} ({f['hora_evento']})"
+            if _notificar_whatsapp(texto):
+                conn.execute("UPDATE avisos_evento SET disparado = 1 WHERE id = ?", (f["aviso_id"],))
                 avisados += 1
         conn.commit()
         return avisados
@@ -232,18 +237,22 @@ def agenda(
     hora: str = "09:00",
     duracion: int = 60,
     descripcion: str = "",
-    avisar_dia_inicio: bool = False,
-    avisar_1h_antes: bool = False,
+    avisos: str = "",
     cuando: str = "",
+    anio: int | None = None,
+    mes: int | None = None,
     exportar_ics: bool = False,
     evento_id: int | None = None,
 ) -> dict:
-    """Punto de entrada MCP. accion: crear | que_tengo | que_hice | es_feriado | cancelar"""
+    """Punto de entrada MCP. accion: crear | que_tengo | que_hice | es_feriado | cancelar
+    avisos: horarios de aviso separados por coma, ej. '08:00,17:00' (opcional)
+    cuando (para que_tengo): hoy | mañana | semana | mes"""
     if accion == "crear":
+        lista_avisos = [h.strip() for h in avisos.split(",") if h.strip()]
         return _crear(titulo, _resolver_fecha(cuando, fecha) or fecha, hora, duracion, descripcion,
-                      avisar_dia_inicio, avisar_1h_antes, exportar_ics)
+                      lista_avisos, exportar_ics)
     if accion == "que_tengo":
-        return _que_tengo(cuando or "hoy")
+        return _que_tengo(cuando or "hoy", anio, mes)
     if accion == "que_hice":
         return _que_hice(cuando)
     if accion == "es_feriado":
@@ -263,18 +272,19 @@ def main() -> int:
     ap.add_argument("--hora", type=str, default="09:00")
     ap.add_argument("--duracion", type=int, default=60)
     ap.add_argument("--descripcion", type=str, default="")
-    ap.add_argument("--avisar-dia-inicio", action="store_true", dest="avisar_dia_inicio")
-    ap.add_argument("--avisar-1h-antes", action="store_true", dest="avisar_1h_antes")
+    ap.add_argument("--avisos", type=str, default="", help="ej. '08:00,17:00'")
     ap.add_argument("--cuando", type=str, default="")
+    ap.add_argument("--anio", type=int, default=None)
+    ap.add_argument("--mes", type=int, default=None)
     ap.add_argument("--exportar-ics", action="store_true", dest="exportar_ics")
     ap.add_argument("--id", type=int, default=None, dest="evento_id")
     args = ap.parse_args()
 
     resultado = agenda(
         accion=args.accion, titulo=args.titulo, fecha=args.fecha, hora=args.hora,
-        duracion=args.duracion, descripcion=args.descripcion,
-        avisar_dia_inicio=args.avisar_dia_inicio, avisar_1h_antes=args.avisar_1h_antes,
-        cuando=args.cuando, exportar_ics=args.exportar_ics, evento_id=args.evento_id,
+        duracion=args.duracion, descripcion=args.descripcion, avisos=args.avisos,
+        cuando=args.cuando, anio=args.anio, mes=args.mes,
+        exportar_ics=args.exportar_ics, evento_id=args.evento_id,
     )
     print(resultado)
     return 0 if resultado.get("ok", True) else 1

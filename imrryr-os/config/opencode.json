@@ -50,7 +50,7 @@
   },
   "agent": {
     "agenda": {
-      "description": "Agenda actividades del usuario (fecha, hora, duración) y responde qué tiene hoy, mañana, esta semana, o qué hizo ayer. Puede avisar por WhatsApp al inicio del día o una hora antes de una actividad, pero solo si el usuario lo pidió explícitamente para ese evento (o activó el resumen diario) — nunca avisa por su cuenta sin haber sido configurado para eso. También puede decir si una fecha es feriado en el país configurado del usuario.",
+      "description": "Agenda actividades del usuario (fecha, hora, duración) y responde qué tiene hoy, mañana, esta semana, o qué hizo ayer. Puede avisar por WhatsApp al inicio del día o una hora antes de una actividad, pero solo si el usuario lo pidió explícitamente para ese evento (o activó el resumen diario) — nunca avisa por su cuenta sin haber sido configurado para eso. También puede decir si una fecha es feriado en el país configurado del usuario. También puede agregar, listar y marcar como hecho ítems de la lista de pendientes del usuario — cosas sin fecha fija, a diferencia de los eventos.",
       "mode": "subagent",
       "model": "imryyr-llm/imrryr-activo",
       "permission": {
@@ -69,6 +69,7 @@
         "question": "deny",
         "skill": {
           "imrryr_agenda": "allow",
+          "imrryr_pendientes": "allow",
           "imrryr_*": "deny",
           "*": "deny"
         }

@@ -119,27 +119,14 @@ def _tick_compras_digest() -> None:
     _guardar_estado(estado)
 
 
-def _tick_agenda_resumen_diario() -> None:
-    ahora = datetime.now()
-    if ahora.strftime("%H:%M") != _hora_resumen_diario():
-        return
-    estado = _leer_estado()
-    hoy = ahora.date().isoformat()
-    if estado.get("ultimo_resumen_agenda") == hoy:
-        return
-
-    from skills.agenda import enviar_resumen_diario
-    resultado = enviar_resumen_diario()
-    log(f"resumen diario de agenda: {resultado}")
-    estado["ultimo_resumen_agenda"] = hoy
-    _guardar_estado(estado)
-
-
-def _tick_agenda_1h_antes() -> None:
-    from skills.agenda import avisar_eventos_1h_antes
-    avisados = avisar_eventos_1h_antes()
+def _tick_agenda_avisos() -> None:
+    """Cada evento puede tener cualquier cantidad de avisos a horas libres
+    (tabla avisos_evento) — reemplaza los dos flags fijos de antes (inicio
+    del día / 1h antes) por avisos a la hora exacta que el usuario pida."""
+    from skills.agenda import avisar_eventos_programados
+    avisados = avisar_eventos_programados()
     if avisados:
-        log(f"avisos 1h-antes enviados: {avisados}")
+        log(f"avisos de agenda enviados: {avisados}")
 
 
 def ejecutar_tareas_programadas() -> None:
@@ -148,8 +135,7 @@ def ejecutar_tareas_programadas() -> None:
         _tick_recordatorios,
         _tick_guardia_seguridad,
         _tick_compras_digest,
-        _tick_agenda_resumen_diario,
-        _tick_agenda_1h_antes,
+        _tick_agenda_avisos,
     )
     for tarea in tareas:
         try:

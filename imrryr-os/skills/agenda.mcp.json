@@ -1,6 +1,6 @@
 {
   "name": "agenda",
-  "description": "Crea eventos, responde qué tienes hoy/mañana/semana o qué hiciste ayer, y dice si una fecha es feriado",
+  "description": "Crea eventos con avisos a horas libres, responde qué tienes hoy/mañana/semana/mes o qué hiciste ayer, y dice si una fecha es feriado",
   "script": "skills/agenda.py",
   "arguments": [
     {
@@ -24,7 +24,7 @@
     {
       "name": "hora",
       "type": "string",
-      "description": "Hora HH:MM, default 09:00",
+      "description": "Hora HH:MM del evento, default 09:00",
       "required": false
     },
     {
@@ -40,21 +40,27 @@
       "required": false
     },
     {
-      "name": "avisar_dia_inicio",
-      "type": "boolean",
-      "description": "Incluir este evento en el resumen diario de la mañana",
-      "required": false
-    },
-    {
-      "name": "avisar_1h_antes",
-      "type": "boolean",
-      "description": "Avisar por WhatsApp 1 hora antes",
+      "name": "avisos",
+      "type": "string",
+      "description": "Horarios de aviso por WhatsApp separados por coma, ej. '08:00,17:00' — solo se avisa si el usuario los pide",
       "required": false
     },
     {
       "name": "cuando",
       "type": "string",
-      "description": "hoy | mañana | semana (para que_tengo/es_feriado)",
+      "description": "hoy | mañana | semana | mes (para que_tengo/es_feriado)",
+      "required": false
+    },
+    {
+      "name": "anio",
+      "type": "integer",
+      "description": "Año para 'que_tengo' con cuando=mes (default: año actual)",
+      "required": false
+    },
+    {
+      "name": "mes",
+      "type": "integer",
+      "description": "Mes (1-12) para 'que_tengo' con cuando=mes (default: mes actual)",
       "required": false
     },
     {

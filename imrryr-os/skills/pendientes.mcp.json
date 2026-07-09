@@ -1,0 +1,31 @@
+{
+  "name": "pendientes",
+  "description": "Crea, lista, marca hecho o elimina ítems de la lista de pendientes (sin fecha fija)",
+  "script": "skills/pendientes.py",
+  "arguments": [
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "crear | listar | marcar_hecho | eliminar",
+      "required": true
+    },
+    {
+      "name": "texto",
+      "type": "string",
+      "description": "Texto del pendiente (para 'crear')",
+      "required": false
+    },
+    {
+      "name": "pendiente_id",
+      "type": "integer",
+      "description": "ID del pendiente (para marcar_hecho/eliminar)",
+      "required": false
+    },
+    {
+      "name": "hecho",
+      "type": "boolean",
+      "description": "true = marcar como hecho, false = desmarcar (default true)",
+      "required": false
+    }
+  ]
+}

@@ -6,8 +6,11 @@ descripcion: >
   si el usuario lo pidió explícitamente para ese evento (o activó el
   resumen diario) — nunca avisa por su cuenta sin haber sido configurado
   para eso. También puede decir si una fecha es feriado en el país
-  configurado del usuario.
+  configurado del usuario. También puede agregar, listar y marcar como hecho
+  ítems de la lista de pendientes del usuario — cosas sin fecha fija, a
+  diferencia de los eventos.
 herramientas_permitidas:
   - agenda
+  - pendientes
 modelo_preferido: imrryr-activo
 activo: true

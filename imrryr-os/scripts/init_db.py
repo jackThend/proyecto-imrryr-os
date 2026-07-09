@@ -146,13 +146,25 @@ CREATE TABLE IF NOT EXISTS eventos (
     hora                TEXT    DEFAULT '09:00',
     duracion_min        INTEGER DEFAULT 60,
     todo_dia            INTEGER DEFAULT 0,
-    avisar_dia_inicio   INTEGER DEFAULT 0,           -- opt-in: incluir en el resumen diario de la mañana
-    avisar_1h_antes     INTEGER DEFAULT 0,           -- opt-in: ping 1h antes
-    aviso_1h_disparado  INTEGER DEFAULT 0,           -- evita re-disparar el aviso de 1h
     ics_generado        TEXT,                        -- ruta al .ics si se exportó (opcional)
     estado              TEXT    DEFAULT 'activo',    -- activo, cancelado, realizado
     created_at          TEXT    DEFAULT (datetime('now')),
     updated_at          TEXT    DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS avisos_evento (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    evento_id       INTEGER NOT NULL,
+    hora_aviso      TEXT    NOT NULL,             -- HH:MM, hora del día en que se envía el aviso
+    disparado       INTEGER DEFAULT 0,
+    FOREIGN KEY (evento_id) REFERENCES eventos(id)
+);
+
+CREATE TABLE IF NOT EXISTS pendientes (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    texto       TEXT    NOT NULL,
+    hecho       INTEGER DEFAULT 0,
+    created_at  TEXT    DEFAULT (datetime('now'))
 );
 
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
@@ -168,6 +180,9 @@ CREATE INDEX IF NOT EXISTS idx_prodseg_activo ON productos_seguimiento(activo);
 CREATE INDEX IF NOT EXISTS idx_ofertas_seguimiento ON ofertas_encontradas(seguimiento_id);
 CREATE INDEX IF NOT EXISTS idx_eventos_fecha ON eventos(fecha);
 CREATE INDEX IF NOT EXISTS idx_eventos_estado ON eventos(estado);
+CREATE INDEX IF NOT EXISTS idx_avisos_evento_id ON avisos_evento(evento_id);
+CREATE INDEX IF NOT EXISTS idx_avisos_disparado ON avisos_evento(disparado);
+CREATE INDEX IF NOT EXISTS idx_pendientes_hecho ON pendientes(hecho);
 """
 
 
@@ -223,7 +238,8 @@ def main() -> int:
             "DROP TABLE IF EXISTS adjuntos_semilla; DROP TABLE IF EXISTS borradores_pendientes; "
             "DROP TABLE IF EXISTS importaciones; DROP TABLE IF EXISTS posts_programados; "
             "DROP TABLE IF EXISTS ofertas_encontradas; DROP TABLE IF EXISTS productos_seguimiento; "
-            "DROP TABLE IF EXISTS eventos;"
+            "DROP TABLE IF EXISTS avisos_evento; DROP TABLE IF EXISTS eventos; "
+            "DROP TABLE IF EXISTS pendientes;"
         )
         log("Tablas eliminadas.")
 

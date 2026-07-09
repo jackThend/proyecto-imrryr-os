@@ -67,9 +67,13 @@ Endpoints:
     DELETE /api/compras/seguimientos/{id} → Elimina un seguimiento (y sus ofertas)
     GET  /api/compras/prefs       → Cuenta de correo + destinatario del digest diario
     POST /api/compras/prefs      → Guarda esas preferencias
-    GET  /api/agenda/eventos?rango=hoy|semana → Lista eventos activos (sin pasar por el LLM)
-    POST /api/agenda/eventos                  → Crea un evento nuevo
+    GET  /api/agenda/eventos?rango=hoy|semana|mes → Lista eventos activos (sin pasar por el LLM)
+    POST /api/agenda/eventos                  → Crea un evento nuevo (avisos: "08:00,17:00")
     POST /api/agenda/eventos/{id}/cancelar    → Cancela un evento
+    GET  /api/pendientes                  → Lista la lista de pendientes
+    POST /api/pendientes                  → Crea un pendiente
+    POST /api/pendientes/{id}/hecho       → Marca (des)hecho un pendiente
+    DELETE /api/pendientes/{id}           → Elimina un pendiente
     POST /api/chat               → Envía prompt a OpenCode (agente configurable)
 """
 from __future__ import annotations
@@ -792,9 +796,9 @@ async def eliminar_seguimiento_compras(seguimiento_id: int):
 
 
 @app.get("/api/agenda/eventos")
-async def listar_eventos_agenda(rango: str = "hoy"):
+async def listar_eventos_agenda(rango: str = "hoy", anio: int | None = None, mes: int | None = None):
     from skills.agenda import agenda as agenda_skill
-    return agenda_skill(accion="que_tengo", cuando=rango)
+    return agenda_skill(accion="que_tengo", cuando=rango, anio=anio, mes=mes)
 
 
 @app.post("/api/agenda/eventos")
@@ -803,10 +807,32 @@ async def crear_evento_agenda(datos: dict):
     return agenda_skill(
         accion="crear", titulo=datos.get("titulo", ""), fecha=datos.get("fecha", ""),
         hora=datos.get("hora", "09:00"), duracion=datos.get("duracion", 60),
-        descripcion=datos.get("descripcion", ""),
-        avisar_dia_inicio=bool(datos.get("avisar_dia_inicio")),
-        avisar_1h_antes=bool(datos.get("avisar_1h_antes")),
+        descripcion=datos.get("descripcion", ""), avisos=datos.get("avisos", ""),
     )
+
+
+@app.get("/api/pendientes")
+async def listar_pendientes_endpoint():
+    from skills.pendientes import pendientes as pendientes_skill
+    return pendientes_skill(accion="listar")
+
+
+@app.post("/api/pendientes")
+async def crear_pendiente_endpoint(datos: dict):
+    from skills.pendientes import pendientes as pendientes_skill
+    return pendientes_skill(accion="crear", texto=datos.get("texto", ""))
+
+
+@app.post("/api/pendientes/{pendiente_id}/hecho")
+async def marcar_pendiente_hecho_endpoint(pendiente_id: int, datos: dict):
+    from skills.pendientes import pendientes as pendientes_skill
+    return pendientes_skill(accion="marcar_hecho", pendiente_id=pendiente_id, hecho=bool(datos.get("hecho", True)))
+
+
+@app.delete("/api/pendientes/{pendiente_id}")
+async def eliminar_pendiente_endpoint(pendiente_id: int):
+    from skills.pendientes import pendientes as pendientes_skill
+    return pendientes_skill(accion="eliminar", pendiente_id=pendiente_id)
 
 
 @app.post("/api/agenda/eventos/{evento_id}/cancelar")
