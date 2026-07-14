@@ -370,13 +370,21 @@ def _reenviar_a_opencode(texto: str) -> str:
         )
         r.raise_for_status()
         data = r.json()
+
+        from uso_ia import registrar_uso
+        registrar_uso("whatsapp", "build")
+
         respuesta = "".join(p.get("text", "") for p in data.get("parts", []) if p.get("type") == "text")
         if not respuesta:
             respuesta = _esperar_texto_final(port, headers, sid)
         return respuesta
     except Exception as e:
         log.warning(f"No se pudo reenviar a OpenCode: {e}")
-        return ""
+        # Antes se devolvía "" y el usuario de WhatsApp no recibía NADA (la
+        # experiencia "parece que se colgó"). Ahora al menos se le explica
+        # qué pasó en su idioma, con la cuota de Gemini como causa probable.
+        from errores_ia import humanizar_error_ia
+        return humanizar_error_ia(e)
 
 
 # ---------------------------------------------------------------------------

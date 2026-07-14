@@ -841,6 +841,7 @@
     <button class="app-subtab" id="ajustesSub-apariencia" onclick="cambiarSubtabAjustes('apariencia')" data-ayuda="Elige entre un modo Creativo (más visual) o Minimalista (más sobrio)."><svg class="icon"><use href="#icon-palette"/></svg> Apariencia</button>
     <button class="app-subtab" id="ajustesSub-github" onclick="cambiarSubtabAjustes('github')" data-ayuda="Conecta el repo de GitHub de tu sitio web para que el Agente RRSS y Web pueda editarlo."><svg class="icon"><use href="#icon-code"/></svg> GitHub</button>
     <button class="app-subtab" id="ajustesSub-social" onclick="cambiarSubtabAjustes('social')" data-ayuda="Conecta tu Página de Facebook / cuenta de Instagram Business para publicar contenido."><svg class="icon"><use href="#icon-globe"/></svg> Redes sociales</button>
+    <button class="app-subtab" id="ajustesSub-respaldos" onclick="cambiarSubtabAjustes('respaldos')" data-ayuda="Copias de seguridad locales de todos tus datos (gastos, agenda, seguimientos). Se crea una por día automáticamente."><svg class="icon"><use href="#icon-download"/></svg> Respaldos</button>
   </div>
   <div style="padding:0 16px" id="ajustesSubcontent"></div>
 </div>
@@ -2818,7 +2819,7 @@ async function descartarBorradorCorreo(id) {
 let ajustesSubtabActual = 'whatsapp';
 function cambiarSubtabAjustes(sub) {
   ajustesSubtabActual = sub;
-  ['whatsapp', 'perfil', 'ia', 'ayuda', 'apariencia', 'github', 'social'].forEach(s =>
+  ['whatsapp', 'perfil', 'ia', 'ayuda', 'apariencia', 'github', 'social', 'respaldos'].forEach(s =>
     document.getElementById('ajustesSub-' + s).classList.toggle('active', sub === s));
   document.getElementById('ajustesSubcontent').innerHTML = '<div class="loading">Cargando</div>';
   if (sub === 'whatsapp') cargarGateway();
@@ -2827,7 +2828,47 @@ function cambiarSubtabAjustes(sub) {
   else if (sub === 'apariencia') renderApariencia();
   else if (sub === 'github') cargarCuentasGitView();
   else if (sub === 'social') cargarCuentasSocialView();
+  else if (sub === 'respaldos') cargarRespaldosView();
   else renderAyudaSettings();
+}
+
+// --- Respaldos locales de la base de datos (Tanda X) ---
+async function cargarRespaldosView() {
+  const el = document.getElementById('ajustesSubcontent');
+  try {
+    const r = await fetch('/api/respaldos');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const filas = (d.respaldos || []).map(b => `
+      <div style="display:flex;justify-content:space-between;padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px">
+        <span>${b.archivo}</span><span style="color:var(--text-dim)">${b.tamano_kb} KB</span>
+      </div>`).join('');
+    el.innerHTML = `
+      <p style="font-size:12px;color:var(--text-dim);margin-bottom:10px;max-width:560px">
+        Todos tus datos (gastos, agenda, seguimientos, mensajes) viven en una base de datos local.
+        Cada día que abres Imrryr OS se guarda automáticamente una copia en
+        <code>vault/backups/</code> (se conservan las últimas 14). Para restaurar una,
+        cierra los servicios y copia el archivo sobre <code>vault/sqlite/imrryr.db</code>.
+      </p>
+      <button class="gw-save-btn" onclick="crearRespaldoAhora()">Respaldar ahora</button>
+      ${filas
+        ? `<div style="margin-top:12px;max-width:560px;border:1px solid var(--border);border-radius:8px;overflow:hidden">${filas}</div>`
+        : '<div class="empty" style="margin-top:12px">Todavía no hay respaldos — el primero se crea solo hoy, o puedes crearlo ahora.</div>'}`;
+  } catch (e) {
+    el.innerHTML = `<div class="widget-error">Error: ${e.message}</div>`;
+  }
+}
+
+async function crearRespaldoAhora() {
+  try {
+    const r = await fetch('/api/respaldos', { method: 'POST' });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    mostrarToast(`Respaldo creado: ${d.archivo} (${d.tamano_kb} KB)`);
+    cargarRespaldosView();
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
 }
 
 // --- Modo Ayuda (tooltips contextuales, ver atributos data-ayuda) ---
@@ -3015,7 +3056,7 @@ async function aplicarFondoPersonalizado() {
 async function actualizarStatus() {
   const bar = document.getElementById('statusBar');
   try {
-    const r = await fetch('/api/status');
+    const [r, rUso] = await Promise.all([fetch('/api/status'), fetch('/api/uso-ia')]);
     if (!r.ok) throw new Error('');
     const d = await r.json();
     const svc = d.servicios || {};
@@ -3024,7 +3065,16 @@ async function actualizarStatus() {
     const critico = svc.litellm && svc.opencode;
     const clase = critico ? (svc.gateway ? 'on' : 'warn') : 'off';
     const detalle = `Motor de IA (LiteLLM): ${svc.litellm ? 'activo' : 'apagado'}. Agentes (OpenCode): ${svc.opencode ? 'activo' : 'apagado'}. WhatsApp (Gateway): ${svc.gateway ? 'activo' : 'apagado'}.`;
-    bar.innerHTML = `<div class="status-item" data-ayuda="${detalle.replace(/"/g,'&quot;')}"><span class="status-dot ${clase}"></span>Sistema</div>`;
+    let usoHtml = '';
+    if (rUso.ok) {
+      const uso = await rUso.json();
+      // El conteo es por turnos de conversación: un turno con herramientas
+      // puede costar varias llamadas API reales, así que es piso, no exacto.
+      const claseUso = uso.hoy >= uso.limite ? 'off' : (uso.hoy >= uso.limite * 0.75 ? 'warn' : 'on');
+      const detalleUso = `Consultas de IA hoy (dashboard + WhatsApp). El límite ${uso.limite} aplica a la cuenta gratuita de Gemini; una consulta que usa herramientas puede gastar más de 1 llamada real.`;
+      usoHtml = `<div class="status-item" data-ayuda="${detalleUso}"><span class="status-dot ${claseUso}"></span>IA hoy: ${uso.hoy}/${uso.limite}</div>`;
+    }
+    bar.innerHTML = `<div class="status-item" data-ayuda="${detalle.replace(/"/g,'&quot;')}"><span class="status-dot ${clase}"></span>Sistema</div>${usoHtml}`;
   } catch {
     bar.innerHTML = '<div class="status-item" style="color:var(--red)">sin conexión</div>';
   }

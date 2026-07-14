@@ -76,6 +76,9 @@ Endpoints:
     POST /api/pendientes                  → Crea un pendiente
     POST /api/pendientes/{id}/hecho       → Marca (des)hecho un pendiente
     DELETE /api/pendientes/{id}           → Elimina un pendiente
+    GET  /api/respaldos          → Lista los respaldos locales de la DB
+    POST /api/respaldos          → Crea un respaldo ahora (también corre solo, 1 vez al día)
+    GET  /api/uso-ia             → Turnos de IA usados hoy vs límite gratuito (proxy)
     POST /api/chat               → Envía prompt a OpenCode (agente configurable)
 """
 from __future__ import annotations
@@ -972,6 +975,9 @@ async def chat(request: Request):
             r.raise_for_status()
             data = r.json()
 
+            from uso_ia import registrar_uso
+            registrar_uso("dashboard", agente)
+
             respuesta = "".join(p.get("text", "") for p in data.get("parts", []) if p.get("type") == "text")
             if not respuesta:
                 respuesta = await _esperar_texto_final(client, sid)
@@ -984,7 +990,8 @@ async def chat(request: Request):
     except Exception as e:
         # La sesión de este agente pudo quedar inválida (ej. OpenCode se reinició); se recrea en el próximo intento.
         _opencode_sessions.pop(agente, None)
-        return JSONResponse({"error": str(e)}, status_code=500)
+        from errores_ia import humanizar_error_ia
+        return JSONResponse({"error": humanizar_error_ia(e)}, status_code=500)
 
 
 # ---------------------------------------------------------------------------
@@ -1002,6 +1009,33 @@ async def system_status():
         finally:
             s.close()
     return {"servicios": servicios}
+
+
+# ---------------------------------------------------------------------------
+# API: Uso diario de IA (proxy por turnos de conversación, ver skills/uso_ia.py)
+# ---------------------------------------------------------------------------
+@app.get("/api/uso-ia")
+async def uso_ia_hoy():
+    from uso_ia import uso_de_hoy
+    return uso_de_hoy()
+
+
+# ---------------------------------------------------------------------------
+# API: Respaldos locales de la base de datos
+# ---------------------------------------------------------------------------
+@app.get("/api/respaldos")
+async def listar_respaldos_db():
+    from scripts.respaldo_db import listar_respaldos
+    return {"respaldos": listar_respaldos()}
+
+
+@app.post("/api/respaldos")
+async def crear_respaldo_db():
+    from scripts.respaldo_db import crear_respaldo
+    resultado = crear_respaldo()
+    if not resultado.get("ok"):
+        return JSONResponse({"error": resultado.get("error", "no se pudo respaldar")}, status_code=500)
+    return resultado
 
 
 # ---------------------------------------------------------------------------

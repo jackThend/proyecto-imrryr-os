@@ -129,6 +129,25 @@ def _tick_agenda_avisos() -> None:
         log(f"avisos de agenda enviados: {avisados}")
 
 
+def _tick_respaldo_db() -> None:
+    """Un respaldo local de la DB por día (Tanda X). Corre en el primer tick
+    de cada día en que el dashboard esté abierto — no necesita hora fija
+    porque respaldar es barato y sobreescribir el del día es inocuo."""
+    estado = _leer_estado()
+    hoy = datetime.now().date().isoformat()
+    if estado.get("ultimo_respaldo_db") == hoy:
+        return
+
+    from scripts.respaldo_db import crear_respaldo
+    resultado = crear_respaldo()
+    if resultado.get("ok"):
+        log(f"respaldo diario de la DB: {resultado['archivo']} ({resultado['tamano_kb']} KB)")
+        estado["ultimo_respaldo_db"] = hoy
+        _guardar_estado(estado)
+    else:
+        log(f"respaldo diario falló: {resultado.get('error')}")
+
+
 def ejecutar_tareas_programadas() -> None:
     tareas = (
         _tick_posts_programados,
@@ -136,6 +155,7 @@ def ejecutar_tareas_programadas() -> None:
         _tick_guardia_seguridad,
         _tick_compras_digest,
         _tick_agenda_avisos,
+        _tick_respaldo_db,
     )
     for tarea in tareas:
         try:

@@ -167,6 +167,18 @@ CREATE TABLE IF NOT EXISTS pendientes (
     created_at  TEXT    DEFAULT (datetime('now'))
 );
 
+-- Registro de turnos de conversación con IA (Tanda X). Es un proxy del gasto
+-- de cuota: un turno con herramientas puede costar varias llamadas reales a
+-- la API del proveedor, así que el contador subestima — sirve para orientar
+-- ("vas 15 de ~20 hoy"), no como medidor exacto.
+CREATE TABLE IF NOT EXISTS uso_ia (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha       TEXT    NOT NULL,
+    canal       TEXT    NOT NULL,
+    agente      TEXT    DEFAULT '',
+    created_at  TEXT    DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
 CREATE INDEX IF NOT EXISTS idx_gastos_categoria ON gastos(categoria);
 CREATE INDEX IF NOT EXISTS idx_proyectos_estado ON proyectos(estado);
@@ -183,6 +195,7 @@ CREATE INDEX IF NOT EXISTS idx_eventos_estado ON eventos(estado);
 CREATE INDEX IF NOT EXISTS idx_avisos_evento_id ON avisos_evento(evento_id);
 CREATE INDEX IF NOT EXISTS idx_avisos_disparado ON avisos_evento(disparado);
 CREATE INDEX IF NOT EXISTS idx_pendientes_hecho ON pendientes(hecho);
+CREATE INDEX IF NOT EXISTS idx_uso_ia_fecha ON uso_ia(fecha);
 """
 
 
@@ -239,7 +252,7 @@ def main() -> int:
             "DROP TABLE IF EXISTS importaciones; DROP TABLE IF EXISTS posts_programados; "
             "DROP TABLE IF EXISTS ofertas_encontradas; DROP TABLE IF EXISTS productos_seguimiento; "
             "DROP TABLE IF EXISTS avisos_evento; DROP TABLE IF EXISTS eventos; "
-            "DROP TABLE IF EXISTS pendientes;"
+            "DROP TABLE IF EXISTS pendientes; DROP TABLE IF EXISTS uso_ia;"
         )
         log("Tablas eliminadas.")
 

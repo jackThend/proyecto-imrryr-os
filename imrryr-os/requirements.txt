@@ -57,3 +57,7 @@ google-api-python-client>=2.100.0
 
 # --- Observabilidad de procesos (Fase 4, Guardia de Seguridad) ---
 psutil>=6.0.0
+
+# --- Tests de la lógica determinista (Tanda X, tests/) ---
+# Correr con: python -m pytest tests/ — no toca la DB del usuario ni la red.
+pytest>=8.0.0
