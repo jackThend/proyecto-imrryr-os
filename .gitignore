@@ -10,6 +10,11 @@
 .env
 .env.*
 !.env.example
+# Claves sueltas en .txt que el usuario deja en la raíz para pruebas — nunca al repo.
+clave api.txt
+clave*.txt
+*clave*.txt
+*api*key*.txt
 imrryr-os/gateway/gateway_config.json
 imrryr-os/config/perfil_negocio.json
 imrryr-os/config/gmail_credentials.json

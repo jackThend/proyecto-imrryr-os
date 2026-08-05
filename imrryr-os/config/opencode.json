@@ -11,22 +11,6 @@
         "apiKey": "sk-imryyr-local"
       },
       "models": {
-        "gemini-pro": {
-          "name": "Gemini 1.5 Pro (vía LiteLLM)",
-          "tool_call": true,
-          "limit": {
-            "context": 1000000,
-            "output": 8192
-          }
-        },
-        "gemini-flash": {
-          "name": "Gemini 1.5 Flash (vía LiteLLM)",
-          "tool_call": true,
-          "limit": {
-            "context": 1000000,
-            "output": 8192
-          }
-        },
         "imrryr-activo": {
           "name": "Cuenta de IA activa (ver Ajustes > Cuentas de IA)",
           "tool_call": true,
@@ -76,7 +60,7 @@
       }
     },
     "compras": {
-      "description": "El usuario le indica un producto, un rango de precio objetivo y en qué tiendas chilenas buscar (MercadoLibre, Falabella, Paris, Ripley — por ahora Falabella es la más confiable, las demás dependen de que esas tiendas no bloqueen la consulta). Revisa ofertas una vez al día y envía un correo resumen a la propia casilla del usuario cuando encuentra algo dentro de rango — nunca compra ni contacta a terceros, solo informa.",
+      "description": "El usuario le indica un producto, un rango de precio objetivo y en qué tiendas chilenas buscar (MercadoLibre, Falabella, Paris, Ripley). Falabella funciona bien con el método rápido de scraper_tiendas por defecto. Para Ripley el método rápido está bloqueado, pero existe un fallback con navegador headless real (usar_navegador=true en scraper_tiendas) que sí funciona — si una búsqueda en Ripley no trae resultados, ofrécele al usuario reintentar con navegador (es más lento, así que no lo actives sin avisar) en vez de asumir directamente que no hay stock. MercadoLibre y Paris no mejoran con navegador (ver docstring de scraper_tiendas) — para esas dos, si no hay resultados, dilo tal cual en vez de reintentar. Revisa ofertas una vez al día y envía un correo resumen a la propia casilla del usuario cuando encuentra algo dentro de rango — nunca compra ni contacta a terceros, solo informa.",
       "mode": "subagent",
       "model": "imryyr-llm/imrryr-activo",
       "permission": {
@@ -321,6 +305,11 @@
           "*": "deny"
         }
       }
+    },
+    "build": {
+      "description": "Agente de código. Ayuda a programar, depurar y mantener el sistema. Acceso sandboxed a lectura/escritura de archivos y ejecución de scripts dentro de scripts/ y skills/ (no tiene acceso a una terminal genérica ni a rutas fuera del proyecto, por seguridad).\nEste agente es también el único punto de entrada para WhatsApp y para el chat \"Asistente principal\" del inicio del dashboard — cualquier mensaje que llegue por esos dos canales te lo pasan a vos primero, sin importar el tema. Vos mismo no tenés las herramientas de negocio (no sabés leer correo, ver gastos, agendar nada, etc.), así que cuando el usuario pregunte o pida algo que corresponde a un agente especializado ya existente (agenda, financiero, secretario/correo, compras, rrss_web, crm, investigador, creativo, guardia_seguridad), delega esa conversación a ese subagente usando la herramienta task en vez de intentar responder vos mismo o decir que no tenés esa información. Solo respondés directamente las preguntas de código/sistema que sí son tu área.\n\nSubagentes disponibles para delegar con la herramienta 'task' (usa exactamente estos nombres): agenda, compras, creativo, crm, financiero, guardia_seguridad, investigador, navegacion, rrss_web, secretario. Cuando la petición sea del dominio de uno de ellos, delega en vez de responder que no puedes.",
+      "mode": "primary",
+      "model": "imryyr-llm/imrryr-activo"
     }
   }
 }

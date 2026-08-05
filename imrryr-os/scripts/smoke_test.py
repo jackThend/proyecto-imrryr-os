@@ -118,7 +118,8 @@ def main() -> int:
     port_llm = int(os.environ.get("LITELLM_PORT", LITELLM_PORT))
     port_oc = int(os.environ.get("OPENCODE_PORT") or OPENCODE_PORT)
     password = os.environ.get("OPENCODE_SERVER_PASSWORD", OPENCODE_PASSWORD)
-    model = os.environ.get("DEFAULT_MODEL", "gemini-flash")
+    # Alias de la cuenta de IA activa; sin default de proveedor concreto.
+    model = "imrryr-activo"
 
     log("=== Smoke test E2E Fase 1 - Imrryr OS ===")
     if not check_services(port_llm, port_oc, password):

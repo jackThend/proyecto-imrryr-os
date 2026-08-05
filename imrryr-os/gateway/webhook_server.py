@@ -342,7 +342,12 @@ def _reenviar_a_opencode(texto: str) -> str:
 
     password = os.environ.get("OPENCODE_SERVER_PASSWORD", "imryyr-local-pass")
     port = int(os.environ.get("OPENCODE_PORT", 4040))
-    modelo = os.environ.get("DEFAULT_MODEL", "gemini-flash")
+    # Alias estable de LiteLLM que SIEMPRE apunta a la cuenta de IA activa
+    # (Ajustes > Cuentas de IA). Antes esto caía a "gemini-flash" por defecto,
+    # lo que rompía la neutralidad de modelos: WhatsApp hablaba con Gemini
+    # aunque el usuario hubiera elegido otro proveedor. Sin default: si no hay
+    # cuenta activa, el sistema lo dice en vez de asumir un proveedor.
+    modelo = "imrryr-activo"
     token = base64.b64encode(f"opencode:{password}".encode()).decode()
     headers = {"Authorization": f"Basic {token}", "Content-Type": "application/json"}
 

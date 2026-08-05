@@ -44,6 +44,7 @@ Endpoints:
     POST /api/ajustes/cuentas-ia          → Crea/edita una cuenta de IA
     DELETE /api/ajustes/cuentas-ia/{id}   → Elimina una cuenta de IA
     POST /api/ajustes/cuentas-ia/{id}/activar  → Activa una cuenta (reinicia LiteLLM)
+    POST /api/ajustes/cuentas-ia/modelos  → Catálogo en vivo del proveedor (ej. OpenCode GO)
     GET  /api/ajustes/cuentas-git          → Cuentas de GitHub configuradas (token oculto)
     POST /api/ajustes/cuentas-git          → Crea/edita una cuenta de GitHub
     DELETE /api/ajustes/cuentas-git/{id}   → Elimina una cuenta de GitHub
@@ -115,7 +116,10 @@ sys.path.insert(0, str(ROOT / "skills"))
 sys.path.insert(0, str(ROOT))  # para 'from correo.config import ...'
 
 if ENV_FILE.exists():
-    load_dotenv(ENV_FILE)
+    # override=True: el .env manda sobre lo que ya haya en el entorno. Sin
+    # esto, una IMRRYR_ACTIVE_API_KEY heredada del shell (o de un arranque
+    # anterior) le ganaba a la cuenta de IA que el usuario acaba de activar.
+    load_dotenv(ENV_FILE, override=True)
 
 app = FastAPI(title="Imrryr Dashboard", version="0.1.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
@@ -531,6 +535,22 @@ async def eliminar_cuenta_ia(cuenta_id: str):
 async def activar_cuenta_ia(cuenta_id: str):
     from config import cuentas_ia
     return cuentas_ia.activar_cuenta(cuenta_id)
+
+
+@app.post("/api/ajustes/cuentas-ia/modelos")
+async def modelos_disponibles_ia(datos: dict):
+    """Catálogo en vivo del proveedor (ej. OpenCode GO no lo publica en su web).
+
+    La API key viaja del navegador al servidor local solo cuando la cuenta aún
+    no existe; si ya está guardada, basta con mandar 'cuenta_id' y el secreto
+    nunca sale del disco. La respuesta jamás incluye la key.
+    """
+    from config import cuentas_ia
+    return cuentas_ia.listar_modelos_remotos(
+        proveedor=datos.get("proveedor", ""),
+        api_key=datos.get("api_key", ""),
+        cuenta_id=datos.get("cuenta_id", ""),
+    )
 
 
 # ---------------------------------------------------------------------------

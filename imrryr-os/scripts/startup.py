@@ -69,7 +69,13 @@ def load_env() -> dict[str, str]:
     if not ENV_FILE.exists():
         log(f"ERROR: no existe {ENV_FILE}. Copia config/.env.example y rellénalo.")
         sys.exit(1)
-    load_dotenv(ENV_FILE)
+    # override=True es OBLIGATORIO acá: al cambiar de cuenta de IA, el
+    # dashboard reescribe IMRRYR_ACTIVE_API_KEY en .env y luego lanza
+    # restart_litellm.py como subproceso. Ese subproceso HEREDA la variable
+    # vieja del proceso padre y, sin override, load_dotenv la respeta — así
+    # LiteLLM arrancaba con la clave del proveedor anterior y el nuevo lo
+    # rechazaba con "Invalid API key". El .env es la fuente de verdad.
+    load_dotenv(ENV_FILE, override=True)
     return dict(os.environ)
 
 

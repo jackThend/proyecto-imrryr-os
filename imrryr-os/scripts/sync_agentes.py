@@ -93,7 +93,10 @@ def construir_agent_config() -> dict:
             continue
 
         herramientas = data.get("herramientas_permitidas", [])
-        modelo = str(data.get("modelo_preferido", "gemini-flash")).removeprefix("imryyr-llm/")
+        # Sin default de proveedor: si un agente no declara modelo_preferido,
+        # usa el alias de la cuenta activa (Ajustes > Cuentas de IA) en vez de
+        # caer a un modelo concreto de un proveedor puntual.
+        modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imryyr-llm/")
 
         permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
         permission_skill[f"{MCP_SERVER_NAME}_*"] = "deny"
@@ -110,7 +113,50 @@ def construir_agent_config() -> dict:
         }
         log(f"  OK {fpath.name} -> agente '{agent_id}' ({len(herramientas)} herramientas)")
 
+    _agregar_build(agentes_json)
     return agentes_json
+
+
+def _agregar_build(agentes_json: dict[str, dict]) -> None:
+    """Escribe también el agente 'build' en opencode.json.
+
+    Antes se omitía por completo por ser el agente primario nativo, pero eso
+    dejaba su 'descripcion' de agentes/agente_build.yaml sin efecto: OpenCode
+    usaba su build genérico, que no sabe que existen subagentes. Resultado:
+    ante "¿qué tengo agendado hoy?" respondía que no podía, en vez de delegar
+    en el subagente de agenda. Como build es el único punto de entrada de
+    WhatsApp y del chat del inicio, sin esto esos dos canales solo servían
+    para temas de código.
+
+    NO se le aplican PERMISOS_NATIVOS_DENEGADOS: build conserva sus permisos
+    elevados (incluida la tool 'task', que es justamente la que usa para
+    delegar). Su sandbox real vive en leer_archivo/escribir_archivo/
+    ejecutar_script.
+    """
+    fpath = AGENTES_DIR / f"agente_{AGENTE_NATIVO}.yaml"
+    if not fpath.exists():
+        return
+    data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
+    descripcion = str(data.get("descripcion", "")).strip()
+
+    # Lista explícita de a quién puede delegar: sin los nombres exactos, el
+    # modelo tiene que adivinar el parámetro de la tool 'task'.
+    subagentes = sorted(agentes_json.keys())
+    if subagentes:
+        descripcion += (
+            "\n\nSubagentes disponibles para delegar con la herramienta 'task' "
+            "(usa exactamente estos nombres): " + ", ".join(subagentes) + ". "
+            "Cuando la petición sea del dominio de uno de ellos, delega en vez "
+            "de responder que no puedes."
+        )
+
+    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imryyr-llm/")
+    agentes_json[AGENTE_NATIVO] = {
+        "description": descripcion,
+        "mode": "primary",
+        "model": f"imryyr-llm/{modelo}",
+    }
+    log(f"  OK {fpath.name} -> agente primario '{AGENTE_NATIVO}' (delega en {len(subagentes)} subagentes)")
 
 
 def main() -> int:

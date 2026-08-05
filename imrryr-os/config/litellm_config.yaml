@@ -15,29 +15,19 @@
 # =====================================================================
 
 model_list:
-  # --- Modelo de nube "grande" (por defecto) ---
-  - model_name: gemini-pro            # alias que ve OpenCode
-    litellm_params:
-      model: gemini/gemini-2.5-pro    # proveedor/modelo real en LiteLLM
-      api_key: os.environ/GEMINI_API_KEY
-
-  # --- Modelo de nube "ligero" (conmutación agnóstica) ---
-  - model_name: gemini-flash
-    litellm_params:
-      model: gemini/gemini-2.5-flash
-      api_key: os.environ/GEMINI_API_KEY
-
-  # --- Modelo local (DIFERIDO: sin GPU/Ollama en este host) ---
-  # Descomentar cuando exista GPU + Ollama y se haya hecho `ollama pull qwen2.5`.
-  # - model_name: qwen-local
-  #   litellm_params:
-  #     model: ollama/qwen2.5
-  #     api_base: os.environ/OLLAMA_HOST
+  # NEUTRALIDAD DE MODELOS: acá NO hay ningún modelo por defecto. El único
+  # modelo que existe es "imrryr-activo", el alias estable que apunta a la
+  # cuenta de IA que el usuario eligió en Ajustes > Cuentas de IA — sea el
+  # proveedor que sea. Antes vivían acá alias fijos de Gemini, lo que hacía
+  # que el sistema cayera a Google aunque el usuario hubiera elegido otro
+  # proveedor; eso contradecía este pilar, así que se quitaron.
+  # El bloque de abajo lo regenera config/cuentas_ia.py al activar una cuenta.
 
   # --- IMRRYR-ACTIVO (autogenerado por Cuentas de IA, no editar a mano) ---
   - model_name: imrryr-activo
     litellm_params:
-      model: gemini/gemini-2.5-flash
+      model: openai/kimi-k2.7-code
+      api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/IMRRYR_ACTIVE_API_KEY
   # --- FIN IMRRYR-ACTIVO ---
 

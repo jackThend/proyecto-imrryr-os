@@ -1860,13 +1860,53 @@ function renderCuentaIaCampos() {
   if (proveedorId === 'otro') {
     html += `<div class="gw-field"><label>Modelo LiteLLM (ej. mistral/mistral-large-latest)</label><input id="ciModelo" placeholder="proveedor/modelo"></div>`;
   }
+  if (proveedorId === 'opencode_go') {
+    // OpenCode GO no publica su catálogo en la web: lo entrega su propia API
+    // según tu suscripción, así que se consulta en vivo con tu API key.
+    html += `<div class="gw-field"><label>Modelo</label>
+        <select id="ciModelo" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;width:100%">
+          <option value="">— pega tu API key y pulsa "Ver modelos" —</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin:-2px 0 6px">Tus modelos los entrega OpenCode GO según tu suscripción. La dirección del servicio ya está configurada.</div>`;
+  }
   if (proveedorId === 'ollama') {
     html += `<div class="gw-field"><label>Host (api_base)</label><input id="ciApiBase" value="http://localhost:11434"></div>`;
   }
   if (prov.requiere_key) {
     html += `<div class="gw-field"><label>API key</label><input id="ciApiKey" type="password"></div>`;
   }
+  if (prov.api_base && proveedorId !== 'ollama') {
+    html += `<button class="gw-modo-btn" style="flex:none;margin-bottom:6px" onclick="cargarModelosProveedor()">Ver modelos disponibles</button>`;
+  }
   el.innerHTML = html;
+}
+
+// Pide al servidor local el catálogo real del proveedor. La API key se manda
+// al backend propio (localhost), que es quien habla con el proveedor — nunca
+// se expone el catálogo ni la clave a terceros.
+async function cargarModelosProveedor() {
+  const proveedor = document.getElementById('ciProveedor').value;
+  const apiKeyEl = document.getElementById('ciApiKey');
+  const sel = document.getElementById('ciModelo');
+  if (!apiKeyEl || !apiKeyEl.value.trim()) { mostrarToast('Primero pega tu API key', 'error'); return; }
+  if (sel) sel.innerHTML = '<option value="">Consultando…</option>';
+  try {
+    const r = await fetch('/api/ajustes/cuentas-ia/modelos', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ proveedor, api_key: apiKeyEl.value.trim() }),
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || 'no se pudo obtener la lista');
+    if (sel) {
+      sel.innerHTML = d.modelos.map(m => `<option value="${m.id}">${m.nombre}</option>`).join('')
+        || '<option value="">(el proveedor no devolvió modelos)</option>';
+    }
+    mostrarToast(`${d.modelos.length} modelo(s) disponibles`);
+  } catch (e) {
+    if (sel) sel.innerHTML = '<option value="">— no se pudo cargar —</option>';
+    mostrarToast('Error: ' + e.message, 'error');
+  }
 }
 
 async function guardarCuentaIa() {
