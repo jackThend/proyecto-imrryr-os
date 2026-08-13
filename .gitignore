@@ -87,6 +87,9 @@ imrryr-os/config/ultimo_audio.json
 logs/
 *.pid
 .run/
+# "Home" propio de OpenCode (aísla Imrryr de la config personal del usuario,
+# ver scripts/startup.py). Es estado local: sesiones, caché y node_modules.
+imrryr-os/.opencode_home/
 
 # --- Sistema / editor ---
 .DS_Store

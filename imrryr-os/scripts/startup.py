@@ -42,6 +42,9 @@ CONFIG_DIR = ROOT / "config"
 GATEWAY_DIR = ROOT / "gateway"
 DASHBOARD_DIR = ROOT / "dashboard"
 RUN_DIR = ROOT / ".run"
+# "Home" propio de OpenCode dentro del proyecto: lo aísla de la configuración
+# personal del usuario (ver start_opencode). Es estado local, va gitignoreado.
+OPENCODE_HOME = ROOT / ".opencode_home"
 ENV_FILE = CONFIG_DIR / ".env"
 LITELLM_CONFIG = CONFIG_DIR / "litellm_config.yaml"
 OPENCODE_CONFIG = CONFIG_DIR / "opencode.json"
@@ -142,9 +145,38 @@ def _resolve_executable(name: str) -> str:
 
 
 def start_opencode(env: dict[str, str], port: int, password: str) -> subprocess.Popen:
-    """Levanta `opencode serve` headless en background."""
+    """Levanta `opencode serve` headless en background, con su propio HOME.
+
+    AISLAMIENTO DE LA CONFIGURACIÓN PERSONAL (importante):
+    OpenCode fusiona la config global del usuario (~/.config/opencode/) con la
+    del proyecto. Eso hacía que Imrryr heredara lo que cada desarrollador
+    tuviera puesto en su máquina: en el equipo donde se desarrolló esto,
+    entraban un servidor MCP ajeno (codebase-memory), un plugin de terminal y
+    tres instrucciones globales sobre "explorar código" que se le inyectaban
+    hasta al agente de Agenda —que ni siquiera tiene permiso para usar esas
+    herramientas—. Peor aún, nada de eso viaja al empaquetar la app: el
+    sistema se comportaba distinto en el PC de desarrollo que en el de un
+    usuario final, que es la peor clase de diferencia.
+
+    La solución es darle a OpenCode un HOME propio dentro del proyecto. Al no
+    encontrar ahí una config de usuario, arranca solo con la de Imrryr
+    (verificado: queda únicamente el MCP 'imrryr', sin plugins ni
+    instrucciones ajenas, y con los 11 agentes intactos).
+
+    Esto NO toca la configuración personal de nadie: quien use `opencode` por
+    su cuenta, fuera de Imrryr, sigue con sus plugins y MCPs de siempre.
+    """
     log_path = RUN_DIR / "opencode.log"
-    env = {**env, "OPENCODE_SERVER_PASSWORD": password}
+    OPENCODE_HOME.mkdir(parents=True, exist_ok=True)
+    env = {
+        **env,
+        "OPENCODE_SERVER_PASSWORD": password,
+        # Node resuelve el "home" por USERPROFILE en Windows y por HOME en
+        # Unix; se fijan ambos para que el aislamiento valga en cualquier SO.
+        "HOME": str(OPENCODE_HOME),
+        "USERPROFILE": str(OPENCODE_HOME),
+        "XDG_CONFIG_HOME": str(OPENCODE_HOME / ".config"),
+    }
 
     opencode_bin = _resolve_executable("opencode")
     cmd = [

@@ -24,6 +24,7 @@ Uso:
 from __future__ import annotations
 
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -67,13 +68,37 @@ def _slug_a_id(nombre_archivo: str) -> str:
 
 
 def construir_mcp_config() -> dict:
-    return {
+    """Servidores MCP que ve OpenCode.
+
+    Se declaran AQUÍ, en la config del proyecto, y no en la config personal de
+    quien desarrolla: así viajan con la app al empaquetarla y el sistema se
+    comporta igual en cualquier PC (ver la nota de aislamiento en
+    scripts/startup.py).
+    """
+    mcp = {
         MCP_SERVER_NAME: {
             "type": "local",
             "command": [_python_venv(), str(MCP_SERVER_SCRIPT)],
             "enabled": True,
         }
     }
+
+    # codebase-memory: exploración de código sin leer archivos a lo bruto.
+    # Solo le sirve al agente `build`, que es el único que trabaja con código;
+    # los subagentes de negocio (agenda, finanzas, compras...) lo tienen
+    # denegado por su allowlist de skills, así que no les añade ruido.
+    # Requiere `uv` (uvx). Si no está instalado se declara deshabilitado en vez
+    # de omitirlo: queda visible en la config, y activarlo es instalar uv.
+    hay_uvx = shutil.which("uvx") is not None
+    mcp["codebase-memory"] = {
+        "type": "local",
+        "command": ["uvx", "codebase-memory-mcp"],
+        "enabled": hay_uvx,
+    }
+    if not hay_uvx:
+        log("  NOTA: 'uvx' no está instalado; el MCP codebase-memory queda deshabilitado.")
+
+    return mcp
 
 
 def construir_agent_config() -> dict:

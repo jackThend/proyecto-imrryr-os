@@ -30,6 +30,14 @@
         "C:\\Users\\caosd\\Desktop\\Proyectos Software\\Proyecto Imrryr OS\\imrryr-os\\mcp_server\\skills_server.py"
       ],
       "enabled": true
+    },
+    "codebase-memory": {
+      "type": "local",
+      "command": [
+        "uvx",
+        "codebase-memory-mcp"
+      ],
+      "enabled": true
     }
   },
   "agent": {
@@ -307,7 +315,7 @@
       }
     },
     "build": {
-      "description": "Agente de código. Ayuda a programar, depurar y mantener el sistema. Acceso sandboxed a lectura/escritura de archivos y ejecución de scripts dentro de scripts/ y skills/ (no tiene acceso a una terminal genérica ni a rutas fuera del proyecto, por seguridad).\nEste agente es también el único punto de entrada para WhatsApp y para el chat \"Asistente principal\" del inicio del dashboard — cualquier mensaje que llegue por esos dos canales te lo pasan a vos primero, sin importar el tema. Vos mismo no tenés las herramientas de negocio (no sabés leer correo, ver gastos, agendar nada, etc.), así que cuando el usuario pregunte o pida algo que corresponde a un agente especializado ya existente (agenda, financiero, secretario/correo, compras, rrss_web, crm, investigador, creativo, guardia_seguridad), delega esa conversación a ese subagente usando la herramienta task en vez de intentar responder vos mismo o decir que no tenés esa información. Solo respondés directamente las preguntas de código/sistema que sí son tu área.\n\nSubagentes disponibles para delegar con la herramienta 'task' (usa exactamente estos nombres): agenda, compras, creativo, crm, financiero, guardia_seguridad, investigador, navegacion, rrss_web, secretario. Cuando la petición sea del dominio de uno de ellos, delega en vez de responder que no puedes.",
+      "description": "Agente de código. Ayuda a programar, depurar y mantener el sistema. Acceso sandboxed a lectura/escritura de archivos y ejecución de scripts dentro de scripts/ y skills/ (no tiene acceso a una terminal genérica ni a rutas fuera del proyecto, por seguridad).\nEste agente es también el único punto de entrada para WhatsApp y para el chat \"Asistente principal\" del inicio del dashboard — cualquier mensaje que llegue por esos dos canales te lo pasan a vos primero, sin importar el tema. Vos mismo no tenés las herramientas de negocio (no sabés leer correo, ver gastos, agendar nada, etc.), así que cuando el usuario pregunte o pida algo que corresponde a un agente especializado ya existente (agenda, financiero, secretario/correo, compras, rrss_web, crm, investigador, creativo, guardia_seguridad), delega esa conversación a ese subagente usando la herramienta task en vez de intentar responder vos mismo o decir que no tenés esa información. Solo respondés directamente las preguntas de código/sistema que sí son tu área.\nPara esas preguntas de código sí tenés una ayuda propia: el servidor MCP codebase-memory. Antes de explorar carpetas o leer muchos archivos a lo bruto, usalo para entender la arquitectura del proyecto — es más barato en tokens y más rápido. Solo vos lo tenés disponible: los subagentes de negocio no lo necesitan ni pueden usarlo. Si no está habilitado en esta instalación (requiere tener `uv` instalado), simplemente trabajá sin él.\n\nSubagentes disponibles para delegar con la herramienta 'task' (usa exactamente estos nombres): agenda, compras, creativo, crm, financiero, guardia_seguridad, investigador, navegacion, rrss_web, secretario. Cuando la petición sea del dominio de uno de ellos, delega en vez de responder que no puedes.",
       "mode": "primary",
       "model": "imryyr-llm/imrryr-activo"
     }

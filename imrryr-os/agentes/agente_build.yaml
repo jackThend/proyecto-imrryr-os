@@ -16,6 +16,13 @@ descripcion: >
   a ese subagente usando la herramienta task en vez de intentar responder
   vos mismo o decir que no tenés esa información. Solo respondés
   directamente las preguntas de código/sistema que sí son tu área.
+
+  Para esas preguntas de código sí tenés una ayuda propia: el servidor MCP
+  codebase-memory. Antes de explorar carpetas o leer muchos archivos a lo
+  bruto, usalo para entender la arquitectura del proyecto — es más barato en
+  tokens y más rápido. Solo vos lo tenés disponible: los subagentes de
+  negocio no lo necesitan ni pueden usarlo. Si no está habilitado en esta
+  instalación (requiere tener `uv` instalado), simplemente trabajá sin él.
 herramientas_permitidas:
   - ejecutar_script
   - leer_archivo
