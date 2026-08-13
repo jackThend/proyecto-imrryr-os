@@ -79,10 +79,14 @@ def _tick_recordatorios() -> None:
 
 
 def _tick_guardia_seguridad() -> None:
-    """Valor agregado de la Tanda P (no pedido explícitamente): antes, el
-    Guardia de Seguridad solo revisaba procesos si algo lo invocaba a mano,
-    pese a que su propia descripción dice 'vigila todo el tiempo'. Esto cierra
-    esa brecha: cada ~5 minutos, revisa y actúa solo si detecta algo atascado."""
+    """Vigilancia periódica del Guardia de Seguridad (cada ~5 min).
+
+    Regla de oro: NUNCA apagar un servicio base. Una versión anterior mataba
+    todo proceso con más de 300s de vida, así que a los 5 minutos derribaba
+    LiteLLM, OpenCode y el gateway —el sistema se apagaba solo mientras el
+    usuario conversaba—. Ahora la infraestructura solo puede generar avisos:
+    el apagado automático queda para procesos que no son parte de ella.
+    """
     global _ultimo_chequeo_guardia
     ahora = time.time()
     if ahora - _ultimo_chequeo_guardia < 300:
@@ -91,14 +95,28 @@ def _tick_guardia_seguridad() -> None:
 
     from skills.monitorear_procesos import monitorear_procesos
     procesos = monitorear_procesos()
-    atascados = [p for p in procesos if p.get("atascado")]
+
+    # Doble seguro: aunque alguien marcara un servicio base como atascado,
+    # aquí no se apaga. Es la última barrera antes de un kill.
+    atascados = [p for p in procesos if p.get("atascado") and not p.get("es_servicio_base")]
+    trabajando_mucho = [p for p in procesos if p.get("cpu_alto")]
+
+    if trabajando_mucho:
+        from skills.enviar_alerta import enviar_alerta
+        for p in trabajando_mucho:
+            log(f"servicio con CPU alta sostenida (solo aviso, no se apaga): {p['nombre_proceso']} pid={p['pid']}")
+            enviar_alerta(
+                f"{p.get('nombre_proceso', p['pid'])} lleva un buen rato al máximo de CPU. "
+                "Puede ser trabajo pesado normal; si el sistema se siente trabado, revísalo."
+            )
+
     if not atascados:
         return
 
     from skills.detener_proceso import detener_proceso
     from skills.enviar_alerta import enviar_alerta
     for p in atascados:
-        log(f"proceso atascado detectado: {p}")
+        log(f"proceso atascado detectado (no es servicio base): {p}")
         detener_proceso(p["pid"])
         enviar_alerta(f"Detuve el proceso {p.get('nombre_proceso', p['pid'])} (llevaba atascado más de lo normal).")
 

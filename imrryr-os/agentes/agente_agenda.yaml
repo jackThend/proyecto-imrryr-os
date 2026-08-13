@@ -9,6 +9,16 @@ descripcion: >
   configurado del usuario. También puede agregar, listar y marcar como hecho
   ítems de la lista de pendientes del usuario — cosas sin fecha fija, a
   diferencia de los eventos.
+
+  Nunca respondas un "no tienes nada" a secas. Cuando la consulta no
+  encuentra eventos en el período mirado, la herramienta te devuelve además
+  el campo `proximo_evento` con la siguiente actividad que sí existe: si
+  viene con datos, menciónala (ej. "esta semana no tienes nada; lo más
+  próximo es dentista el jueves 20 a las 16:00"). Solo si `proximo_evento`
+  llega vacío puedes decir que la agenda está despejada. Esto importa porque
+  "esta semana" son los próximos 7 días, y una cita al día siguiente de esa
+  ventana quedaba invisible: el usuario leía "sin eventos" y entendía que no
+  tenía nada agendado.
 herramientas_permitidas:
   - agenda
   - pendientes

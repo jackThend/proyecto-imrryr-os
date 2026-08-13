@@ -45,6 +45,36 @@ def test_que_tengo_semana_incluye_los_7_dias():
     assert titulos == ["En 6 días"]
 
 
+def test_ventana_vacia_ofrece_el_proximo_evento():
+    # El caso real: cita justo un día después de la ventana de 7 días. Antes
+    # se respondía "sin eventos" y el usuario creía que no tenía nada.
+    hoy = date.today()
+    agenda._crear("Dentista", (hoy + timedelta(days=8)).isoformat(), "16:00", 60, "", ["08:00"], False)
+
+    r = agenda._que_tengo("semana", None, None)
+    assert r["eventos"] == []
+    assert r["proximo_evento"] is not None
+    assert r["proximo_evento"]["titulo"] == "Dentista"
+    # Los avisos viajan con él, para poder mencionarlos sin otra consulta.
+    assert [a["hora_aviso"] for a in r["proximo_evento"]["avisos"]] == ["08:00"]
+
+
+def test_sin_ningun_evento_el_proximo_es_nulo():
+    r = agenda._que_tengo("semana", None, None)
+    assert r["eventos"] == []
+    assert r["proximo_evento"] is None
+
+
+def test_con_eventos_en_la_ventana_no_se_agrega_ruido():
+    hoy = date.today()
+    agenda._crear("Reunión", (hoy + timedelta(days=2)).isoformat(), "10:00", 60, "", [], False)
+    agenda._crear("Lejano", (hoy + timedelta(days=30)).isoformat(), "10:00", 60, "", [], False)
+
+    r = agenda._que_tengo("semana", None, None)
+    assert [e["titulo"] for e in r["eventos"]] == ["Reunión"]
+    assert "proximo_evento" not in r
+
+
 def test_que_tengo_mes_usa_mes_pedido():
     agenda._crear("Evento enero", "2027-01-15", "10:00", 60, "", [], False)
     agenda._crear("Evento febrero", "2027-02-15", "10:00", 60, "", [], False)

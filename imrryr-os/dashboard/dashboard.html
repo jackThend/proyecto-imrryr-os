@@ -1080,7 +1080,10 @@ async function enviarChatGenerico(appId, agente) {
     const r = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensaje: texto, agente }),
-      signal: AbortSignal.timeout(120000),
+      // 300s, igual que el timeout del servidor: delegar en varios subagentes
+      // encadena llamadas al modelo y con 120s el navegador cortaba respuestas
+      // que estaban llegando bien (medido: 123s en una consulta de agenda).
+      signal: AbortSignal.timeout(300000),
     });
     const data = await r.json();
     hist.pop();

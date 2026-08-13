@@ -41,11 +41,22 @@ def humanizar_error_ia(e: Exception) -> str:
             "otra cuenta en Ajustes > Cuentas de IA."
         )
     if isinstance(e, (httpx.ReadTimeout, httpx.WriteTimeout, httpx.PoolTimeout)):
+        # Antes este mensaje daba por hecho que el proveedor era Gemini y
+        # culpaba a su cuota gratuita. Con otro proveedor activo eso confunde:
+        # la causa más común ahí es simplemente una consulta que encadena
+        # varias llamadas al modelo (delegar en subagentes) y tarda más.
         return (
-            "El modelo tardó demasiado en responder y corté la espera. Si usas la "
-            "cuenta gratuita de Gemini, lo más probable es que se agotara la cuota "
-            "diaria (20 consultas) — en ese caso el proveedor deja la petición "
-            "colgada en vez de avisar. Puedes esperar a que se renueve (cerca de las "
-            "4-5 AM) o activar otra cuenta en Ajustes > Cuentas de IA."
+            "El modelo tardó demasiado en responder y corté la espera. Suele pasar "
+            "con preguntas que obligan a consultar varios agentes a la vez; probar de "
+            "nuevo, o preguntar por una cosa a la vez, normalmente funciona. "
+            "Si usas una cuenta gratuita (por ejemplo Gemini, con 20 consultas al día), "
+            "otra causa probable es que se agotara la cuota: en ese caso el proveedor "
+            "deja la petición colgada en vez de avisar, y se renueva cerca de las 4-5 AM. "
+            "Puedes cambiar de cuenta en Ajustes > Cuentas de IA."
         )
-    return f"Algo falló hablando con los agentes: {e}"
+    # Algunas excepciones (ej. las de httpx al cortarse la conexión con
+    # OpenCode) traen str() vacío, y el mensaje quedaba en "Algo falló
+    # hablando con los agentes:" sin decir nada. En ese caso al menos se
+    # nombra el tipo, que es lo único que hay.
+    detalle = str(e).strip() or type(e).__name__
+    return f"Algo falló hablando con los agentes: {detalle}"

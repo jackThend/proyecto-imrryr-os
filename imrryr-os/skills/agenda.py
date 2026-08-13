@@ -118,6 +118,23 @@ def _crear(
         conn.close()
 
 
+def _proximo_despues(conn: sqlite3.Connection, fecha_limite: str) -> dict | None:
+    """Primer evento activo posterior a la ventana que se consultó.
+
+    Existe para que un "no tienes nada esta semana" no se lea como "no tienes
+    nada". Caso real que lo motivó: con un dentista agendado para el jueves 20,
+    preguntar "¿qué tengo agendado?" un día 12 respondía "sin eventos" — cierto
+    para los próximos 7 días, pero engañoso, porque la cita caía al día 8.
+    Devolviendo además el próximo evento, el agente puede cerrar la respuesta
+    con "lo más próximo es el dentista el jueves 20".
+    """
+    fila = conn.execute(
+        "SELECT * FROM eventos WHERE estado='activo' AND fecha > ? ORDER BY fecha, hora LIMIT 1",
+        (fecha_limite,),
+    ).fetchone()
+    return _con_avisos(conn, [fila])[0] if fila else None
+
+
 def _que_tengo(cuando: str, anio: int | None, mes: int | None) -> dict[str, Any]:
     hoy = date.today()
     conn = _conn()
@@ -140,10 +157,17 @@ def _que_tengo(cuando: str, anio: int | None, mes: int | None) -> dict[str, Any]
             ).fetchall()
         else:
             fecha = _resolver_fecha(cuando, "")
+            hasta = fecha or hoy.isoformat()
             filas = conn.execute(
                 "SELECT * FROM eventos WHERE estado='activo' AND fecha = ? ORDER BY hora", (fecha,)
             ).fetchall()
-        return {"ok": True, "eventos": _con_avisos(conn, filas)}
+
+        resultado: dict[str, Any] = {"ok": True, "eventos": _con_avisos(conn, filas)}
+        if not filas:
+            # Solo cuando no hay nada en la ventana: si sí hay eventos, añadir
+            # el siguiente sería ruido.
+            resultado["proximo_evento"] = _proximo_despues(conn, hasta)
+        return resultado
     finally:
         conn.close()
 

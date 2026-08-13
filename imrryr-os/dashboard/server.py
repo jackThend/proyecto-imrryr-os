@@ -990,7 +990,13 @@ async def chat(request: Request):
                     "model": {"providerID": "imryyr-llm", "modelID": _modelo_activo()},
                     "parts": [{"type": "text", "text": mensaje}],
                 },
-                timeout=120,
+                # 300s y no 120: una pregunta que obliga a delegar en varios
+                # subagentes encadena varias llamadas al modelo. Medido con
+                # kimi-k2.7-code vía OpenCode GO, un resumen de cuatro dominios
+                # tardó 108s y una consulta de agenda 123s — con el límite
+                # anterior esa última moría por timeout aunque el modelo estaba
+                # respondiendo bien.
+                timeout=300,
             )
             r.raise_for_status()
             data = r.json()

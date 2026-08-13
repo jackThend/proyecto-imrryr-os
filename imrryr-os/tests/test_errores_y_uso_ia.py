@@ -28,6 +28,14 @@ def test_error_generico_no_expone_stacktrace_pero_si_el_detalle():
     assert "Traceback" not in msg
 
 
+def test_excepcion_sin_texto_no_deja_el_mensaje_a_medias():
+    # Visto en vivo: al caerse OpenCode a mitad de una consulta, la excepción
+    # llegaba con str() vacío y el usuario leía "Algo falló hablando con los
+    # agentes:" sin ninguna explicación.
+    msg = errores_ia.humanizar_error_ia(RuntimeError(""))
+    assert msg.rstrip().endswith("RuntimeError")
+
+
 def test_registrar_y_contar_uso(db_temporal, monkeypatch):
     monkeypatch.setattr(uso_ia, "DB_PATH", db_temporal)
     assert uso_ia.uso_de_hoy()["hoy"] == 0

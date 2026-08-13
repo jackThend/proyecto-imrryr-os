@@ -371,7 +371,9 @@ def _reenviar_a_opencode(texto: str) -> str:
                 "model": {"providerID": "imryyr-llm", "modelID": modelo},
                 "parts": [{"type": "text", "text": f"[WhatsApp] {texto}"}],
             },
-            timeout=120,
+            # Mismo motivo que en dashboard/server.py: delegar en subagentes
+            # encadena varias llamadas al modelo y 120s se quedaba corto.
+            timeout=300,
         )
         r.raise_for_status()
         data = r.json()
