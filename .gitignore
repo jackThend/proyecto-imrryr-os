@@ -17,6 +17,9 @@ clave*.txt
 *api*key*.txt
 imrryr-os/gateway/gateway_config.json
 imrryr-os/config/perfil_negocio.json
+# opencode.json se genera localmente desde opencode.template.json (sync_agentes.py):
+# las rutas del MCP apuntan al venv de ESTA máquina, así que no viaja en git.
+imrryr-os/config/opencode.json
 imrryr-os/config/gmail_credentials.json
 imrryr-os/config/gmail_token.pickle
 imrryr-os/config/gmail_secretario_credentials.json

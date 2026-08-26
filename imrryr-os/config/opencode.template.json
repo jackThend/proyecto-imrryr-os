@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "small_model": "imrryr-llm/imrryr-activo",
+  "model": "imrryr-llm/imrryr-activo",
+  "provider": {
+    "imrryr-llm": {
+      "name": "Imrryr LLM Gateway (LiteLLM)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "http://localhost:4000/v1",
+        "apiKey": "sk-imrryr-local"
+      },
+      "models": {
+        "imrryr-activo": {
+          "name": "Cuenta de IA activa (ver Ajustes > Cuentas de IA)",
+          "tool_call": true,
+          "limit": {
+            "context": 1000000,
+            "output": 8192
+          }
+        }
+      }
+    }
+  }
+}

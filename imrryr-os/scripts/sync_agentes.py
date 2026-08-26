@@ -18,6 +18,10 @@ Si borras un agentes/*.yaml o le quitas una herramienta, este script (que
 startup.py corre en cada arranque) refleja el cambio en opencode.json sin
 tocar código: es el escaneo de "Carpetas Dinámicas" que describe la Fase 4.
 
+opencode.json no se commitea (rutas absolutas de esta máquina). En una
+instalación nueva se siembra desde config/opencode.template.json, que es
+portable y commiteable — mismo patrón que config/.env vs .env.example.
+
 Uso:
     python scripts/sync_agentes.py
 """
@@ -33,6 +37,11 @@ import yaml
 ROOT = Path(__file__).resolve().parent.parent
 AGENTES_DIR = ROOT / "agentes"
 OPENCODE_JSON = ROOT / "config" / "opencode.json"
+# Plantilla portable (commiteada, sin rutas absolutas): de acá se siembra
+# opencode.json en una instalación nueva. El archivo real NO se commitea —
+# igual que config/.env — porque las rutas del MCP son absolutas por diseño
+# (apuntan al venv y a skills_server.py de ESTA máquina).
+OPENCODE_TEMPLATE = ROOT / "config" / "opencode.template.json"
 MCP_SERVER_SCRIPT = ROOT / "mcp_server" / "skills_server.py"
 MCP_SERVER_NAME = "imrryr"
 
@@ -121,7 +130,7 @@ def construir_agent_config() -> dict:
         # Sin default de proveedor: si un agente no declara modelo_preferido,
         # usa el alias de la cuenta activa (Ajustes > Cuentas de IA) en vez de
         # caer a un modelo concreto de un proveedor puntual.
-        modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imryyr-llm/")
+        modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
 
         permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
         permission_skill[f"{MCP_SERVER_NAME}_*"] = "deny"
@@ -133,7 +142,7 @@ def construir_agent_config() -> dict:
         agentes_json[agent_id] = {
             "description": str(data.get("descripcion", "")).strip(),
             "mode": "subagent",
-            "model": f"imryyr-llm/{modelo}",
+            "model": f"imrryr-llm/{modelo}",
             "permission": permission,
         }
         log(f"  OK {fpath.name} -> agente '{agent_id}' ({len(herramientas)} herramientas)")
@@ -175,18 +184,33 @@ def _agregar_build(agentes_json: dict[str, dict]) -> None:
             "de responder que no puedes."
         )
 
-    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imryyr-llm/")
+    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
     agentes_json[AGENTE_NATIVO] = {
         "description": descripcion,
         "mode": "primary",
-        "model": f"imryyr-llm/{modelo}",
+        "model": f"imrryr-llm/{modelo}",
     }
     log(f"  OK {fpath.name} -> agente primario '{AGENTE_NATIVO}' (delega en {len(subagentes)} subagentes)")
 
 
+def _sembrar_desde_plantilla() -> bool:
+    """Instalación nueva: copia la plantilla portable a opencode.json.
+
+    La parte estática (provider LiteLLM en :4000) viaja commiteada sin rutas
+    absolutas; las claves "mcp" y "agent" las agrega este script abajo con
+    los paths reales de esta máquina."""
+    if OPENCODE_JSON.exists():
+        return True
+    if not OPENCODE_TEMPLATE.exists():
+        log(f"ERROR: no existe {OPENCODE_JSON} ni la plantilla {OPENCODE_TEMPLATE}")
+        return False
+    OPENCODE_JSON.write_text(OPENCODE_TEMPLATE.read_text(encoding="utf-8"), encoding="utf-8")
+    log(f"opencode.json sembrado desde {OPENCODE_TEMPLATE.name}")
+    return True
+
+
 def main() -> int:
-    if not OPENCODE_JSON.exists():
-        log(f"ERROR: no existe {OPENCODE_JSON}")
+    if not _sembrar_desde_plantilla():
         return 1
 
     cfg = json.loads(OPENCODE_JSON.read_text(encoding="utf-8"))
