@@ -59,6 +59,7 @@ def test_el_html_del_dashboard_se_sirve(cliente):
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
     assert "__IMRRYR_CHAT_TIMEOUT_MS__" not in r.text
+    assert "/static/dashboard.js" in r.text
 
 
 def test_css_del_dashboard_se_sirve(cliente):
@@ -68,11 +69,20 @@ def test_css_del_dashboard_se_sirve(cliente):
     assert ":root" in r.text
 
 
+def test_javascript_del_dashboard_se_sirve(cliente):
+    r = cliente.get("/static/dashboard.js")
+    assert r.status_code == 200
+    assert "javascript" in r.headers["content-type"]
+    assert "enviarChatGenerico" in r.text
+    assert "AbortSignal.timeout(window.IMRRYR_CONFIG.chatTimeoutMs)" in r.text
+    assert "__IMRRYR_CHAT_TIMEOUT_MS__" not in r.text
+
+
 def test_html_inyecta_timeout_configurado(cliente, monkeypatch):
     monkeypatch.setenv("IMRRYR_CHAT_TIMEOUT_SECONDS", "123")
     r = cliente.get("/")
     assert r.status_code == 200
-    assert "AbortSignal.timeout(Number('123000'))" in r.text
+    assert "chatTimeoutMs: Number('123000')" in r.text
 
 
 # ---------------------------------------------------------------------------
