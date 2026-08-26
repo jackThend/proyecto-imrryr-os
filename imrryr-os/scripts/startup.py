@@ -57,7 +57,7 @@ OPENCODE_PORT = 4040
 GATEWAY_PORT = 5050
 WHATSAPP_LOCAL_PORT = 5051
 DASHBOARD_PORT = 3000
-OPENCODE_PASSWORD = "imryyr-local-pass"  # local-only; sustituir por .env
+OPENCODE_PASSWORD = "imrryr-local-pass"  # local-only; sustituir por .env
 HEALTH_TIMEOUT = 60  # segundos máx esperando cada servicio
 
 

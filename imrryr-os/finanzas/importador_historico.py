@@ -329,7 +329,7 @@ def _pedir_extraccion_lote(correos: list[dict]) -> list[dict | None]:
             r = client.post(
                 f"http://localhost:{port}/session",
                 headers=headers,
-                json={"agent": "financiero", "model": {"id": "imrryr-activo", "providerID": "imryyr-llm"}},
+                json={"agent": "financiero", "model": {"id": "imrryr-activo", "providerID": "imrryr-llm"}},
             )
             r.raise_for_status()
             sid = r.json().get("data", {}).get("id") or r.json().get("id")
@@ -339,7 +339,7 @@ def _pedir_extraccion_lote(correos: list[dict]) -> list[dict | None]:
                 headers=headers,
                 json={
                     "agent": "financiero",
-                    "model": {"providerID": "imryyr-llm", "modelID": "imrryr-activo"},
+                    "model": {"providerID": "imrryr-llm", "modelID": "imrryr-activo"},
                     "parts": [{"type": "text", "text": prompt}],
                 },
             )

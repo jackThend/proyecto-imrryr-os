@@ -5,7 +5,7 @@ smoke_test.py - Prueba E2E de Fase 1 (1.3.8)
 Verifica que toda la cadena funciona de extremo a extremo:
 
   OpenCode serve (:4040)
-      -> config/opencode.json (provider imryyr-llm)
+      -> config/opencode.json (provider imrryr-llm)
       -> LiteLLM (:4000)
       -> Gemini API (gemini-2.5-flash)
 
@@ -37,7 +37,7 @@ ENV_FILE = ROOT / "config" / ".env"
 
 LITELLM_PORT = 4000
 OPENCODE_PORT = 4040
-OPENCODE_PASSWORD = "imryyr-local-pass"
+OPENCODE_PASSWORD = "imrryr-local-pass"
 
 
 def log(msg: str) -> None:
@@ -78,7 +78,7 @@ def create_session(port_oc: int, password: str, model: str) -> str:
     r = httpx.post(
         f"http://localhost:{port_oc}/session",
         headers=basic_auth(password),
-        json={"agent": "build", "model": {"id": model, "providerID": "imryyr-llm"}},
+        json={"agent": "build", "model": {"id": model, "providerID": "imrryr-llm"}},
         timeout=15,
     )
     r.raise_for_status()
@@ -99,7 +99,7 @@ def send_prompt(port_oc: int, password: str, sid: str, model: str, message: str)
         headers=basic_auth(password),
         json={
             "agent": "build",
-            "model": {"providerID": "imryyr-llm", "modelID": model},
+            "model": {"providerID": "imrryr-llm", "modelID": model},
             "parts": [{"type": "text", "text": message}],
         },
         timeout=120,

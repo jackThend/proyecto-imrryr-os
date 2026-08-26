@@ -355,7 +355,7 @@ def _reenviar_a_opencode(texto: str) -> str:
         r = httpx.post(
             f"http://localhost:{port}/session",
             headers=headers,
-            json={"agent": "build", "model": {"id": modelo, "providerID": "imryyr-llm"}},
+            json={"agent": "build", "model": {"id": modelo, "providerID": "imrryr-llm"}},
             timeout=15,
         )
         r.raise_for_status()
@@ -368,7 +368,7 @@ def _reenviar_a_opencode(texto: str) -> str:
             headers=headers,
             json={
                 "agent": "build",
-                "model": {"providerID": "imryyr-llm", "modelID": modelo},
+                "model": {"providerID": "imrryr-llm", "modelID": modelo},
                 "parts": [{"type": "text", "text": f"[WhatsApp] {texto}"}],
             },
             # Mismo motivo que en dashboard/server.py: delegar en subagentes

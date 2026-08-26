@@ -26,17 +26,17 @@ ENV_FILE = ROOT / "config" / ".env"
 
 
 def load_provider_models() -> list[str]:
-    """Devuelve los modelos definidos en opencode.json (provider imryyr-llm)."""
+    """Devuelve los modelos definidos en opencode.json (provider imrryr-llm)."""
     if not OPENCODE_JSON.exists():
         return []
     cfg = json.loads(OPENCODE_JSON.read_text(encoding="utf-8"))
-    provider = cfg.get("provider", {}).get("imryyr-llm", {})
+    provider = cfg.get("provider", {}).get("imrryr-llm", {})
     return list(provider.get("models", {}).keys())
 
 
 def update_opencode_json(model: str) -> None:
     cfg = json.loads(OPENCODE_JSON.read_text(encoding="utf-8"))
-    full = f"imryyr-llm/{model}"
+    full = f"imrryr-llm/{model}"
     cfg["model"] = full
     # si el modelo es flash, úsalo también como small_model (barato para tareas chicas)
     if "flash" in model:
@@ -65,13 +65,13 @@ def main() -> int:
     available = load_provider_models()
 
     if len(sys.argv) < 2:
-        print("Modelos disponibles en el gateway Imrryr (imryyr-llm/*):")
+        print("Modelos disponibles en el gateway Imrryr (imrryr-llm/*):")
         for m in available:
             print(f"  - {m}")
         print("\nUso: python scripts/switch_model.py <modelo>")
         return 0
 
-    target = sys.argv[1].removeprefix("imryyr-llm/")
+    target = sys.argv[1].removeprefix("imrryr-llm/")
     if available and target not in available:
         print(f"ERROR: '{target}' no está en opencode.json.")
         print("Modelos válidos: " + ", ".join(available))
@@ -79,7 +79,7 @@ def main() -> int:
 
     update_opencode_json(target)
     update_env_default(target)
-    print(f"✓ Modelo por defecto cambiado a: imryyr-llm/{target}")
+    print(f"✓ Modelo por defecto cambiado a: imrryr-llm/{target}")
     print("  - opencode.json actualizado (model + small_model)")
     print("  - .env DEFAULT_MODEL actualizado")
     print("\nReinicia OpenCode (si estaba corriendo) para que tome el cambio.")
