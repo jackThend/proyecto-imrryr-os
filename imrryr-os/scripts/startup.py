@@ -48,8 +48,7 @@ ENV_FILE = CONFIG_DIR / ".env"
 LITELLM_CONFIG = CONFIG_DIR / "litellm_config.yaml"
 OPENCODE_CONFIG = CONFIG_DIR / "opencode.json"
 
-sys.path.insert(0, str(GATEWAY_DIR))
-sys.path.insert(0, str(ROOT))  # para 'from config.defaults import ...'
+sys.path.insert(0, str(ROOT))  # para config.defaults y el paquete gateway
 
 # --- defaults (overrideables desde .env) ---
 LITELLM_PORT = 4000
@@ -354,7 +353,7 @@ def main() -> int:
     wait_gateway(gateway_port)  # no bloqueante: el gateway es opcional para el resto del backend
 
     # 4. Sidecar WhatsApp local (solo si el modo activo es "local")
-    from config import modo_activo  # gateway/config.py
+    from gateway.config import modo_activo
 
     if modo_activo() == "local":
         if not _port_open(whatsapp_local_port):
