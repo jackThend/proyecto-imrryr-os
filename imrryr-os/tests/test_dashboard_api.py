@@ -61,6 +61,13 @@ def test_el_html_del_dashboard_se_sirve(cliente):
     assert "__IMRRYR_CHAT_TIMEOUT_MS__" not in r.text
 
 
+def test_css_del_dashboard_se_sirve(cliente):
+    r = cliente.get("/static/dashboard.css")
+    assert r.status_code == 200
+    assert "text/css" in r.headers["content-type"]
+    assert ":root" in r.text
+
+
 def test_html_inyecta_timeout_configurado(cliente, monkeypatch):
     monkeypatch.setenv("IMRRYR_CHAT_TIMEOUT_SECONDS", "123")
     r = cliente.get("/")
