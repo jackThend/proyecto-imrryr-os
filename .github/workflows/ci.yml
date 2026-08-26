@@ -1,0 +1,30 @@
+# CI de Imrryr OS — tests de la lógica determinista
+# Corre la suite pytest en cada push/PR. No toca la DB del usuario ni la red:
+# ver tests/conftest.py (base temporal) y los mocks de test_navegar_web.py.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: windows-latest  # mismo SO que desarrollo: paths y scheduler coinciden
+    defaults:
+      run:
+        working-directory: imrryr-os
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: imrryr-os/requirements.txt
+
+      - name: Instalar dependencias
+        run: pip install -r requirements.txt
+
+      - name: Tests
+        run: python -m pytest tests/ -q
