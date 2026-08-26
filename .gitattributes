@@ -1,0 +1,13 @@
+# Normalización de line endings: el repo guarda LF; Windows trabaja con LF
+# también (VS Code, Python, Git lo manejan bien). Los scripts de shell de
+# Windows sí necesitan CRLF o PowerShell/cmd los rompen.
+* text=auto eol=lf
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binales que nunca deben tocarse (por si se agregan assets después)
+*.png binary
+*.jpg binary
+*.db binary
+*.pickle binary
