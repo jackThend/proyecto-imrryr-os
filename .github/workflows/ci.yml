@@ -7,10 +7,16 @@ on:
   push:
     branches: [main]
   pull_request:
+  workflow_dispatch:
 
 jobs:
   pytest:
-    runs-on: windows-latest  # mismo SO que desarrollo: paths y scheduler coinciden
+    name: pytest (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
     defaults:
       run:
         working-directory: imrryr-os
