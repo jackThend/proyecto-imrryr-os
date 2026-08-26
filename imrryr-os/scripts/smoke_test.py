@@ -35,7 +35,7 @@ ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "config" / ".env"
 sys.path.insert(0, str(ROOT))  # para 'from config.defaults import ...'
 
-from config.defaults import OPENCODE_PASSWORD_DEFAULT  # noqa: E402
+from config.defaults import OPENCODE_PASSWORD_DEFAULT, chat_timeout_seconds  # noqa: E402
 
 LITELLM_PORT = 4000
 OPENCODE_PORT = 4040
@@ -104,7 +104,7 @@ def send_prompt(port_oc: int, password: str, sid: str, model: str, message: str)
             "model": {"providerID": "imrryr-llm", "modelID": model},
             "parts": [{"type": "text", "text": message}],
         },
-        timeout=120,
+        timeout=chat_timeout_seconds(),
     )
     r.raise_for_status()
     data = r.json()

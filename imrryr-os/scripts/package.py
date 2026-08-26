@@ -164,6 +164,7 @@ def create_env_template(profile: dict):
         "LITELLM_PORT=4000",
         "OPENCODE_PORT=4040",
         "DASHBOARD_PORT=3000",
+        "IMRRYR_CHAT_TIMEOUT_SECONDS=300",
         "",
         "# --- Auth servidor OpenCode ---",
         "OPENCODE_SERVER_PASSWORD=cambia_esta_password",

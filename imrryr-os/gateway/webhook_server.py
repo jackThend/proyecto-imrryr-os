@@ -45,9 +45,10 @@ ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "config" / ".env"
 DB_PATH = ROOT / "vault" / "sqlite" / "imrryr.db"
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
+sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "skills"))
-from config import guardar_config, leer_config, modo_activo  # noqa: E402
+from config.defaults import chat_timeout_seconds  # noqa: E402
+from gateway.config import guardar_config, leer_config, modo_activo  # noqa: E402
 
 if ENV_FILE.exists():
     load_dotenv(ENV_FILE)
@@ -373,7 +374,7 @@ def _reenviar_a_opencode(texto: str) -> str:
             },
             # Mismo motivo que en dashboard/server.py: delegar en subagentes
             # encadena varias llamadas al modelo y 120s se quedaba corto.
-            timeout=300,
+            timeout=chat_timeout_seconds(),
         )
         r.raise_for_status()
         data = r.json()

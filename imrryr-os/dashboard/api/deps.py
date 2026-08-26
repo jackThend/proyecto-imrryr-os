@@ -9,7 +9,9 @@ import base64
 import os
 from pathlib import Path
 
-from config.defaults import OPENCODE_PASSWORD_DEFAULT
+from config.defaults import OPENCODE_PASSWORD_DEFAULT, chat_timeout_seconds
+
+__all__ = ["chat_timeout_seconds"]
 
 # --- rutas (deps.py vive en dashboard/api/) ---
 ROOT = Path(__file__).resolve().parents[2]

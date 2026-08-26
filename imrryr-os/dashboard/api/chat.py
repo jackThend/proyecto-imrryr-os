@@ -95,7 +95,7 @@ async def chat(request: Request):
                 # tardó 108s y una consulta de agenda 123s — con el límite
                 # anterior esa última moría por timeout aunque el modelo estaba
                 # respondiendo bien.
-                timeout=300,
+                timeout=deps.chat_timeout_seconds(),
             )
             r.raise_for_status()
             data = r.json()

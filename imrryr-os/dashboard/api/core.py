@@ -20,6 +20,7 @@ router = APIRouter()
 @router.get("/", response_class=HTMLResponse)
 async def dashboard():
     html = (Path(__file__).resolve().parents[1] / "dashboard.html").read_text(encoding="utf-8")
+    html = html.replace("__IMRRYR_CHAT_TIMEOUT_MS__", str(deps.chat_timeout_seconds() * 1000))
     return HTMLResponse(html)
 
 

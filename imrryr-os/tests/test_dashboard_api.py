@@ -58,6 +58,14 @@ def test_el_html_del_dashboard_se_sirve(cliente):
     r = cliente.get("/")
     assert r.status_code == 200
     assert "text/html" in r.headers["content-type"]
+    assert "__IMRRYR_CHAT_TIMEOUT_MS__" not in r.text
+
+
+def test_html_inyecta_timeout_configurado(cliente, monkeypatch):
+    monkeypatch.setenv("IMRRYR_CHAT_TIMEOUT_SECONDS", "123")
+    r = cliente.get("/")
+    assert r.status_code == 200
+    assert "AbortSignal.timeout(Number('123000'))" in r.text
 
 
 # ---------------------------------------------------------------------------

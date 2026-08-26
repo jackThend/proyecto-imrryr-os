@@ -1080,10 +1080,10 @@ async function enviarChatGenerico(appId, agente) {
     const r = await fetch('/api/chat', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensaje: texto, agente }),
-      // 300s, igual que el timeout del servidor: delegar en varios subagentes
+      // Timeout configurable (300s por defecto): delegar en varios subagentes
       // encadena llamadas al modelo y con 120s el navegador cortaba respuestas
       // que estaban llegando bien (medido: 123s en una consulta de agenda).
-      signal: AbortSignal.timeout(300000),
+      signal: AbortSignal.timeout(Number('__IMRRYR_CHAT_TIMEOUT_MS__')),
     });
     const data = await r.json();
     hist.pop();
