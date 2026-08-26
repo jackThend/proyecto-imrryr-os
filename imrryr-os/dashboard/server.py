@@ -43,7 +43,16 @@ if ENV_FILE.exists():
     load_dotenv(ENV_FILE, override=True)
 
 app = FastAPI(title="Imrryr Dashboard", version="0.1.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+# CORS cerrado al propio origen del panel. Con "*", cualquier sitio web que
+# visitaras con el dashboard abierto podría llamar a estas APIs locales
+# (enviar correo, publicar en RRSS…) desde tu navegador. Todo el frontend
+# usa URLs relativas (mismo origen), así que esto no le afecta.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 app.mount("/adjuntos", StaticFiles(directory=str(ADJUNTOS_DIR)), name="adjuntos")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 

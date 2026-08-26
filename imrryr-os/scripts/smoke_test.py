@@ -7,7 +7,7 @@ Verifica que toda la cadena funciona de extremo a extremo:
   OpenCode serve (:4040)
       -> config/opencode.json (provider imrryr-llm)
       -> LiteLLM (:4000)
-      -> Gemini API (gemini-2.5-flash)
+      -> cuenta de IA activa (alias imrryr-activo, el proveedor que sea)
 
 Flujo:
   1. Verifica que ambos servicios estén vivos (healthcheck).
@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import base64
 import os
+import sys
 from pathlib import Path
 
 import httpx
@@ -32,10 +33,13 @@ from dotenv import load_dotenv
 
 ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "config" / ".env"
+sys.path.insert(0, str(ROOT))  # para 'from config.defaults import ...'
+
+from config.defaults import OPENCODE_PASSWORD_DEFAULT  # noqa: E402
 
 LITELLM_PORT = 4000
 OPENCODE_PORT = 4040
-OPENCODE_PASSWORD = "imrryr-local-pass"
+OPENCODE_PASSWORD = OPENCODE_PASSWORD_DEFAULT
 
 
 def log(msg: str) -> None:
@@ -91,7 +95,7 @@ def create_session(port_oc: int, password: str, model: str) -> str:
 
 def send_prompt(port_oc: int, password: str, sid: str, model: str, message: str) -> str:
     """Envía un prompt (endpoint síncrono /session/{id}/message) y devuelve el texto de respuesta."""
-    log("3/3 - Enviando prompt (OpenCode -> LiteLLM -> Gemini)…")
+    log("3/3 - Enviando prompt (OpenCode -> LiteLLM -> modelo activo)…")
     r = httpx.post(
         f"http://localhost:{port_oc}/session/{sid}/message",
         headers=basic_auth(password),
@@ -135,7 +139,7 @@ def main() -> int:
     ok = "PONG" in reply.upper()
     log("=" * 60)
     log("VVV E2E OK - Cadena completa operativa:" if ok else "⚠ Respuesta inesperada.")
-    log(f"     OpenCode(:{port_oc}) -> LiteLLM(:{port_llm}) -> Gemini")
+    log(f"     OpenCode(:{port_oc}) -> LiteLLM(:{port_llm}) -> modelo activo")
     log("=" * 60)
     return 0 if ok else 1
 

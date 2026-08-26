@@ -1,6 +1,7 @@
 """Núcleo: HTML del dashboard, widgets, estado del sistema, uso de IA y respaldos."""
 from __future__ import annotations
 
+import os
 import socket
 from pathlib import Path
 
@@ -49,8 +50,15 @@ async def list_widgets():
 # ---------------------------------------------------------------------------
 @router.get("/api/status")
 async def system_status():
+    # Puertos desde el entorno (el dashboard carga config/.env al arrancar):
+    # si el usuario cambia LITELLM_PORT u OPENCODE_PORT, este panel sigue
+    # diciendo la verdad. El gateway no es configurable por .env hoy: :5050.
     servicios = {}
-    for name, port in [("litellm", 4000), ("opencode", 4040), ("gateway", 5050)]:
+    for name, port in [
+        ("litellm", int(os.environ.get("LITELLM_PORT") or 4000)),
+        ("opencode", int(os.environ.get("OPENCODE_PORT") or 4040)),
+        ("gateway", 5050),
+    ]:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             s.settimeout(1)

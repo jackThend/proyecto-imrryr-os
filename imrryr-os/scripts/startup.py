@@ -49,6 +49,7 @@ LITELLM_CONFIG = CONFIG_DIR / "litellm_config.yaml"
 OPENCODE_CONFIG = CONFIG_DIR / "opencode.json"
 
 sys.path.insert(0, str(GATEWAY_DIR))
+sys.path.insert(0, str(ROOT))  # para 'from config.defaults import ...'
 
 # --- defaults (overrideables desde .env) ---
 LITELLM_PORT = 4000
@@ -56,7 +57,7 @@ OPENCODE_PORT = 4040
 GATEWAY_PORT = 5050
 WHATSAPP_LOCAL_PORT = 5051
 DASHBOARD_PORT = 3000
-OPENCODE_PASSWORD = "imrryr-local-pass"  # local-only; sustituir por .env
+from config.defaults import OPENCODE_PASSWORD_DEFAULT as OPENCODE_PASSWORD  # noqa: E402
 HEALTH_TIMEOUT = 60  # segundos máx esperando cada servicio
 
 

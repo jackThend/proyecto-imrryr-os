@@ -156,7 +156,8 @@ def create_env_template(profile: dict):
         "# Generado por package.py el " + date.today().isoformat(),
         "# =====================================================================",
         "#",
-        "# OBTENER: https://aistudio.google.com/apikey",
+        "# La cuenta de IA se activa desde el dashboard: Ajustes > Cuentas de IA",
+        "# (acepta Gemini, OpenCode GO u Ollama local — ver cuentas_ia.py).",
         "GEMINI_API_KEY=",
         "",
         "# --- Puertos locales ---",
@@ -167,8 +168,10 @@ def create_env_template(profile: dict):
         "# --- Auth servidor OpenCode ---",
         "OPENCODE_SERVER_PASSWORD=cambia_esta_password",
         "",
-        "# --- Modelo por defecto ---",
-        "DEFAULT_MODEL=gemini-flash",
+        "# --- Modelo ---",
+        "# Vacío a propósito (neutralidad de modelos): el sistema usa el alias",
+        "# imrryr-activo, que apunta a la cuenta activada en el dashboard.",
+        "DEFAULT_MODEL=",
     ]
 
     if profile.get("modulos", {}).get("terminal", True):
@@ -229,7 +232,7 @@ def main():
     subprocess.run([python, "scripts/init_db.py"], check=True)
     
     log("Instalacion completada.")
-    log("1. Edita config/.env con tu GEMINI_API_KEY")
+    log("1. Activa tu cuenta de IA en Ajustes > Cuentas de IA (dashboard)")
     log("2. Ejecuta: python scripts/startup.py")
     log("3. Abre: http://localhost:3000")
     return 0

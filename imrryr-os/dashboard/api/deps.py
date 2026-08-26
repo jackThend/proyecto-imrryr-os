@@ -9,6 +9,8 @@ import base64
 import os
 from pathlib import Path
 
+from config.defaults import OPENCODE_PASSWORD_DEFAULT
+
 # --- rutas (deps.py vive en dashboard/api/) ---
 ROOT = Path(__file__).resolve().parents[2]
 DASHBOARD_DIR = ROOT / "dashboard"
@@ -28,7 +30,7 @@ def _opencode_port() -> int:
 
 
 def _opencode_password() -> str:
-    return os.environ.get("OPENCODE_SERVER_PASSWORD", "imrryr-local-pass")
+    return os.environ.get("OPENCODE_SERVER_PASSWORD") or OPENCODE_PASSWORD_DEFAULT
 
 
 def _modelo_activo() -> str:

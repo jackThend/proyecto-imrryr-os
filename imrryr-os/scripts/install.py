@@ -78,7 +78,7 @@ def create_env() -> bool:
 
     shutil.copy2(env_example, env_file)
     log(".env creado desde plantilla.")
-    log("IMPORTANTE: Edita config/.env y agrega tu GEMINI_API_KEY")
+    log("IMPORTANTE: activa tu cuenta de IA en Ajustes > Cuentas de IA (dashboard)")
     return True
 
 
@@ -161,7 +161,7 @@ def print_next_steps():
     log("=" * 60)
     log("")
     log("  Proximos pasos:")
-    log("  1. Edita config/.env con tu GEMINI_API_KEY")
+    log("  1. Activa tu cuenta de IA en Ajustes > Cuentas de IA (dashboard)")
     log("  2. python scripts/startup.py")
     log("  3. Abre http://localhost:3000 en tu navegador")
     log("")
