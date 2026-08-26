@@ -155,19 +155,19 @@ def init_db() -> bool:
 
 def print_next_steps():
     profile_name = detect_profile()
-    log(f"")
+    log("")
     log("=" * 60)
     log(f"  Imrryr OS instalado — Perfil: {profile_name}")
     log("=" * 60)
-    log(f"")
+    log("")
     log("  Proximos pasos:")
-    log(f"  1. Edita config/.env con tu GEMINI_API_KEY")
-    log(f"  2. python scripts/startup.py")
-    log(f"  3. Abre http://localhost:3000 en tu navegador")
-    log(f"")
-    log(f"  Para detener: python scripts/shutdown.py")
-    log(f"  Para cambiar modelo: python scripts/switch_model.py")
-    log(f"")
+    log("  1. Edita config/.env con tu GEMINI_API_KEY")
+    log("  2. python scripts/startup.py")
+    log("  3. Abre http://localhost:3000 en tu navegador")
+    log("")
+    log("  Para detener: python scripts/shutdown.py")
+    log("  Para cambiar modelo: python scripts/switch_model.py")
+    log("")
 
 
 def main() -> int:

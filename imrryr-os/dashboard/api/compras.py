@@ -4,7 +4,6 @@ from __future__ import annotations
 import json
 
 from fastapi import APIRouter
-from fastapi.responses import JSONResponse
 
 from api import deps
 

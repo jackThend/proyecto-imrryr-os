@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Test de integracion: verifica que todos los servicios respondan."""
 import httpx
-import sys
 
 BASE = "http://localhost:3000"
 

@@ -15,7 +15,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import os
 import shutil
 import sys
 import zipfile
@@ -286,7 +285,7 @@ def main() -> int:
     zip_path = create_zip(args.profile)
     size_mb = zip_path.stat().st_size / (1024 * 1024)
 
-    log(f"Empaquetado completado:")
+    log("Empaquetado completado:")
     log(f"  Perfil: {profile['nombre']}")
     log(f"  Archivo: {zip_path.name}")
     log(f"  Tamaño: {size_mb:.1f} MB")

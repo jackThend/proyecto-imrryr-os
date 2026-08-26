@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Debug: Prueba el flujo de chat real contra OpenCode API."""
-import base64, json, time
+import base64
 import httpx
 
 PASSWORD = "imryyr-local-pass"

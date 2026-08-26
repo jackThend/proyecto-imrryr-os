@@ -12,8 +12,6 @@ from __future__ import annotations
 
 import argparse
 import base64
-import json
-import os
 import pickle
 from pathlib import Path
 
@@ -29,7 +27,6 @@ def log(msg: str) -> None:
 
 def get_service():
     from google.auth.transport.requests import Request
-    from google.oauth2.credentials import Credentials
     from google_auth_oauthlib.flow import InstalledAppFlow
     from googleapiclient.discovery import build
 

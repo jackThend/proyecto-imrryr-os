@@ -14,7 +14,6 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
-import sys
 from datetime import date
 from pathlib import Path
 
@@ -93,20 +92,20 @@ def generate_status(project_path: Path, project_name: str) -> str:
 
     lines = [
         f"# Estado del Proyecto: {project_name}",
-        f"",
+        "",
         f"> Generado: {date.today().isoformat()}",
-        f"> Autodocumentación automática (scripts/autodoc.py)",
-        f"",
-        f"## Tecnologías detectadas",
-        f"",
+        "> Autodocumentación automática (scripts/autodoc.py)",
+        "",
+        "## Tecnologías detectadas",
+        "",
     ]
     for t in techs:
         lines.append(f"- {t}")
 
     lines.extend([
-        f"",
-        f"## Commits recientes (últimas 24h)",
-        f"",
+        "",
+        "## Commits recientes (últimas 24h)",
+        "",
     ])
 
     if git_commits:
@@ -117,9 +116,9 @@ def generate_status(project_path: Path, project_name: str) -> str:
         lines.append("*Sin actividad reciente*")
 
     lines.extend([
-        f"",
-        f"## Estructura del proyecto",
-        f"",
+        "",
+        "## Estructura del proyecto",
+        "",
     ])
 
     # List top-level dirs
@@ -130,8 +129,8 @@ def generate_status(project_path: Path, project_name: str) -> str:
         lines.append(f"- {entry.name}{suffix}")
 
     lines.extend([
-        f"",
-        f"---",
+        "",
+        "---",
         f"_Actualizado: {date.today().isoformat()} por Imrryr OS_",
     ])
 
