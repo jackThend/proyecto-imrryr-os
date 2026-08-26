@@ -33,12 +33,30 @@ CORE_DIRS = [
     "dashboard",
     "gateway",
     "docs",
-    "semillas",
 ]
 
+# Archivos base siempre incluidos
 CORE_FILES = [
     "requirements.txt",
 ]
+
+# Espejo del .gitignore: lo que es secreto o dato del usuario NUNCA entra al
+# distributable. Antes solo se excluía .env y el zip se llevaba la sesión de
+# WhatsApp (.wwebjs_auth), las credenciales de config/*.json, los fondos
+# personales del dashboard y hasta node_modules del sidecar.
+IGNORE_PATTERNS = shutil.ignore_patterns(
+    # basura de entorno / build
+    "__pycache__", "*.pyc", ".pytest_cache", ".venv", ".run", "node_modules", "tmp",
+    # secretos y estado local (el .env.example lo regenera create_env_template)
+    ".env", ".env.*",
+    "cuentas_*.json", "admin_modulos.json", "gmail_*", "*.pickle",
+    "scheduler_estado.json", "ultimo_audio.json", "compras_prefs.json",
+    "region.json", "agenda_prefs.json", "gateway_config.json",
+    # sesión de WhatsApp local
+    ".wwebjs_auth", ".wwebjs_cache", "qr.png",
+    # contenido personal del usuario dentro de carpetas de código
+    "fondos", "audios", "privado", "eventos", "vault",
+)
 
 
 def log(msg: str) -> None:
@@ -72,7 +90,7 @@ def copy_core():
             dst = PKG_DIR / dirname
             if dst.exists():
                 shutil.rmtree(dst)
-            shutil.copytree(src, dst, ignore=shutil.ignore_patterns(".venv", "__pycache__", ".run", ".gitkeep", ".env"))
+            shutil.copytree(src, dst, ignore=IGNORE_PATTERNS)
             log(f"  Core: {dirname}/")
 
     for fname in CORE_FILES:
@@ -80,6 +98,11 @@ def copy_core():
         if src.exists():
             shutil.copy2(src, PKG_DIR / fname)
             log(f"  Core: {fname}")
+
+    # semillas/ es dato del usuario: viaja VACÍA como estructura lista para usar.
+    (PKG_DIR / "semillas" / "adjuntos").mkdir(parents=True, exist_ok=True)
+    (PKG_DIR / "semillas" / ".gitkeep").write_text("", encoding="utf-8")
+    log("  Core: semillas/ (estructura vacía, sin datos)")
 
 
 def copy_agents(agent_list: list[str]):
