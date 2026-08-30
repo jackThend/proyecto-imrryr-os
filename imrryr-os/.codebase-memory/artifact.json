@@ -1,0 +1,11 @@
+{
+    "schema_version": 2,
+    "commit": "35f6aa973174b16fdc6ed67781614feb65fe7f02",
+    "indexed_at": "2026-08-30T22:56:10Z",
+    "project": "imrryr-os",
+    "nodes": 2120,
+    "edges": 6544,
+    "original_size": 6619136,
+    "compressed_size": 1275151,
+    "compression_level": 9
+}
