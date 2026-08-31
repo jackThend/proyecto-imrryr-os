@@ -12,7 +12,7 @@ litellm[proxy]>=1.52.0
 python-dotenv>=1.0.1
 
 # --- Backend del dashboard (Fase 6) y servidores locales ---
-fastapi>=0.115.0
+fastapi>=0.141.1
 uvicorn[standard]>=0.32.0
 
 # --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---
