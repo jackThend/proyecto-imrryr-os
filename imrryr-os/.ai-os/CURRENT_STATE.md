@@ -2,11 +2,14 @@
 
 ## Variables Clave
 - **Proyecto**: imrryr-os
-- **Última iteración**: 2026-08-31 — migración mcp 2.x completada con smoke real
+- **Última iteración**: 2026-08-31 — verificación final de integridad completada
 - **CI**: ambos OS en verde (Windows + Ubuntu)
 - **Tests**: 80/80 pasando (25 del manifiesto + 1 regresión MCP + 54 previos)
 - **Linter**: Ruff sin errores (incluye `.ai-os/`)
 - **mcp**: 2.1.1 instalado y verificado end-to-end (stdio: initialize, tools/list 38, tools/call)
+- **Servicios**: dashboard/litellm/opencode/gateway/sidecar en 3000/4000/4040/5050/5051
+- **fastapi**: techo <0.141 (litellm[proxy] lo fija con ==; PR Dependabot #6 cerrado con evidencia)
+- **Zips**: regenerados con requirements.txt actualizado (pyme + tech, 0.6 MB)
 - **GROQ_API_KEY**: presente en config/.env — transcripción Groq activa en WhatsApp y voice-bridge
 
 ## Estado de Módulos del Manifiesto
@@ -31,4 +34,4 @@ RFC aprobado y aplicado: pins corregidos en requirements.txt.
 Validación: pip check limpio, ruff limpio, suite 79/79, smoke TTS real OK.
 
 ## Siguiente Paso Pendiente
-Migración mcp 2.x (FastMCP → MCPServer) y rotación de API key antes de producción (aplazada por el usuario).
+Única tarea restante del PLAN: rotar API key antes de producción (aplazada por decisión del usuario).

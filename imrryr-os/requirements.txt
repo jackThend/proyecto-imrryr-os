@@ -12,7 +12,10 @@ litellm[proxy]>=1.52.0
 python-dotenv>=1.0.1
 
 # --- Backend del dashboard (Fase 6) y servidores locales ---
-fastapi>=0.115.0
+# Techo <0.141 obligatorio (evidencia CI 2026-08-31): litellm[proxy] fija
+# fastapi con == exacto; >=0.141 hace ResolutionImpossible con cualquier
+# litellm del rango. El floor lo gobierna litellm hasta que migre.
+fastapi>=0.115.0,<0.141
 uvicorn[standard]>=0.32.0
 
 # --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---

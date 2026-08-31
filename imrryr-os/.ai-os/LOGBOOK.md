@@ -76,3 +76,17 @@
 **Decisiones Técnicas (ADR)**: API v2 compatible con nuestro uso exacto (add_tool y run stdio conservan firma); v2 atiende clientes del protocolo 2025 sin configuración, OpenCode no necesita cambios; test de regresión hermético guarda el auto-discovery (>=30 tools); try/except via getattr en el test por si la API interna _tool_manager vuelve a cambiar
 
 **Siguiente Paso Pendiente**: Verificación final de integridad pre-producción; rotación de API key (única tarea restante, aplazada por el usuario)
+
+## [2026-08-31 18:06] Iteración #29
+**Objetivo**: Verificación final de integridad pre-producción
+
+**Entidades Modificadas**:
+- requirements.txt -> fastapi>=0.115.0,<0.141 (techo por pin exacto de litellm[proxy])
+- scripts/startup.py -> servicios reiniciados (estaban caídos)
+- dist/imrryr-os-pyme.zip + tech -> regenerados con requirements.txt actualizado
+
+**Diagnósticos de Validación**: Puertos 3000/4000/4040/5050/5051: up | servicios litellm/opencode/gateway: true | html 200 con css/js externos | timeout inyectado: chatTimeoutMs Number('300000') | widgets=11 via /api/widgets | respaldo integrity_check ok + imrryr_2026-08-31.db creado | zips 0.6MB regenerados
+
+**Decisiones Técnicas (ADR)**: fastapi ceiling <0.141: litellm[proxy] fija fastapi con == exacto y >=0.141 hace ResolutionImpossible (evidencia CI run 33443237461, PR #6 cerrado con comentario); PRs Dependabot #2 #4 #5 (pip) y #3 (express 5 major del sidecar WhatsApp) quedan abiertos para sesión dedicada
+
+**Siguiente Paso Pendiente**: Única tarea restante: rotar API key antes de producción (aplazada por el usuario)

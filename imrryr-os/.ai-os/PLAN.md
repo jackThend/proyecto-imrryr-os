@@ -95,5 +95,5 @@ imrryr-os/
 - [x] Wire del voice-bridge al gateway vía skill compartida (Groq heredado sin cambios en webhook_server.py)
 - [x] Revisar 4 breaking changes del scout con RFC aprobado (RFC 2026-08-31: pins corregidos en requirements.txt)
 - [x] Migrar mcp 1.x → 2.x (FastMCP → MCPServer en mcp_server/skills_server.py; smoke stdio real: initialize + 38 tools + tools/call OK)
+- [x] Verificación final de integridad (2026-08-31: servicios up, dashboard en vivo con timeout inyectado y widgets=11, respaldo integrity ok + respaldo del día, zips regenerados, techo fastapi por conflicto litellm documentado y PR #6 cerrado con evidencia)
 - [ ] Rotar API key antes de producción
-- [ ] Verificación final de integridad
