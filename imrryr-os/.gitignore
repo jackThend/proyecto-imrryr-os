@@ -1,2 +1,5 @@
 ﻿# AI-OS sandbox files
 .ai-os/sandbox/
+
+# AI-OS runtime state (volatil, la memoria durable vive en LOGBOOK/CURRENT_STATE)
+.ai-os/fetch_log.json

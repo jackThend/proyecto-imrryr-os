@@ -2,38 +2,33 @@
 
 ## Variables Clave
 - **Proyecto**: imrryr-os
-- **Ultima iteración**: 2026-08-26 (commit 35f6aa9: Dependabot)
-- **Ultimo commit principal**: 8c04510 (JavaScript extraction)
+- **Última iteración**: 2026-08-30 — módulos del manifiesto funcionales
 - **CI**: ambos OS en verde (Windows + Ubuntu)
 - **Tests**: 54/54 pasando
-- **Linter**: Ruff sin errores reales
-- **Dashboard**: en vivo en puerto 3000, todos servicios activos
-- **Backup diario**: funcionando, ultimo `imrryr_2026-08-26.db` (168 KB), integrity_check ok
-- **Respaldos totales**: 6 (retención 14 días)
-- **Zips distribución**: imrryr-os-pyme.zip y imrryr-os-tech.zip (0.6 MB cada uno)
+- **Linter**: Ruff sin errores (incluye `.ai-os/`)
 - **Codebase-memory**: indexado, 2120 nodos, 6544 aristas
-- **Claves API**: actual en `config/.env` como `IMRRYR_ACTIVE_API_KEY`; rotación pendiente antes de producción
+- **GROQ_API_KEY**: presente en config/.env — voice-bridge en modo Groq activo
+
+## Estado de Módulos del Manifiesto
+- **config.json**: v1.1.0 con decisiones del usuario (Groq primario/local fallback, skills separadas, CLI, scout stack+agentes+MCPs, sandbox subdirectorio, modelos sugeridos) ✓
+- **PROJECT_SPEC.md**: completo ✓
+- **PLAN.md**: actualizado con progreso real ✓
+- **LOGBOOK.md**: iteración #25 registrada ✓
+- **voice-bridge**: FUNCIONAL — Groq (whisper-large-v3) primario, faster-whisper local fallback, edge-tts síntesis ✓
+- **meta-harness**: FUNCIONAL — scout PyPI detectó 4 breaking changes (mcp 2.x, edge-tts 7.x, psutil 7.x, pytest 9.x), 11 agentes analizados, sandbox aislado verificado sin fuga de credenciales ✓
+- **init-project**: CLI con entrevista estructurada ✓
+- **Skills forjadas**: ast_navigation (protocolo FETCH + registro), sdd_protocol (enforcement SDD + LOGBOOK), deterministic_validate (ruff + pytest, diagnóstico exacto) ✓
 
 ## Bloqueo Activo
-- **API key**: clave actual no rotada. Pendiente de rotación antes de producción.
-- **Backup externo**: no implementado (solo local por decisión del usuario)
+- **API key**: rotación pendiente antes de producción (decisión del usuario: aplazada)
 
-## Estado de Módulos del Manifesto
-- **config.json**: creado ✓
-- **PROJECT_SPEC.md**: creado ✓
-- **PLAN.md**: creado ✓
-- **CURRENT_STATE.md**: este archivo
-- **LOGBOOK.md**: creado ✓
-- **init-project**: pendiente de implementar
-- **voice-bridge**: pendiente de implementar
-- **meta-harness**: pendiente de implementar
-- **skills forjadas .ai-os/**: pendiente de implementar
-
-## Diagnósticos Recientes
-- LSP: sin errores de sintaxis
-- Tests: todos pasando
-- Integridad SQLite: ok
-- Servicios: litellm, opencode, gateway todos activos
+## Hallazgos del Scout (meta-harness, 2026-08-30)
+Breaking changes mayores pendientes de sandbox+changelog:
+- mcp >=1.2.0 → 2.1.1 (impacta mcp_server/skills_server.py)
+- edge-tts >=6.1.0 → 7.2.8 (impacta skills/tts_local.py)
+- psutil >=6.0.0 → 7.2.2 (impacta guardia de seguridad)
+- pytest >=8.0.0 → 9.1.1 (impacta CI)
+Ninguno actualizado: requieren RFC aprobado primero.
 
 ## Siguiente Paso Pendiente
-Implementar los módulos del manifiesto (init-project, voice-bridge, meta-harness) y forjar skills adicionales en `.ai-os/skills/`. Luego crear `AGENTS.md` que wiree el manifiesto al proyecto.
+Suite de tests para los módulos `.ai-os/` y wire del voice-bridge al gateway.

@@ -1,1 +1,88 @@
-{"manifest_version": "1.0.0", "system": "AI-OS Master", "project": "imrryr-os", "mcp_servers": {"codebase-memory": {"transport": "stdio", "command": "codebase-memory-mcp", "purpose": "AST navigation via Tree-sitter, call graphs, type signatures, dependency resolution", "required": true}, "filesystem": {"transport": "stdio", "command": "filesystem-mcp", "purpose": "Read/write .md, .json, SQLite persistent memory", "required": true}}, "model_routing": {"architect_planner": {"tier": "flagship", "role": "SPEC.md creation, UX flows, contract design", "source": "user_selection"}, "constructor_executor": {"tier": "efficient", "models": ["DeepSeek", "Gemini Flash", "Haiku"], "role": "diffs, refactoring, micro-tasks", "source": "user_selection"}, "streaming_voice": {"tier": "ultra_low_latency", "models": ["Groq", "Whisper Local"], "role": "audio transcription, spoken synthesis", "source": "skills/leer_en_voz.py"}, "auditor_reviewer": {"tier": "critical_reasoning", "role": "regression validation, security audit pre-production", "source": "user_selection"}}, "context_rules": {"max_context_utilization": "clean_each_turn", "navigation": "AST_via_codebase-memory", "tool_disclosure": "progressive", "deterministic_override": "lsp_compiler_linter"}, "workspace": {"root": "imrryr-os", "ai_os_dir": ".ai-os", "memory_files": ["PROJECT_SPEC.md", "PLAN.md", "CURRENT_STATE.md", "LOGBOOK.md"]}, "entry_points": {"dashboard": "dashboard/server.py", "gateway": "gateway/webhook_server.py", "skills_mcp": "skills/*.py"}}
+{
+  "manifest_version": "1.1.0",
+  "system": "AI-OS Master",
+  "project": "imrryr-os",
+  "mcp_servers": {
+    "codebase-memory": {
+      "transport": "stdio",
+      "command": "codebase-memory-mcp",
+      "purpose": "AST navigation via Tree-sitter, call graphs, type signatures, dependency resolution",
+      "required": true
+    },
+    "filesystem": {
+      "transport": "stdio",
+      "command": "filesystem-mcp",
+      "purpose": "Read/write .md, .json, SQLite persistent memory",
+      "required": true
+    }
+  },
+  "model_routing": {
+    "architect_planner": {
+      "tier": "flagship",
+      "role": "PROJECT_SPEC.md creation, UX flows, contract design",
+      "suggested": ["claude-opus", "gpt-5", "gemini-pro"],
+      "selection": "user_per_session"
+    },
+    "constructor_executor": {
+      "tier": "efficient",
+      "role": "code diffs, refactoring, micro-tasks",
+      "suggested": ["deepseek-chat", "gemini-flash", "claude-haiku"],
+      "selection": "user_per_session"
+    },
+    "streaming_voice": {
+      "tier": "ultra_low_latency",
+      "role": "audio transcription, spoken synthesis",
+      "primary": {
+        "provider": "groq",
+        "endpoint": "https://api.groq.com/openai/v1/audio/transcriptions",
+        "model": "whisper-large-v3",
+        "auth_env": "GROQ_API_KEY"
+      },
+      "fallback": {
+        "provider": "faster-whisper-local",
+        "implementation": "skills/transcribir_audio.py",
+        "model": "tiny"
+      },
+      "synthesis": {
+        "provider": "edge-tts",
+        "implementation": "skills/tts_local.py",
+        "voice": "es-CL-CatalinaNeural"
+      }
+    },
+    "auditor_reviewer": {
+      "tier": "critical_reasoning",
+      "role": "regression validation, security audit pre-production",
+      "suggested": ["o1", "claude-opus", "deepseek-reasoner"],
+      "selection": "user_per_session"
+    }
+  },
+  "context_rules": {
+    "max_context_utilization": "clean_each_turn",
+    "navigation": "AST_via_codebase-memory",
+    "tool_disclosure": "progressive",
+    "deterministic_override": "lsp_compiler_linter"
+  },
+  "skills_layers": {
+    "operational": "skills/ (70 MCP skills del OS, sirven al usuario)",
+    "forged": ".ai-os/skills/ (skills forjadas por el AI-OS, se gobierna a sí mismo)",
+    "rule": "nunca mezclar: .ai-os/skills/ solo contiene herramientas de gobierno del AI-OS"
+  },
+  "sandbox": {
+    "path": ".ai-os/sandbox/",
+    "isolation": "subdirectorio aislado, sin acceso a vault/ ni credenciales",
+    "approval_required": true
+  },
+  "workspace": {
+    "root": "imrryr-os",
+    "ai_os_dir": ".ai-os",
+    "memory_files": ["PROJECT_SPEC.md", "PLAN.md", "CURRENT_STATE.md", "LOGBOOK.md"]
+  },
+  "entry_points": {
+    "dashboard": "dashboard/server.py",
+    "gateway": "gateway/webhook_server.py",
+    "skills_mcp": "skills/*.py",
+    "voice_bridge": ".ai-os/modules/voice-bridge/voice_bridge.py",
+    "meta_harness": ".ai-os/modules/meta-harness/meta_harness.py",
+    "init_project": ".ai-os/modules/init-project/init_project.py"
+  }
+}

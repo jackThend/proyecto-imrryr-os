@@ -6,7 +6,7 @@ Conduce una entrevista estructurada con el usuario para definir el alcance,
 realiza benchmarking y genera conjuntamente el mapa conceptual y el plan técnico.
 """
 from __future__ import annotations
-import json
+
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
