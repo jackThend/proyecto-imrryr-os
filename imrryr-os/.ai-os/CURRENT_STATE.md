@@ -2,12 +2,12 @@
 
 ## Variables Clave
 - **Proyecto**: imrryr-os
-- **Última iteración**: 2026-08-30 — módulos del manifiesto funcionales
+- **Última iteración**: 2026-08-31 — tests del manifiesto + wire Groq al gateway
 - **CI**: ambos OS en verde (Windows + Ubuntu)
-- **Tests**: 54/54 pasando
+- **Tests**: 79/79 pasando (54 previos + 25 del manifiesto en tests/test_ai_os.py)
 - **Linter**: Ruff sin errores (incluye `.ai-os/`)
 - **Codebase-memory**: indexado, 2120 nodos, 6544 aristas
-- **GROQ_API_KEY**: presente en config/.env — voice-bridge en modo Groq activo
+- **GROQ_API_KEY**: presente en config/.env — transcripción Groq activa en WhatsApp y voice-bridge
 
 ## Estado de Módulos del Manifiesto
 - **config.json**: v1.1.0 con decisiones del usuario (Groq primario/local fallback, skills separadas, CLI, scout stack+agentes+MCPs, sandbox subdirectorio, modelos sugeridos) ✓
@@ -31,4 +31,4 @@ Breaking changes mayores pendientes de sandbox+changelog:
 Ninguno actualizado: requieren RFC aprobado primero.
 
 ## Siguiente Paso Pendiente
-Suite de tests para los módulos `.ai-os/` y wire del voice-bridge al gateway.
+Rotación de API key antes de producción (aplazada por el usuario) y revisión de los 4 breaking changes detectados por el scout con RFC aprobado.

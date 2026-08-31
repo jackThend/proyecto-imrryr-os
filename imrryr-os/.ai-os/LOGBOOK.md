@@ -35,3 +35,17 @@
 **Decisiones Técnicas (ADR)**: Groq primario con fallback local (decisión usuario); skills forjadas separadas de skills MCP operativas; scout determinista vía PyPI JSON API (cómputo determinista sobre inferencia); sandbox con env mínimo sin IMRRYR_/GROQ_/OPENAI_ vars
 
 **Siguiente Paso Pendiente**: Suite de tests para módulos .ai-os/ y wire voice-bridge al gateway
+
+## [2026-08-30 20:26] Iteración #26
+**Objetivo**: Suite de tests del manifiesto y wire Groq al gateway
+
+**Entidades Modificadas**:
+- skills/transcribir_audio.py -> transcribir_groq(), transcribir_con_motor(), _groq_api_key()
+- .ai-os/modules/voice-bridge/voice_bridge.py -> transcribir() delega en skill compartida
+- tests/test_ai_os.py -> 25 tests herméticos (sdd, fetch, lint, routing, versiones, sandbox)
+
+**Diagnósticos de Validación**: LSP: 0 errores (ruff) | Tests: 79/79 OK (54 previos + 25 nuevos)
+
+**Decisiones Técnicas (ADR)**: Wire sin tocar gateway/webhook_server.py: la skill transcribir_audio compartida ahora prueba Groq primero con fallback faster-whisper, heredando el cambio a WhatsApp y voice-bridge a la vez; transcribir() mantiene su firma (compatibilidad MCP); tests importan módulos .ai-os por ruta con importlib y parchean rutas a tmp_path
+
+**Siguiente Paso Pendiente**: Rotación de API key antes de producción (decisión aplazada por el usuario); revisar breaking changes del scout con RFC

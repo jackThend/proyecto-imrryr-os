@@ -2,27 +2,23 @@
 """voice-bridge — Módulo de Control por Voz y Streaming (Tanda VII).
 
 Arquitectura de decisión (2026-08-30):
-  - Primario: Groq Whisper (whisper-large-v3) — ultra-baja latencia.
-  - Fallback: faster-whisper local (skills/transcribir_audio.py) — offline.
-  - Síntesis: edge-tts (skills/tts_local.py) — ya instalado.
-
-La clave GROQ_API_KEY se lee de config/.env. Sin clave o sin red,
-el fallback local cubre el turno. Cero dependencias nuevas.
+  - La transcripción vive en skills/transcribir_audio.py (Groq primario,
+    faster-whisper fallback): este módulo delega, no duplica.
+  - La síntesis vive en skills/tts_local.py (edge-tts → pyttsx3).
+  - Este módulo aporta el enrutamiento de comandos del OS y el ciclo
+    completo de un turno de voz (transcribir → enrutar → confirmar).
 """
 from __future__ import annotations
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 AI_OS = ROOT / ".ai-os"
 CONFIG = AI_OS / "config.json"
-ENV_FILE = ROOT / "config" / ".env"
 
-SKILLS_DIR = ROOT / "skills"
 sys.path.insert(0, str(ROOT))
 
 
@@ -36,64 +32,13 @@ def cargar_config() -> dict:
     return {}
 
 
-def _groq_api_key() -> str:
-    """Lee GROQ_API_KEY del entorno o de config/.env."""
-    key = os.environ.get("GROQ_API_KEY", "")
-    if key:
-        return key
-    if ENV_FILE.exists():
-        for line in ENV_FILE.read_text(encoding="utf-8").splitlines():
-            if line.startswith("GROQ_API_KEY="):
-                return line.split("=", 1)[1].strip()
-    return ""
-
-
-def transcribir_groq(ruta_audio: str) -> str:
-    """Transcripción vía Groq (OpenAI-compatible). Devuelve '' si falla."""
-    key = _groq_api_key()
-    if not key:
-        log("GROQ_API_KEY no configurada — usando fallback local")
-        return ""
-    try:
-        import httpx
-
-        audio = Path(ruta_audio)
-        if not audio.exists():
-            log(f"ERROR: archivo no encontrado: {ruta_audio}")
-            return ""
-        response = httpx.post(
-            "https://api.groq.com/openai/v1/audio/transcriptions",
-            headers={"Authorization": f"Bearer {key}"},
-            files={"file": (audio.name, audio.read_bytes(), "audio/ogg")},
-            data={"model": "whisper-large-v3", "language": "es"},
-            timeout=30.0,
-        )
-        response.raise_for_status()
-        texto = response.json().get("text", "")
-        log(f"Transcripción Groq: {texto[:100]}...")
-        return texto
-    except Exception as e:
-        log(f"WARN: Groq falló ({e.__class__.__name__}: {e}) — usando fallback local")
-        return ""
-
-
-def transcribir_local(ruta_audio: str) -> str:
-    """Fallback local: delega en skills/transcribir_audio.py (faster-whisper)."""
-    from skills.transcribir_audio import transcribir
-
-    texto = transcribir(ruta_audio, modelo="tiny")
-    log(f"Transcripción local: {texto[:100]}...")
-    return texto
-
-
 def transcribir(ruta_audio: str) -> dict:
-    """Transcribe con Groq; si falla, usa faster-whisper local."""
-    texto = transcribir_groq(ruta_audio)
-    motor = "groq"
-    if not texto:
-        texto = transcribir_local(ruta_audio)
-        motor = "faster-whisper-local"
-    return {"texto": texto, "motor": motor}
+    """Delega en la skill compartida (Groq → faster-whisper local)."""
+    from skills.transcribir_audio import transcribir_con_motor
+
+    resultado = transcribir_con_motor(ruta_audio)
+    log(f"Transcripción ({resultado['motor']}): {resultado['texto'][:100]}...")
+    return resultado
 
 
 def sintetizar(texto: str, salida: str | None = None, voz: str = "es-CL") -> str:
@@ -122,14 +67,14 @@ def procesar_comando_voz(comando: str) -> dict:
     return {"comando": comando, "accion": None, "status": "sin_match"}
 
 
-def turno_completo(ruta_audio: str) -> dict:
+def turno_completo(ruta_audio: str, sintetizar_respuesta: bool = True) -> dict:
     """Ciclo completo: transcribir → enrutar → sintetizar confirmación."""
     resultado = transcribir(ruta_audio)
     if not resultado["texto"]:
         return {"status": "sin_transcripcion", "motor": resultado["motor"]}
     enrutado = procesar_comando_voz(resultado["texto"])
     respuesta = "Comando recibido." if enrutado["accion"] else "Comando no reconocido."
-    audio_out = sintetizar(respuesta)
+    audio_out = sintetizar(respuesta) if sintetizar_respuesta else ""
     return {
         "status": "completado",
         "motor": resultado["motor"],
@@ -145,9 +90,7 @@ def main() -> int:
     ap.add_argument("--sin-voz", action="store_true", help="No sintetizar respuesta")
     args = ap.parse_args()
 
-    resultado = turno_completo(args.audio)
-    if args.sin_voz:
-        resultado.pop("audio_respuesta", None)
+    resultado = turno_completo(args.audio, sintetizar_respuesta=not args.sin_voz)
     print(json.dumps(resultado, indent=2, ensure_ascii=False))
     return 0
 

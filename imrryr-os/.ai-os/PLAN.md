@@ -91,7 +91,7 @@ imrryr-os/
 - [x] Implementar módulo `voice-bridge` (Groq primario + faster-whisper fallback)
 - [x] Implementar módulo `meta-harness` (scout PyPI/agentes/MCPs + sandbox aislado)
 - [x] Crear `AGENTS.md` integrando el manifiesto
-- [ ] Implementar suite de tests para los módulos del manifiesto
-- [ ] Wire del voice-bridge al gateway (entrada de audio por WhatsApp)
+- [x] Implementar suite de tests para los módulos del manifiesto (25 tests en tests/test_ai_os.py)
+- [x] Wire del voice-bridge al gateway vía skill compartida (Groq heredado sin cambios en webhook_server.py)
 - [ ] Rotar API key antes de producción
 - [ ] Verificación final de integridad
