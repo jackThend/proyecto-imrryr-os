@@ -10,7 +10,7 @@ config/opencode.json (agent.<nombre>.permission.skill).
 Auto-discovery (sin registro manual): al arrancar, este servidor escanea
 skills/*.mcp.json, importa el módulo indicado en "script" y registra la
 función pública que se llama igual que "name" como una tool MCP real.
-FastMCP construye el schema de argumentos inspeccionando la firma real de
+MCPServer construye el schema de argumentos inspeccionando la firma real de
 la función de Python — el .mcp.json solo aporta nombre/descripción/qué
 módulo importar, no hace falta traducirlo a tipos.
 
@@ -18,6 +18,11 @@ Agregar una skill nueva es: crear skills/x.py (con una función pública
 llamada igual que la skill) + skills/x.mcp.json — sin tocar este archivo.
 
 No se ejecuta a mano: lo arranca OpenCode como subproceso stdio.
+
+Migración mcp 2.x (RFC 2026-08-31): FastMCP fue renombrado a MCPServer;
+add_tool(fn, name=, description=) y run(transport="stdio") conservan su
+firma, y el servidor v2 atiende clientes del protocolo 2025 (como el
+cliente MCP de OpenCode) sin configuración adicional.
 """
 from __future__ import annotations
 
@@ -31,9 +36,9 @@ ROOT = Path(__file__).resolve().parent.parent
 SKILLS_DIR = ROOT / "skills"
 sys.path.insert(0, str(SKILLS_DIR))
 
-from mcp.server.fastmcp import FastMCP  # noqa: E402
+from mcp.server import MCPServer  # noqa: E402
 
-mcp = FastMCP("imrryr")
+mcp = MCPServer("imrryr")
 
 _modulos_cargados: dict[str, ModuleType] = {}
 

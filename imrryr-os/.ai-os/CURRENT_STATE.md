@@ -2,11 +2,11 @@
 
 ## Variables Clave
 - **Proyecto**: imrryr-os
-- **Última iteración**: 2026-08-31 — tests del manifiesto + wire Groq al gateway
+- **Última iteración**: 2026-08-31 — migración mcp 2.x completada con smoke real
 - **CI**: ambos OS en verde (Windows + Ubuntu)
-- **Tests**: 79/79 pasando (54 previos + 25 del manifiesto en tests/test_ai_os.py)
+- **Tests**: 80/80 pasando (25 del manifiesto + 1 regresión MCP + 54 previos)
 - **Linter**: Ruff sin errores (incluye `.ai-os/`)
-- **Codebase-memory**: indexado, 2120 nodos, 6544 aristas
+- **mcp**: 2.1.1 instalado y verificado end-to-end (stdio: initialize, tools/list 38, tools/call)
 - **GROQ_API_KEY**: presente en config/.env — transcripción Groq activa en WhatsApp y voice-bridge
 
 ## Estado de Módulos del Manifiesto

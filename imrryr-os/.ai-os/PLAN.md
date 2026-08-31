@@ -94,6 +94,6 @@ imrryr-os/
 - [x] Implementar suite de tests para los módulos del manifiesto (25 tests en tests/test_ai_os.py)
 - [x] Wire del voice-bridge al gateway vía skill compartida (Groq heredado sin cambios en webhook_server.py)
 - [x] Revisar 4 breaking changes del scout con RFC aprobado (RFC 2026-08-31: pins corregidos en requirements.txt)
-- [ ] Migrar mcp 1.x → 2.x (FastMCP → MCPServer en mcp_server/skills_server.py, con smoke del servidor real)
+- [x] Migrar mcp 1.x → 2.x (FastMCP → MCPServer en mcp_server/skills_server.py; smoke stdio real: initialize + 38 tools + tools/call OK)
 - [ ] Rotar API key antes de producción
 - [ ] Verificación final de integridad

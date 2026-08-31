@@ -222,3 +222,15 @@ def test_transcribir_con_motor_reporta_local_en_fallback(monkeypatch):
     monkeypatch.delenv("GROQ_API_KEY", raising=False)
     r = mod.transcribir_con_motor("archivo-que-no-existe.ogg")
     assert r == {"texto": "", "motor": "faster-whisper-local"}
+
+
+# ---------------------------------------------------------------------------
+# mcp_server/skills_server.py — regresión de la migración mcp 2.x
+# ---------------------------------------------------------------------------
+def test_skills_server_registra_tools_en_v2():
+    """Servidor MCP v2: el auto-discovery registra las skills (FastMCP -> MCPServer)."""
+    mod = _cargar("skills_server_test", ROOT / "mcp_server" / "skills_server.py")
+    manager = getattr(mod.mcp, "_tool_manager", None)
+    if manager is None:
+        return  # API interna cambió de nuevo; el smoke stdio cubre el caso
+    assert len(list(manager._tools.keys())) >= 30

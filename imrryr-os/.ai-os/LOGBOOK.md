@@ -62,3 +62,17 @@
 **Decisiones Técnicas (ADR)**: mcp NO se migra ahora: 2.x elimina FastMCP (skills_server.py:34 rompería); techo <2 protector porque el pin sin techo ya rompía installs frescos; edge-tts 7 obligatorio porque Microsoft rompio su API en dic 2025 y las 6.x ya no generan audio; psutil y pytest: codificar la realidad ya validada por la suite + techos <8/<10
 
 **Siguiente Paso Pendiente**: Migración mcp 1.x a 2.x como tarea propia del PLAN; rotación de API key antes de producción
+
+## [2026-08-31 17:45] Iteración #28
+**Objetivo**: Migración mcp 1.x a 2.x con smoke del servidor real
+
+**Entidades Modificadas**:
+- mcp_server/skills_server.py -> from mcp.server import MCPServer, mcp = MCPServer('imrryr')
+- requirements.txt -> mcp>=2.1.1,<3
+- tests/test_ai_os.py -> test_skills_server_registra_tools_en_v2()
+
+**Diagnósticos de Validación**: LSP: 0 errores | Tests: 80/80 OK | Smoke stdio real: initialize (era 2025) OK, tools/list 38 tools, tools/call listar_semillas OK | pip check: limpio
+
+**Decisiones Técnicas (ADR)**: API v2 compatible con nuestro uso exacto (add_tool y run stdio conservan firma); v2 atiende clientes del protocolo 2025 sin configuración, OpenCode no necesita cambios; test de regresión hermético guarda el auto-discovery (>=30 tools); try/except via getattr en el test por si la API interna _tool_manager vuelve a cambiar
+
+**Siguiente Paso Pendiente**: Verificación final de integridad pre-producción; rotación de API key (única tarea restante, aplazada por el usuario)
