@@ -49,3 +49,16 @@
 **Decisiones Técnicas (ADR)**: Wire sin tocar gateway/webhook_server.py: la skill transcribir_audio compartida ahora prueba Groq primero con fallback faster-whisper, heredando el cambio a WhatsApp y voice-bridge a la vez; transcribir() mantiene su firma (compatibilidad MCP); tests importan módulos .ai-os por ruta con importlib y parchean rutas a tmp_path
 
 **Siguiente Paso Pendiente**: Rotación de API key antes de producción (decisión aplazada por el usuario); revisar breaking changes del scout con RFC
+
+## [2026-08-30 22:17] Iteración #27
+**Objetivo**: RFC de breaking changes aprobado y pins corregidos en requirements.txt
+
+**Entidades Modificadas**:
+- requirements.txt -> mcp>=1.2.0,<2, edge-tts>=7.2.8, psutil>=7.2.2,<8, pytest>=9.1.1,<10
+- .ai-os/sandbox/rfc_breaking_changes_20260831.md -> RFC aprobado y aplicado
+
+**Diagnósticos de Validación**: pip check: sin dependencias rotas | ruff: 0 errores | Tests: 79/79 OK | Smoke TTS real (edge-tts 7.2.8): OK 18KB mp3 | FastMCP baseline en mcp 1.28.1: OK
+
+**Decisiones Técnicas (ADR)**: mcp NO se migra ahora: 2.x elimina FastMCP (skills_server.py:34 rompería); techo <2 protector porque el pin sin techo ya rompía installs frescos; edge-tts 7 obligatorio porque Microsoft rompio su API en dic 2025 y las 6.x ya no generan audio; psutil y pytest: codificar la realidad ya validada por la suite + techos <8/<10
+
+**Siguiente Paso Pendiente**: Migración mcp 1.x a 2.x como tarea propia del PLAN; rotación de API key antes de producción

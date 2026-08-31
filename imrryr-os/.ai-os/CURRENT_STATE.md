@@ -22,13 +22,13 @@
 ## Bloqueo Activo
 - **API key**: rotación pendiente antes de producción (decisión del usuario: aplazada)
 
-## Hallazgos del Scout (meta-harness, 2026-08-30)
-Breaking changes mayores pendientes de sandbox+changelog:
-- mcp >=1.2.0 → 2.1.1 (impacta mcp_server/skills_server.py)
-- edge-tts >=6.1.0 → 7.2.8 (impacta skills/tts_local.py)
-- psutil >=6.0.0 → 7.2.2 (impacta guardia de seguridad)
-- pytest >=8.0.0 → 9.1.1 (impacta CI)
-Ninguno actualizado: requieren RFC aprobado primero.
+## Hallazgos del Scout (meta-harness) — RESUELTOS 2026-08-31
+RFC aprobado y aplicado: pins corregidos en requirements.txt.
+- mcp: `>=1.2.0,<2` (techo protector; migración 2.x abierta en PLAN)
+- edge-tts: `>=7.2.8` (6.x rota contra la API actual de Microsoft)
+- psutil: `>=7.2.2,<8`
+- pytest: `>=9.1.1,<10`
+Validación: pip check limpio, ruff limpio, suite 79/79, smoke TTS real OK.
 
 ## Siguiente Paso Pendiente
-Rotación de API key antes de producción (aplazada por el usuario) y revisión de los 4 breaking changes detectados por el scout con RFC aprobado.
+Migración mcp 2.x (FastMCP → MCPServer) y rotación de API key antes de producción (aplazada por el usuario).

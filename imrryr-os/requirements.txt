@@ -16,7 +16,9 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.32.0
 
 # --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---
-mcp>=1.2.0
+# Techo <2 obligatorio (RFC 2026-08-31): mcp 2.x elimina FastMCP y rompería
+# mcp_server/skills_server.py. Migración a 2.x = tarea propia del PLAN.
+mcp>=1.2.0,<2
 
 # --- Cliente HTTP para healthchecks y llamadas a APIs locales ---
 httpx>=0.27.0
@@ -45,7 +47,9 @@ beautifulsoup4>=4.12.0
 playwright>=1.47.0
 
 # --- Text-to-Speech local (Fase 3.2, skills/tts_local.py) ---
-edge-tts>=6.1.0
+# >=7.2.8 obligatorio (RFC 2026-08-31): Microsoft rompió su API Edge TTS en
+# dic 2025; las 6.x ya no generan audio. API Communicate/save compatible.
+edge-tts>=7.2.8
 pyttsx3>=2.90
 
 # --- Transcripción de audio local (Fase 5.2, skills/transcribir_audio.py) ---
@@ -56,11 +60,13 @@ google-auth-oauthlib>=1.2.0
 google-api-python-client>=2.100.0
 
 # --- Observabilidad de procesos (Fase 4, Guardia de Seguridad) ---
-psutil>=6.0.0
+# Techo <8 (RFC 2026-08-31): psutil 8.0 en desarrollo trae breaking changes.
+psutil>=7.2.2,<8
 
 # --- Tests de la lógica determinista (Tanda X, tests/) ---
 # Correr con: python -m pytest tests/ — no toca la DB del usuario ni la red.
-pytest>=8.0.0
+# RFC 2026-08-31: 9.1.1 validada por la suite (79/79). Solo API core en uso.
+pytest>=9.1.1,<10
 
 # --- Linter de errores reales (CI + desarrollo; reglas en ruff.toml) ---
 ruff>=0.16.0
