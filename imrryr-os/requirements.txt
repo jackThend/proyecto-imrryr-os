@@ -37,7 +37,7 @@ pyyaml>=6.0.2
 chromadb>=1.5.0
 
 # --- Lectura de PDFs (Fase 2.2, ingesta docs) ---
-pymupdf>=1.24.0
+pymupdf>=1.28.2
 
 # --- Web scraping (Fase 3.1, Tanda Q: scraper_tiendas.py) ---
 beautifulsoup4>=4.12.0
