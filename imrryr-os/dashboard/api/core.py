@@ -75,7 +75,17 @@ async def system_status():
 @router.get("/api/uso-ia")
 async def uso_ia_hoy():
     from uso_ia import uso_de_hoy
-    return uso_de_hoy()
+    return uso_de_hoy(incluir_detalles=True)
+
+
+@router.post("/api/uso-ia/presupuesto")
+async def actualizar_presupuesto_ia(payload: dict):
+    from uso_ia import guardar_limite_diario
+    limite = int(payload.get("limite_diario", 20))
+    res = guardar_limite_diario(limite)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
 
 
 # ---------------------------------------------------------------------------
@@ -94,3 +104,62 @@ async def crear_respaldo_db():
     if not resultado.get("ok"):
         return JSONResponse({"error": resultado.get("error", "no se pudo respaldar")}, status_code=500)
     return resultado
+
+
+# ---------------------------------------------------------------------------
+# API: Human-In-The-Loop (HITL) Autorizaciones pendientes
+# ---------------------------------------------------------------------------
+@router.get("/api/hitl/pendientes")
+async def listar_hitl_pendientes(agente: str = ""):
+    from skills.confirmacion_hitl import listar_solicitudes_pendientes
+    return {"solicitudes": listar_solicitudes_pendientes(agente)}
+
+
+@router.post("/api/hitl/{solicitud_id}/resolver")
+async def resolver_hitl(solicitud_id: int, payload: dict):
+    from skills.confirmacion_hitl import resolver_solicitud
+    decision = payload.get("decision", "")
+    res = resolver_solicitud(solicitud_id, decision)
+    if not res.get("ok"):
+        return JSONResponse(res, status_code=400)
+    return res
+
+
+# ---------------------------------------------------------------------------
+# API: Estado de desarrollo y proyectos (Agente Build)
+# ---------------------------------------------------------------------------
+@router.get("/api/codigo/estado")
+async def get_codigo_estado():
+    """Devuelve el estado del repositorio y el archivo de seguimiento de proyecto."""
+    import subprocess
+    root = deps.ROOT
+    current_state_file = root / ".ai-os" / "CURRENT_STATE.md"
+    contenido_state = ""
+    if current_state_file.exists():
+        try:
+            contenido_state = current_state_file.read_text(encoding="utf-8")
+        except Exception:
+            pass
+
+    branch = "main"
+    ultimo_commit = ""
+    try:
+        r_b = subprocess.run(["git", "branch", "--show-current"], cwd=str(root), capture_output=True, text=True)
+        if r_b.returncode == 0 and r_b.stdout.strip():
+            branch = r_b.stdout.strip()
+        r_c = subprocess.run(["git", "log", "-1", "--oneline"], cwd=str(root), capture_output=True, text=True)
+        if r_c.returncode == 0 and r_c.stdout.strip():
+            ultimo_commit = r_c.stdout.strip()
+    except Exception:
+        pass
+
+    estado_final = contenido_state.strip() or f"Rama activa: {branch}\nÚltimo commit: {ultimo_commit}\n\nListo para recibir instrucciones de desarrollo."
+    return {
+        "ok": True,
+        "ruta": str(root),
+        "branch": branch,
+        "ultimo_commit": ultimo_commit,
+        "estado": estado_final,
+    }
+
+

@@ -5,7 +5,7 @@ import httpx
 BASE = "http://localhost:3000"
 
 
-def test(path: str, desc: str) -> bool:
+def verificar_endpoint(path: str, desc: str) -> bool:
     try:
         r = httpx.get(f"{BASE}{path}", timeout=10)
         ok = r.status_code == 200
@@ -25,7 +25,7 @@ def main() -> int:
         ("/api/semillas", "API semillas"),
         ("/api/status", "API status"),
     ]
-    results = [test(p, d) for p, d in tests]
+    results = [verificar_endpoint(p, d) for p, d in tests]
     ok = all(results)
     print(f"\n{'V' if ok else 'X'} {sum(results)}/{len(results)} tests OK")
     return 0 if ok else 1

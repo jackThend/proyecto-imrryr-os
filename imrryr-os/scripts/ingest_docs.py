@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import sqlite3
 from pathlib import Path
 
 import chromadb
@@ -21,6 +22,7 @@ from chromadb.config import Settings
 ROOT = Path(__file__).resolve().parent.parent
 VAULT_DIR = ROOT / "docs" / "vault"
 CHROMA_DIR = ROOT / "vault" / "chroma"
+DB_PATH = ROOT / "vault" / "sqlite" / "imrryr.db"
 COLLECTION_NAME = "imrryr-knowledge"
 
 
@@ -64,6 +66,14 @@ def main() -> int:
             log("Colección recreada.")
         except Exception:
             pass
+        if DB_PATH.exists():
+            try:
+                conn_fts = sqlite3.connect(str(DB_PATH))
+                conn_fts.execute("DELETE FROM documentos_fts")
+                conn_fts.commit()
+                conn_fts.close()
+            except Exception:
+                pass
 
     collection = client.get_or_create_collection(COLLECTION_NAME)
 
@@ -76,7 +86,7 @@ def main() -> int:
     for fpath in sorted(files):
         doc_id = hashlib.md5(str(fpath.relative_to(ROOT)).encode()).hexdigest()
 
-        existing = collection.get(ids=[doc_id])
+        existing = collection.get(ids=[f"{doc_id}_0"])
         if existing and existing["ids"]:
             log(f"  SKIP {fpath.name} (ya indexado)")
             continue
@@ -113,6 +123,21 @@ def main() -> int:
             ids=chunk_ids,
             metadatas=metadatas,
         )
+
+        # Ingesta en SQLite FTS5 para búsqueda léxica BM25 (RAG Híbrido)
+        if DB_PATH.exists():
+            try:
+                conn_fts = sqlite3.connect(str(DB_PATH))
+                for cid, chunk, meta in zip(chunk_ids, chunks, metadatas):
+                    conn_fts.execute(
+                        "INSERT INTO documentos_fts (chunk_id, archivo, fuente, texto) VALUES (?, ?, ?, ?)",
+                        (cid, meta["file"], meta["source"], chunk),
+                    )
+                conn_fts.commit()
+                conn_fts.close()
+            except Exception as e:
+                log(f"  WARN: error guardando en FTS5: {e}")
+
         ingested += 1
         log(f"  OK {fpath.name} ({len(chunks)} chunks)")
 

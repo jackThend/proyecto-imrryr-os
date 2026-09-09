@@ -15,7 +15,7 @@ from api import deps
 
 router = APIRouter()
 
-AGENTE_NATIVO_EXCLUIDO = "agente_build"  # agente nativo de OpenCode, sync_agentes.py lo excluye igual
+AGENTES_PROTEGIDOS = {"agente_build", "agente_asistente"}  # agentes del núcleo, no se eliminan
 
 ICONOS_POR_MODULO = {
     "agente_financiero": "chart", "agente_creativo": "bulb", "agente_crm": "users",
@@ -50,7 +50,7 @@ def _leer_modulos_de(carpeta: Path, eliminado: bool = False) -> list[dict]:
     if not carpeta.exists():
         return modulos
     for fpath in sorted(carpeta.glob("*.yaml")):
-        if fpath.stem == AGENTE_NATIVO_EXCLUIDO:
+        if fpath.stem in AGENTES_PROTEGIDOS:
             continue
         try:
             data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}

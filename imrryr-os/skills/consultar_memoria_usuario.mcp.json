@@ -1,0 +1,13 @@
+{
+  "name": "consultar_memoria_usuario",
+  "description": "Consulta los hechos, preferencias y datos clave previamente aprendidos y guardados sobre el usuario para personalizar la respuesta y recordar su contexto.",
+  "script": "skills/memoria_perfil.py",
+  "arguments": [
+    {
+      "name": "categoria",
+      "type": "string",
+      "description": "Categoría opcional para filtrar: 'perfil', 'preferencia', 'regla' o 'negocio'. Si se omite, devuelve toda la memoria.",
+      "required": false
+    }
+  ]
+}

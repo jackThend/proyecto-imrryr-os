@@ -2,15 +2,13 @@
 
 ## Variables Clave
 - **Proyecto**: imrryr-os
-- **Última iteración**: 2026-08-31 — verificación final de integridad completada
-- **CI**: ambos OS en verde (Windows + Ubuntu)
-- **Tests**: 80/80 pasando (25 del manifiesto + 1 regresión MCP + 54 previos)
-- **Linter**: Ruff sin errores (incluye `.ai-os/`)
-- **mcp**: 2.1.1 instalado y verificado end-to-end (stdio: initialize, tools/list 38, tools/call)
-- **Servicios**: dashboard/litellm/opencode/gateway/sidecar en 3000/4000/4040/5050/5051
-- **fastapi**: techo <0.141 (litellm[proxy] lo fija con ==; PR Dependabot #6 cerrado con evidencia)
-- **Zips**: regenerados con requirements.txt actualizado (pyme + tech, 0.6 MB)
-- **GROQ_API_KEY**: presente en config/.env — transcripción Groq activa en WhatsApp y voice-bridge
+- **Última iteración**: 2026-09-08 — Transformación de Agente Build (OpenCode nativo + AST Graph MCP + Vista Código)
+- **CI / Tests**: 87/87 pasando (100% verde)
+- **Linter**: Ruff sin errores (0 advertencias)
+- **Agente Programador**: Permisos completos nativos de OpenCode habilitados (bash, edit, read, glob, ast-graph). Vista dedicada en Dashboard.
+- **Compilación Nativa**: Lanzadores ejecutables compilados con PyInstaller (Iniciar Imrryr OS.exe / Detener Imrryr OS.exe) + guion Inno Setup.
+- **Servicios**: dashboard (:3000), litellm (:4000), opencode (:4040), gateway (:5050), whatsapp_local (:5051)
+- **Zips Distributables**: regenerados y validados en entorno sandbox limpio (pyme + tech)
 
 ## Estado de Módulos del Manifiesto
 - **config.json**: v1.1.0 con decisiones del usuario (Groq primario/local fallback, skills separadas, CLI, scout stack+agentes+MCPs, sandbox subdirectorio, modelos sugeridos) ✓

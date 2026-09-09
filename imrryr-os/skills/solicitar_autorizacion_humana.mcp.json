@@ -1,0 +1,26 @@
+{
+  "name": "solicitar_autorizacion_humana",
+  "description": "Registra una solicitud de autorización humana obligatoria (HITL) en el Dashboard antes de ejecutar acciones críticas o irreversibles (como transferencias, modificaciones de código crítico, envíos masivos o borrado de datos). El agente suspende la ejecución hasta la respuesta del usuario.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "agente": {
+        "type": "string",
+        "description": "Nombre del agente que solicita la autorización (ej. 'asistente', 'build', 'crm')"
+      },
+      "accion": {
+        "type": "string",
+        "description": "Identificador o verbo de la acción crítica (ej. 'ejecutar_script', 'enviar_correo', 'modificar_db')"
+      },
+      "resumen_humano": {
+        "type": "string",
+        "description": "Explicación clara y concisa en lenguaje natural para el usuario de qué se va a hacer y por qué"
+      },
+      "parametros": {
+        "type": "object",
+        "description": "Parámetros técnicos detallados de la acción propuesta"
+      }
+    },
+    "required": ["agente", "accion", "resumen_humano"]
+  }
+}

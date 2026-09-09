@@ -171,11 +171,64 @@ CREATE TABLE IF NOT EXISTS pendientes (
 -- la API del proveedor, así que el contador subestima — sirve para orientar
 -- ("vas 15 de ~20 hoy"), no como medidor exacto.
 CREATE TABLE IF NOT EXISTS uso_ia (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    fecha            TEXT    NOT NULL,
+    canal            TEXT    NOT NULL,
+    agente           TEXT    DEFAULT '',
+    proveedor        TEXT    DEFAULT '',
+    modelo           TEXT    DEFAULT '',
+    tokens_estimados INTEGER DEFAULT 0,
+    latencia_ms      INTEGER DEFAULT 0,
+    created_at       TEXT    DEFAULT (datetime('now'))
+);
+
+-- Persistencia del historial de chat por agente (evita pérdida de contexto al recargar F5)
+CREATE TABLE IF NOT EXISTS sesiones_chat (
+    id          TEXT PRIMARY KEY,
+    agente      TEXT NOT NULL,
+    titulo      TEXT,
+    created_at  TEXT DEFAULT (datetime('now')),
+    updated_at  TEXT DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS mensajes_chat (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    sesion_id    TEXT,
+    agente       TEXT NOT NULL,
+    rol          TEXT NOT NULL,           -- user, assistant, system
+    texto        TEXT NOT NULL,
+    herramientas TEXT,                    -- comma-separated o lista de herramientas usadas
+    created_at   TEXT DEFAULT (datetime('now'))
+);
+
+-- Memoria jerárquica de preferencias y hechos clave del usuario (estilo Mem0 / Letta)
+CREATE TABLE IF NOT EXISTS memoria_usuario (
     id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    fecha       TEXT    NOT NULL,
-    canal       TEXT    NOT NULL,
-    agente      TEXT    DEFAULT '',
-    created_at  TEXT    DEFAULT (datetime('now'))
+    categoria   TEXT NOT NULL,            -- perfil, preferencia, hecho, regla
+    clave       TEXT NOT NULL UNIQUE,
+    valor       TEXT NOT NULL,
+    fuente      TEXT DEFAULT 'chat',
+    updated_at  TEXT DEFAULT (datetime('now'))
+);
+
+-- Human-in-the-loop (HITL) para autorizaciones críticas de agentes
+CREATE TABLE IF NOT EXISTS solicitudes_hitl (
+    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+    agente          TEXT NOT NULL,
+    accion          TEXT NOT NULL,
+    parametros      TEXT NOT NULL DEFAULT '{}',
+    resumen_humano  TEXT NOT NULL,
+    estado          TEXT DEFAULT 'pendiente', -- 'pendiente', 'aprobado', 'rechazado'
+    creado_at       TEXT DEFAULT (datetime('now')),
+    resuelto_at     TEXT
+);
+
+-- RAG Híbrido: tabla FTS5 de texto completo para búsqueda léxica BM25
+CREATE VIRTUAL TABLE IF NOT EXISTS documentos_fts USING fts5(
+    chunk_id UNINDEXED,
+    archivo,
+    fuente,
+    texto
 );
 
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
@@ -195,6 +248,11 @@ CREATE INDEX IF NOT EXISTS idx_avisos_evento_id ON avisos_evento(evento_id);
 CREATE INDEX IF NOT EXISTS idx_avisos_disparado ON avisos_evento(disparado);
 CREATE INDEX IF NOT EXISTS idx_pendientes_hecho ON pendientes(hecho);
 CREATE INDEX IF NOT EXISTS idx_uso_ia_fecha ON uso_ia(fecha);
+CREATE INDEX IF NOT EXISTS idx_mensajes_chat_agente ON mensajes_chat(agente);
+CREATE INDEX IF NOT EXISTS idx_mensajes_chat_sesion ON mensajes_chat(sesion_id);
+CREATE INDEX IF NOT EXISTS idx_memoria_categoria ON memoria_usuario(categoria);
+CREATE INDEX IF NOT EXISTS idx_hitl_estado ON solicitudes_hitl(estado);
+CREATE INDEX IF NOT EXISTS idx_hitl_agente ON solicitudes_hitl(agente);
 """
 
 
@@ -233,6 +291,23 @@ def _migrar_semillas_ideas(conn: sqlite3.Connection) -> None:
         log("Migración: columna semilla_origen_id agregada a proyectos")
 
 
+def _migrar_uso_ia(conn: sqlite3.Connection) -> None:
+    """Agrega columnas de telemetría agéntica y presupuesto a uso_ia."""
+    columnas = [row[1] for row in conn.execute("PRAGMA table_info(uso_ia)").fetchall()]
+    if "proveedor" not in columnas:
+        conn.execute("ALTER TABLE uso_ia ADD COLUMN proveedor TEXT DEFAULT ''")
+        log("Migración: columna proveedor agregada a uso_ia")
+    if "modelo" not in columnas:
+        conn.execute("ALTER TABLE uso_ia ADD COLUMN modelo TEXT DEFAULT ''")
+        log("Migración: columna modelo agregada a uso_ia")
+    if "tokens_estimados" not in columnas:
+        conn.execute("ALTER TABLE uso_ia ADD COLUMN tokens_estimados INTEGER DEFAULT 0")
+        log("Migración: columna tokens_estimados agregada a uso_ia")
+    if "latencia_ms" not in columnas:
+        conn.execute("ALTER TABLE uso_ia ADD COLUMN latencia_ms INTEGER DEFAULT 0")
+        log("Migración: columna latencia_ms agregada a uso_ia")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Inicializa la base de datos SQLite")
     ap.add_argument("--reset", action="store_true", help="Borrar y recrear tablas")
@@ -258,6 +333,7 @@ def main() -> int:
     conn.executescript(SCHEMA_SQL)
     _migrar_gastos_fuente_id(conn)
     _migrar_semillas_ideas(conn)
+    _migrar_uso_ia(conn)
     conn.commit()
 
     cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")

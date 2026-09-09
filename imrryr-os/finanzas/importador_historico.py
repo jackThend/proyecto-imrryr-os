@@ -40,6 +40,36 @@ ROOT = Path(__file__).resolve().parent.parent
 DB_PATH = ROOT / "vault" / "sqlite" / "imrryr.db"
 LOTE_IA = 25
 PAUSA_ENTRE_LOTES_SEG = 2
+INTERVALO_SYNC_DEFECTO_SEGS = 24 * 60 * 60  # 24 horas por defecto
+
+
+def obtener_intervalo_sync() -> int:
+    """Retorna el intervalo de sincronización periódica en segundos.
+    Lee primero FINANZAS_SYNC_INTERVAL_SECS del entorno, luego
+    config/finanzas_prefs.json ('intervalo_sync_segundos'), y finalmente
+    el defecto (86400s).
+    """
+    env_val = os.environ.get("FINANZAS_SYNC_INTERVAL_SECS")
+    if env_val:
+        try:
+            val = int(env_val)
+            if val > 0:
+                return val
+        except ValueError:
+            pass
+
+    prefs_file = ROOT / "config" / "finanzas_prefs.json"
+    if prefs_file.is_file():
+        try:
+            data = json.loads(prefs_file.read_text(encoding="utf-8"))
+            val = int(data.get("intervalo_sync_segundos", 0))
+            if val > 0:
+                return val
+        except Exception:
+            pass
+
+    return INTERVALO_SYNC_DEFECTO_SEGS
+
 
 sys.path.insert(0, str(ROOT / "skills"))
 sys.path.insert(0, str(ROOT))

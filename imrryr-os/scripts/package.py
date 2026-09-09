@@ -33,11 +33,16 @@ CORE_DIRS = [
     "dashboard",
     "gateway",
     "docs",
+    "finanzas",
+    "correo",
+    "mcp_server",
 ]
 
 # Archivos base siempre incluidos
 CORE_FILES = [
     "requirements.txt",
+    "install.ps1",
+    "install.sh",
 ]
 
 # Espejo del .gitignore: lo que es secreto o dato del usuario NUNCA entra al
@@ -129,23 +134,81 @@ def copy_agents(agent_list: list[str]):
         log("  Build bloqueado (perfil sin codigo)")
 
 
-def copy_skills(skill_list: list[str]):
-    """Copia solo los skills del perfil + sus manifiestos MCP."""
+CORE_SKILLS = [
+    "uso_ia.py",
+    "errores_ia.py",
+    "perfil_negocio.py",
+    "confirmacion_hitl.py",
+    "memoria_perfil.py",
+    "inyectar_gasto.py",
+    "leer_gmail.py",
+    "consultar_memoria_vectorial.py",
+    "generar_cotizacion_pdf.py",
+]
+
+
+def resolve_profile_skills(profile: dict) -> tuple[set[str], set[str]]:
+    """Determina los scripts .py y manifiestos .mcp.json requeridos por el perfil."""
+    import yaml
+
+    scripts_necesarios = set(profile.get("skills", []))
+    scripts_necesarios.update(CORE_SKILLS)
+    mcp_jsons_necesarios = set()
+
+    for agente_file in profile.get("agentes", []):
+        agente_path = ROOT / "agentes" / agente_file
+        if not agente_path.exists():
+            continue
+        try:
+            agente_data = yaml.safe_load(agente_path.read_text(encoding="utf-8")) or {}
+            for tool_name in agente_data.get("herramientas_permitidas", []):
+                mcp_path = ROOT / "skills" / f"{tool_name}.mcp.json"
+                if mcp_path.exists():
+                    mcp_jsons_necesarios.add(mcp_path.name)
+                    try:
+                        mcp_data = json.loads(mcp_path.read_text(encoding="utf-8"))
+                        script_rel = mcp_data.get("script", "")
+                        if script_rel:
+                            scripts_necesarios.add(Path(script_rel).name)
+                    except Exception:
+                        pass
+                py_path = ROOT / "skills" / f"{tool_name}.py"
+                if py_path.exists():
+                    scripts_necesarios.add(py_path.name)
+        except Exception:
+            pass
+
+    bloqueos = profile.get("bloqueos", [])
+    if "ejecutar_script_python" in bloqueos or "terminal" in bloqueos:
+        scripts_necesarios.discard("ejecutar_script.py")
+        mcp_jsons_necesarios.discard("ejecutar_script.mcp.json")
+
+    return scripts_necesarios, mcp_jsons_necesarios
+
+
+def copy_skills(profile: dict):
+    """Copia los skills y manifiestos MCP necesarios para el perfil."""
     dst_dir = PKG_DIR / "skills"
     dst_dir.mkdir(exist_ok=True)
 
-    for skill_file in skill_list:
+    scripts_necesarios, mcp_jsons = resolve_profile_skills(profile)
+
+    for skill_file in sorted(scripts_necesarios):
         src = ROOT / "skills" / skill_file
         if src.exists():
             shutil.copy2(src, dst_dir / skill_file)
             log(f"  Skill: {skill_file}")
-
-            # Copiar manifiesto MCP si existe
             mcp_src = src.with_suffix(".mcp.json")
             if mcp_src.exists():
-                shutil.copy2(mcp_src, dst_dir / mcp_src.name)
+                mcp_jsons.add(mcp_src.name)
         else:
             log(f"  WARN: skill {skill_file} no encontrado")
+
+    for mcp_file in sorted(mcp_jsons):
+        src = ROOT / "skills" / mcp_file
+        if src.exists() and not (dst_dir / mcp_file).exists():
+            shutil.copy2(src, dst_dir / mcp_file)
+            log(f"  MCP: {mcp_file}")
 
 
 def create_env_template(profile: dict):
@@ -304,7 +367,7 @@ def main() -> int:
 
     copy_core()
     copy_agents(profile.get("agentes", []))
-    copy_skills(profile.get("skills", []))
+    copy_skills(profile)
     create_env_template(profile)
     create_install_script(profile)
     create_manifest(profile)

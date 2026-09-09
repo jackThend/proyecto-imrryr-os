@@ -4,6 +4,7 @@ descripcion: "Versión comercial para empresas. Sin acceso a código ni terminal
 
 # Agentes incluidos (sin Build)
 agentes:
+  - agente_asistente.yaml
   - agente_financiero.yaml
   - agente_investigador.yaml
   - agente_creativo.yaml
@@ -13,11 +14,21 @@ agentes:
 # Skills incluidos (solo operacionales)
 skills:
   - inyectar_gasto.py
+  - leer_gmail.py
   - scraper_fondos.py
   - crear_evento.py
+  - agenda.py
+  - recordatorios.py
+  - pendientes.py
   - tts_local.py
   - transcribir_audio.py
-  - recordatorios.py
+  - consultar_memoria_vectorial.py
+  - generar_cotizacion_pdf.py
+  - memoria_perfil.py
+  - confirmacion_hitl.py
+  - perfil_negocio.py
+  - uso_ia.py
+  - errores_ia.py
 
 # Capacidades bloqueadas
 bloqueos:

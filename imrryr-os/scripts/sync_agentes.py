@@ -45,11 +45,10 @@ OPENCODE_TEMPLATE = ROOT / "config" / "opencode.template.json"
 MCP_SERVER_SCRIPT = ROOT / "mcp_server" / "skills_server.py"
 MCP_SERVER_NAME = "imrryr"
 
-# El agente Build es el agente primario nativo de OpenCode (permisos
-# elevados por diseño, ver agentes/agente_build.yaml): no se convierte en
-# subagente ni se restringe aquí. Su sandbox de seguridad vive dentro de
-# leer_archivo.py/escribir_archivo.py/ejecutar_script.py.
-AGENTE_NATIVO = "build"
+# Agente supervisor central (asistente universal de entrada)
+AGENTE_SUPERVISOR = "asistente"
+# Agente de código/CTO (especialista de ingeniería de software)
+AGENTE_BUILD = "build"
 
 PERMISOS_NATIVOS_DENEGADOS = [
     "read", "edit", "bash", "grep", "glob", "list",
@@ -116,9 +115,10 @@ def construir_agent_config() -> dict:
     if not AGENTES_DIR.exists():
         return agentes_json
 
+    # 1. Registrar primero los subagentes especializados
     for fpath in sorted(AGENTES_DIR.glob("*.yaml")):
         agent_id = _slug_a_id(fpath.stem)
-        if agent_id == AGENTE_NATIVO or fpath.stem == AGENTE_NATIVO:
+        if agent_id in (AGENTE_SUPERVISOR, AGENTE_BUILD):
             continue
 
         data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
@@ -127,9 +127,6 @@ def construir_agent_config() -> dict:
             continue
 
         herramientas = data.get("herramientas_permitidas", [])
-        # Sin default de proveedor: si un agente no declara modelo_preferido,
-        # usa el alias de la cuenta activa (Ajustes > Cuentas de IA) en vez de
-        # caer a un modelo concreto de un proveedor puntual.
         modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
 
         permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
@@ -147,34 +144,70 @@ def construir_agent_config() -> dict:
         }
         log(f"  OK {fpath.name} -> agente '{agent_id}' ({len(herramientas)} herramientas)")
 
+    # 2. Registrar Build (si existe en este perfil)
     _agregar_build(agentes_json)
+
+    # 3. Registrar Asistente Central como supervisor primario
+    _agregar_asistente(agentes_json)
+
     return agentes_json
 
 
 def _agregar_build(agentes_json: dict[str, dict]) -> None:
-    """Escribe también el agente 'build' en opencode.json.
-
-    Antes se omitía por completo por ser el agente primario nativo, pero eso
-    dejaba su 'descripcion' de agentes/agente_build.yaml sin efecto: OpenCode
-    usaba su build genérico, que no sabe que existen subagentes. Resultado:
-    ante "¿qué tengo agendado hoy?" respondía que no podía, en vez de delegar
-    en el subagente de agenda. Como build es el único punto de entrada de
-    WhatsApp y del chat del inicio, sin esto esos dos canales solo servían
-    para temas de código.
-
-    NO se le aplican PERMISOS_NATIVOS_DENEGADOS: build conserva sus permisos
-    elevados (incluida la tool 'task', que es justamente la que usa para
-    delegar). Su sandbox real vive en leer_archivo/escribir_archivo/
-    ejecutar_script.
-    """
-    fpath = AGENTES_DIR / f"agente_{AGENTE_NATIVO}.yaml"
+    """Registra el agente 'build' con permisos nativos completos de OpenCode + MCPs."""
+    fpath = AGENTES_DIR / f"agente_{AGENTE_BUILD}.yaml"
     if not fpath.exists():
         return
     data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
+    if not data.get("activo", True):
+        return
+
+    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
+
+    # Permisos nativos de OpenCode habilitados para desarrollo completo
+    permission = {
+        "read": "allow",
+        "edit": "allow",
+        "bash": "allow",
+        "glob": "allow",
+        "grep": "allow",
+        "list": "allow",
+        "webfetch": "allow",
+        "websearch": "allow",
+        "lsp": "allow",
+        "todowrite": "allow",
+        "task": "allow",
+        "external_directory": "allow",
+    }
+    # Acceso a todos los MCPs y skills del sistema
+    permission["skill"] = {
+        f"{MCP_SERVER_NAME}_*": "allow",
+        "codebase-memory_*": "allow",
+        "*": "allow",
+    }
+
+    agentes_json[AGENTE_BUILD] = {
+        "description": str(data.get("descripcion", "")).strip(),
+        "mode": "subagent",
+        "model": f"imrryr-llm/{modelo}",
+        "permission": permission,
+    }
+    log(f"  OK {fpath.name} -> agente de desarrollo '{AGENTE_BUILD}' (permisos nativos OpenCode + codebase-memory)")
+
+
+def _agregar_asistente(agentes_json: dict[str, dict]) -> None:
+    """Registra el agente supervisor 'asistente' como agente primario universal."""
+    fpath = AGENTES_DIR / f"agente_{AGENTE_SUPERVISOR}.yaml"
+    if not fpath.exists():
+        # Fallback de compatibilidad: si no existe asistente, build queda como primario
+        if AGENTE_BUILD in agentes_json:
+            agentes_json[AGENTE_BUILD]["mode"] = "primary"
+            agentes_json[AGENTE_BUILD]["permission"].pop("task", None)
+        return
+
+    data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
     descripcion = str(data.get("descripcion", "")).strip()
 
-    # Lista explícita de a quién puede delegar: sin los nombres exactos, el
-    # modelo tiene que adivinar el parámetro de la tool 'task'.
     subagentes = sorted(agentes_json.keys())
     if subagentes:
         descripcion += (
@@ -185,12 +218,23 @@ def _agregar_build(agentes_json: dict[str, dict]) -> None:
         )
 
     modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
-    agentes_json[AGENTE_NATIVO] = {
+    herramientas = data.get("herramientas_permitidas", [])
+
+    permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
+    permission_skill[f"{MCP_SERVER_NAME}_*"] = "deny"
+    permission_skill["*"] = "deny"
+
+    permisos = {clave: "deny" for clave in PERMISOS_NATIVOS_DENEGADOS if clave != "task"}
+    permisos["task"] = "allow"
+    permisos["skill"] = permission_skill
+
+    agentes_json[AGENTE_SUPERVISOR] = {
         "description": descripcion,
         "mode": "primary",
         "model": f"imrryr-llm/{modelo}",
+        "permission": permisos,
     }
-    log(f"  OK {fpath.name} -> agente primario '{AGENTE_NATIVO}' (delega en {len(subagentes)} subagentes)")
+    log(f"  OK {fpath.name} -> agente supervisor primario '{AGENTE_SUPERVISOR}' (delega en {len(subagentes)} subagentes)")
 
 
 def _sembrar_desde_plantilla() -> bool:

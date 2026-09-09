@@ -6,5 +6,8 @@ herramientas_permitidas:
   - leer_gmail
   - consultar_memoria_vectorial
   - crear_evento
+  - generar_cotizacion_pdf
+  - guardar_hecho_memoria
+  - consultar_memoria_usuario
 modelo_preferido: imrryr-activo
 activo: true

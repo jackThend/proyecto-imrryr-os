@@ -21,6 +21,7 @@ const APPS = [
   { id: 'compras', nombre: 'Compras', icono: 'cart', agente: 'compras', chatLabel: 'Agente de Compras', ayuda: 'Sigue el precio de productos en tiendas chilenas y te avisa por correo cuando encuentra ofertas.' },
   { id: 'agenda', nombre: 'Agenda', icono: 'calendar', agente: 'agenda', chatLabel: 'Agente de Agenda', ayuda: 'Agenda tus actividades y te dice qué tienes hoy, mañana o esta semana — puede avisarte por WhatsApp si se lo pides.' },
   { id: 'navegacion', nombre: 'Navegación', icono: 'search', agente: 'navegacion', chatLabel: 'Agente de Navegación', ayuda: 'Busca y lee contenido web, y te lo puede leer en voz alta mientras trabajas en otra parte del sistema.' },
+  { id: 'codigo', nombre: 'Código', icono: 'terminal', agente: 'build', chatLabel: 'CTO Adjunto (Build)', ayuda: 'Entorno de desarrollo con permisos completos de OpenCode, comandos bash, edición directa y navegación por grafos AST.' },
   { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
   { id: 'modulos', nombre: 'Módulos', icono: 'modulos', agente: null, ayuda: 'Activa, desactiva o elimina agentes — protegido con contraseña.' },
 ];
@@ -134,6 +135,21 @@ function initChat(appId, agente, onSuccess) {
   if (!inp || !btn) return;
   inp.addEventListener('keydown', e => { if (e.key === 'Enter') enviarChatGenerico(appId, agente); });
   btn.addEventListener('click', () => enviarChatGenerico(appId, agente));
+
+  if (!chatHistoriales[appId] || chatHistoriales[appId].length === 0) {
+    fetch('/api/chat/historial/' + agente)
+      .then(r => r.json())
+      .then(data => {
+        if (data && data.mensajes && data.mensajes.length > 0) {
+          chatHistoriales[appId] = data.mensajes.map(m => ({
+            role: m.rol === 'user' ? 'user' : 'assistant',
+            text: m.texto,
+          }));
+          renderChatGenerico(appId);
+        }
+      })
+      .catch(() => {});
+  }
 }
 
 function renderChatGenerico(appId) {
@@ -157,27 +173,69 @@ async function enviarChatGenerico(appId, agente) {
   hist.push({ role: 'thinking', text: 'Pensando...' });
   renderChatGenerico(appId);
   btn.disabled = true;
+
   try {
-    const r = await fetch('/api/chat', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const r = await fetch('/api/chat/stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ mensaje: texto, agente }),
-      // Timeout configurable (300s por defecto): delegar en varios subagentes
-      // encadena llamadas al modelo y con 120s el navegador cortaba respuestas
-      // que estaban llegando bien (medido: 123s en una consulta de agenda).
       signal: AbortSignal.timeout(window.IMRRYR_CONFIG.chatTimeoutMs),
     });
-    const data = await r.json();
+
+    if (!r.ok || !r.body) {
+      throw new Error(`HTTP ${r.status}`);
+    }
+
+    const reader = r.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+    let streamText = '';
+    const toolsUsadas = [];
+
     hist.pop();
-    if (data.error) {
-      hist.push({ role: 'error', text: 'Error: ' + data.error });
-    } else {
-      hist.push({ role: 'assistant', text: data.respuesta || '(sin respuesta)' });
-      if (chatOnSuccess[appId]) chatOnSuccess[appId]();
+    const assistantMsg = { role: 'assistant', text: '' };
+    hist.push(assistantMsg);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const dataStr = line.slice(6).trim();
+        if (!dataStr) continue;
+        try {
+          const ev = JSON.parse(dataStr);
+          if (ev.tipo === 'tool') {
+            toolsUsadas.push(ev.tool);
+            assistantMsg.text = `[🔧 Usando ${toolsUsadas.join(', ')}...]\n` + streamText;
+            renderChatGenerico(appId);
+          } else if (ev.tipo === 'token') {
+            streamText += ev.texto;
+            assistantMsg.text = (toolsUsadas.length > 0 ? `[🔧 Usé: ${toolsUsadas.join(', ')}]\n\n` : '') + streamText;
+            renderChatGenerico(appId);
+          } else if (ev.tipo === 'done') {
+            assistantMsg.text = ev.respuesta;
+            renderChatGenerico(appId);
+            if (chatOnSuccess[appId]) chatOnSuccess[appId]();
+          } else if (ev.tipo === 'error') {
+            assistantMsg.role = 'error';
+            assistantMsg.text = 'Error: ' + ev.error;
+            renderChatGenerico(appId);
+          }
+        } catch {
+          // chunk parcial
+        }
+      }
     }
   } catch (e) {
     hist.pop();
     hist.push({ role: 'error', text: 'Error de conexión: ' + e.message });
   }
+
   renderChatGenerico(appId);
   btn.disabled = false;
   inp.focus();
@@ -189,7 +247,10 @@ const vistasInicializadas = new Set();
 
 let vistaActivaActual = 'inicio';
 
+let _acabaDeArrastrar = false;
+
 function abrirApp(id) {
+  if (_acabaDeArrastrar) return;
   document.querySelectorAll('.nav-tab').forEach(b => b.classList.toggle('active', b.id === 'tab-' + id));
   document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'view-' + id));
   // Módulos vuelve a pedir la contraseña cada vez que se sale de la sección
@@ -208,7 +269,7 @@ function abrirApp(id) {
 
 function inicializarVista(id) {
   switch (id) {
-    case 'inicio': initChat('inicio', 'build'); break;
+    case 'inicio': initChat('inicio', 'asistente'); break;
     case 'ideas':
       initChat('ideas', 'creativo', cargarIdeasView);
       document.getElementById('ideasFiltroEstado').addEventListener('change', () => cargarIdeasView());
@@ -222,6 +283,7 @@ function inicializarVista(id) {
     case 'compras': initChat('compras', 'compras', cargarComprasView); break;
     case 'agenda': initChat('agenda', 'agenda', cargarAgendaView); break;
     case 'navegacion': initChat('navegacion', 'navegacion', revisarUltimoAudioNavegacion); break;
+    case 'codigo': initChat('codigo', 'build', cargarEstadoProyecto); break;
   }
 }
 
@@ -232,6 +294,7 @@ function cargarVista(id) {
     case 'correo': cambiarSubtabCorreo(correoSubtabActual); break;
     case 'oportunidades': cargarOportunidadesView(); break;
     case 'finanzas': cargarFinanzasView(); break;
+    case 'codigo': cargarEstadoProyecto(); break;
     case 'ajustes': cambiarSubtabAjustes(ajustesSubtabActual); break;
     case 'modulos': cargarModulosView(); break;
     case 'rrss': cargarRrssView(); break;
@@ -246,7 +309,7 @@ function cargarVista(id) {
 // igual que el tema o el modo ayuda — no hace falta ida y vuelta al servidor). ---
 const INICIO_PREFS_DEFAULT = {
   hero: ['correo', 'oportunidades', 'ideas'],
-  secundaria: ['finanzas', 'crm', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda', 'navegacion'],
+  secundaria: ['finanzas', 'crm', 'codigo', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda', 'navegacion'],
 };
 
 function leerInicioPrefs() {
@@ -275,7 +338,7 @@ function pintarHomeHeroEsqueleto(heroIds) {
   document.getElementById('homeHero').innerHTML = heroIds.map(id => {
     const app = appPorId(id);
     if (!app) return '';
-    return `<div class="hero-card" id="hero-${id}" onclick="abrirApp('${id}')" data-ayuda="${app.ayuda || ''}"><div class="loading">Cargando</div></div>`;
+    return `<div class="hero-card" id="hero-${id}" data-id="${id}" onclick="abrirApp('${id}')" data-ayuda="${app.ayuda || ''}"><div class="loading">Cargando</div></div>`;
   }).join('');
 }
 
@@ -293,6 +356,7 @@ async function cargarHome() {
   pintarHomeHeroEsqueleto(prefs.hero);
   prefs.hero.forEach(id => (HERO_LOADERS[id] || cargarHeroGenerico)(id));
   cargarHomeSecundaria(prefs.secundaria);
+  setupHomeDragAndDrop();
 }
 
 const CTA_HTML = '<div class="hero-card-cta">Entrar <svg class="icon"><use href="#icon-arrow-right"/></svg></div>';
@@ -364,12 +428,131 @@ function cargarHomeSecundaria(secundariaIds) {
     const app = appPorId(id);
     if (!app) return '';
     const subInicial = SECUNDARIA_LOADERS[id] ? 'Cargando…' : (SECUNDARIA_SUB_ESTATICO[id] || '');
-    return `<div class="mini-card" onclick="abrirApp('${id}')" data-ayuda="${app.ayuda || ''}">
+    return `<div class="mini-card" id="mini-${id}" data-id="${id}" onclick="abrirApp('${id}')" data-ayuda="${app.ayuda || ''}">
       <div class="mini-card-icon"><svg class="icon"><use href="#icon-${app.icono}"/></svg></div>
       <div class="mini-card-body"><div class="mini-card-title">${app.nombre}</div><div class="mini-card-sub" id="mini-${id}-sub">${subInicial}</div></div>
     </div>`;
   }).join('');
   secundariaIds.forEach(id => { if (SECUNDARIA_LOADERS[id]) SECUNDARIA_LOADERS[id](); });
+}
+
+function setupHomeDragAndDrop() {
+  const heroEl = document.getElementById('homeHero');
+  const secEl = document.getElementById('homeSecondary');
+  if (!heroEl || !secEl) return;
+
+  function bindCard(card, zone) {
+    card.setAttribute('draggable', 'true');
+    card.addEventListener('dragstart', (e) => {
+      _acabaDeArrastrar = true;
+      card.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', JSON.stringify({ id: card.dataset.id, zone }));
+    });
+    card.addEventListener('dragend', () => {
+      card.classList.remove('dragging');
+      document.querySelectorAll('.hero-card, .mini-card').forEach(c => c.classList.remove('drag-over'));
+      setTimeout(() => { _acabaDeArrastrar = false; }, 150);
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      card.classList.add('drag-over');
+    });
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('drag-over');
+    });
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      card.classList.remove('drag-over');
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (!raw) return;
+        const src = JSON.parse(raw);
+        const targetId = card.dataset.id;
+        if (!src.id || src.id === targetId) return;
+        reordenarCardsHome(src.id, src.zone, targetId, zone);
+      } catch (err) {
+        console.error('Error en drop de card:', err);
+      }
+    });
+  }
+
+  heroEl.querySelectorAll('.hero-card').forEach(c => bindCard(c, 'hero'));
+  secEl.querySelectorAll('.mini-card').forEach(c => bindCard(c, 'secundaria'));
+
+  [heroEl, secEl].forEach(container => {
+    const zone = container === heroEl ? 'hero' : 'secundaria';
+    container.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    container.addEventListener('drop', (e) => {
+      e.preventDefault();
+      if (e.target.closest('.hero-card, .mini-card')) return;
+      try {
+        const raw = e.dataTransfer.getData('text/plain');
+        if (!raw) return;
+        const src = JSON.parse(raw);
+        if (!src.id) return;
+        reordenarCardsHome(src.id, src.zone, null, zone);
+      } catch (err) {
+        console.error('Error en drop de contenedor:', err);
+      }
+    });
+  });
+}
+
+function reordenarCardsHome(srcId, srcZone, targetId, targetZone) {
+  const prefs = leerInicioPrefs();
+  if (srcZone === targetZone) {
+    const list = targetZone === 'hero' ? prefs.hero : prefs.secundaria;
+    const oldIdx = list.indexOf(srcId);
+    if (oldIdx !== -1) list.splice(oldIdx, 1);
+    const newIdx = targetId ? list.indexOf(targetId) : list.length;
+    if (newIdx !== -1) {
+      list.splice(newIdx, 0, srcId);
+    } else {
+      list.push(srcId);
+    }
+  } else if (srcZone === 'secundaria' && targetZone === 'hero') {
+    if (prefs.hero.length >= 3 && targetId) {
+      const hIdx = prefs.hero.indexOf(targetId);
+      const sIdx = prefs.secundaria.indexOf(srcId);
+      if (hIdx !== -1 && sIdx !== -1) {
+        prefs.hero[hIdx] = srcId;
+        prefs.secundaria[sIdx] = targetId;
+      }
+    } else {
+      prefs.secundaria = prefs.secundaria.filter(x => x !== srcId);
+      const newIdx = targetId ? prefs.hero.indexOf(targetId) : prefs.hero.length;
+      if (prefs.hero.length >= 3) {
+        const expulsado = prefs.hero.pop();
+        prefs.secundaria.unshift(expulsado);
+      }
+      if (newIdx !== -1 && newIdx < prefs.hero.length) {
+        prefs.hero.splice(newIdx, 0, srcId);
+      } else {
+        prefs.hero.push(srcId);
+      }
+    }
+  } else if (srcZone === 'hero' && targetZone === 'secundaria') {
+    if (prefs.hero.length <= 1) {
+      mostrarToast('Debe haber al menos 1 tarjeta grande', 'info');
+      return;
+    }
+    prefs.hero = prefs.hero.filter(x => x !== srcId);
+    const newIdx = targetId ? prefs.secundaria.indexOf(targetId) : prefs.secundaria.length;
+    if (newIdx !== -1) {
+      prefs.secundaria.splice(newIdx, 0, srcId);
+    } else {
+      prefs.secundaria.push(srcId);
+    }
+  }
+  guardarInicioPrefs(prefs);
+  cargarHome();
+  mostrarToast('Diseño de Inicio actualizado', 'success');
 }
 
 // Formato chileno de dinero: 29900 -> "$29.900" (punto de miles, sin decimales)
@@ -799,31 +982,96 @@ function renderPerfilNegocio() {
   const el = document.getElementById('ajustesSubcontent');
   if (!el || !perfilNegocioActual) return;
   const p = perfilNegocioActual;
+  const empresas = Array.isArray(p.empresas) ? p.empresas : [];
   const extras = Object.entries(p.caracteristicas_extra || {});
+
+  let empresasHtml = empresas.map((emp, idx) => `
+    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px;margin-bottom:8px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <strong style="font-size:13px">${emp.nombre || 'Empresa #' + (idx+1)}</strong>
+        <span style="cursor:pointer;color:var(--red);font-size:12px" onclick="quitarEmpresaPerfil(${idx})">✕ Eliminar</span>
+      </div>
+      <div style="font-size:12px;color:var(--text-dim)">${emp.descripcion || emp.giro || 'Sin descripción'}</div>
+    </div>
+  `).join('');
+
   let html = `
-    <div class="gw-field"><label>Giro (separado por comas)</label><input id="pnGiro" value="${(p.giro || []).join(', ')}"></div>
+    <div class="gw-field">
+      <label>Tu Nombre (cómo te llaman los agentes)</label>
+      <input id="pnNombreUsuario" value="${(p.nombre_usuario || '').replace(/"/g, '&quot;')}" placeholder="ej. Carlos">
+    </div>
+
+    <div class="gw-field" style="margin-top:14px">
+      <label>Tus Empresas o Proyectos Activos</label>
+      <div id="listaEmpresasPerfil">${empresasHtml || '<div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">No hay empresas registradas aún.</div>'}</div>
+      <div style="display:flex;flex-direction:column;gap:6px;background:var(--surface1);padding:8px;border-radius:8px;border:1px dashed var(--border)">
+        <input id="pnNuevaEmpresaNombre" placeholder="Nombre de la empresa (ej. Estudio Creativo SpA)" class="gw-inline-input">
+        <input id="pnNuevaEmpresaDesc" placeholder="Qué hace (ej. Consultoría en museografía y software)" class="gw-inline-input">
+        <button class="gw-save-btn" style="align-self:flex-start" onclick="agregarEmpresaPerfil()">+ Agregar Empresa</button>
+      </div>
+    </div>
+
+    <div class="gw-field" style="margin-top:14px"><label>Giro General (separado por comas)</label><input id="pnGiro" value="${(p.giro || []).join(', ')}"></div>
     <div class="gw-field"><label>Región</label><input id="pnRegion" value="${(p.ubicacion && p.ubicacion.region) || ''}"></div>
     <div class="gw-field"><label>Comuna</label><input id="pnComuna" value="${(p.ubicacion && p.ubicacion.comuna) || ''}"></div>
     <div class="gw-field"><label>Tamaño de empresa</label><input id="pnTamano" value="${p.tamano_empresa || ''}" placeholder="micro, pequeña, mediana..."></div>
   `;
   if (extras.length) {
-    html += '<div style="margin:6px 0">' + extras.map(([k, v]) =>
-      `<span class="tag">${k}: ${v} <span style="cursor:pointer" onclick="quitarCaracteristica('${k.replace(/'/g, "\\'")}')">&times;</span></span>`
-    ).join('') + '</div>';
+    html += '<div style="margin:8px 0;font-size:12px"><label>Reglas y Preferencias fijas:</label><div style="margin-top:4px">' + extras.map(([k, v]) =>
+      `<span class="tag" style="margin:2px">${k}: ${v} <span style="cursor:pointer" onclick="quitarCaracteristica('${k.replace(/'/g, "\\'")}')">&times;</span></span>`
+    ).join('') + '</div></div>';
   }
   html += `
     <div style="display:flex;gap:6px;margin-top:6px">
-      <input id="pnNuevaClave" placeholder="característica" class="gw-inline-input">
-      <input id="pnNuevoValor" placeholder="valor" class="gw-inline-input">
+      <input id="pnNuevaClave" placeholder="regla o preferencia (ej. horario)" class="gw-inline-input">
+      <input id="pnNuevoValor" placeholder="valor (ej. solo mañanas)" class="gw-inline-input">
       <button class="gw-save-btn" onclick="agregarCaracteristica()">+</button>
     </div>
-    <button class="gw-save-btn" style="margin-top:8px" onclick="guardarPerfilNegocio()">Guardar perfil</button>
+    <button class="gw-save-btn" style="margin-top:12px" onclick="guardarPerfilNegocio()">Guardar perfil completo</button>
   `;
   el.innerHTML = html;
 }
 
+async function agregarEmpresaPerfil() {
+  const nom = document.getElementById('pnNuevaEmpresaNombre').value.trim();
+  const desc = document.getElementById('pnNuevaEmpresaDesc').value.trim();
+  if (!nom) {
+    mostrarToast('Ingresa el nombre de la empresa', 'error');
+    return;
+  }
+  const empresas = Array.isArray(perfilNegocioActual.empresas) ? [...perfilNegocioActual.empresas] : [];
+  empresas.push({ nombre: nom, descripcion: desc, giro: desc });
+  try {
+    const r = await fetch('/api/perfil-negocio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresas }),
+    });
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
+    mostrarToast('Empresa agregada', 'success');
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
+async function quitarEmpresaPerfil(idx) {
+  const empresas = (perfilNegocioActual.empresas || []).filter((_, i) => i !== idx);
+  try {
+    const r = await fetch('/api/perfil-negocio', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ empresas }),
+    });
+    perfilNegocioActual = await r.json();
+    renderPerfilNegocio();
+    mostrarToast('Empresa eliminada', 'info');
+  } catch (e) {
+    mostrarToast('Error: ' + e.message, 'error');
+  }
+}
+
 async function guardarPerfilNegocio() {
   const datos = {
+    nombre_usuario: document.getElementById('pnNombreUsuario') ? document.getElementById('pnNombreUsuario').value.trim() : '',
     giro: document.getElementById('pnGiro').value.split(',').map(s => s.trim()).filter(Boolean),
     ubicacion: {
       region: document.getElementById('pnRegion').value.trim(),
@@ -837,7 +1085,7 @@ async function guardarPerfilNegocio() {
     });
     perfilNegocioActual = await r.json();
     renderPerfilNegocio();
-    mostrarToast('Perfil de negocio guardado', 'success');
+    mostrarToast('Perfil guardado', 'success');
   } catch (e) {
     mostrarToast('Error guardando perfil: ' + e.message, 'error');
   }
@@ -2251,7 +2499,11 @@ async function aplicarFondoPersonalizado() {
 async function actualizarStatus() {
   const bar = document.getElementById('statusBar');
   try {
-    const [r, rUso] = await Promise.all([fetch('/api/status'), fetch('/api/uso-ia')]);
+    const [r, rUso, rHitl] = await Promise.all([
+      fetch('/api/status'),
+      fetch('/api/uso-ia'),
+      fetch('/api/hitl/pendientes').catch(() => ({ ok: false }))
+    ]);
     if (!r.ok) throw new Error('');
     const d = await r.json();
     const svc = d.servicios || {};
@@ -2266,12 +2518,222 @@ async function actualizarStatus() {
       // El conteo es por turnos de conversación: un turno con herramientas
       // puede costar varias llamadas API reales, así que es piso, no exacto.
       const claseUso = uso.hoy >= uso.limite ? 'off' : (uso.hoy >= uso.limite * 0.75 ? 'warn' : 'on');
-      const detalleUso = `Consultas de IA hoy (dashboard + WhatsApp). El límite ${uso.limite} aplica a la cuenta gratuita de Gemini; una consulta que usa herramientas puede gastar más de 1 llamada real.`;
-      usoHtml = `<div class="status-item" data-ayuda="${detalleUso}"><span class="status-dot ${claseUso}"></span>IA hoy: ${uso.hoy}/${uso.limite}</div>`;
+      const provInfo = uso.proveedor ? ` (${uso.proveedor})` : '';
+      const detalleUso = `Proveedor: ${uso.proveedor || 'Gemini'} (${uso.modelo || 'flash'}). Consultas hoy: ${uso.hoy}/${uso.limite}. Clic para telemetría y presupuesto.`;
+      usoHtml = `<div class="status-item" style="cursor:pointer" onclick="abrirModalObservabilidadIA()" data-ayuda="${detalleUso}"><span class="status-dot ${claseUso}"></span>IA hoy: ${uso.hoy}/${uso.limite}${provInfo}</div>`;
     }
-    bar.innerHTML = `<div class="status-item" data-ayuda="${detalle.replace(/"/g,'&quot;')}"><span class="status-dot ${clase}"></span>Sistema</div>${usoHtml}`;
+    let hitlHtml = '';
+    if (rHitl && rHitl.ok) {
+      try {
+        const dHitl = await rHitl.json();
+        const pendientes = dHitl.solicitudes || [];
+        if (pendientes.length > 0) {
+          hitlHtml = `<div class="status-item" style="color:var(--color-accent);font-weight:600;cursor:pointer" onclick="abrirModalHitl()" data-ayuda="Hay acciones de agentes esperando tu autorización expresa."><span class="status-dot warn"></span>${pendientes.length} HITL pendiente(s)</div>`;
+        }
+      } catch {}
+    }
+    bar.innerHTML = `<div class="status-item" data-ayuda="${detalle.replace(/"/g,'&quot;')}"><span class="status-dot ${clase}"></span>Sistema</div>${usoHtml}${hitlHtml}`;
   } catch {
     bar.innerHTML = '<div class="status-item" style="color:var(--red)">sin conexión</div>';
+  }
+}
+
+async function abrirModalObservabilidadIA() {
+  const anterior = document.getElementById('obsIAOverlay');
+  if (anterior) anterior.remove();
+
+  try {
+    const r = await fetch('/api/uso-ia');
+    const d = await r.json();
+
+    const overlay = document.createElement('div');
+    overlay.className = 'detalle-overlay';
+    overlay.id = 'obsIAOverlay';
+    overlay.onclick = (e) => { if (e.target === overlay) cerrarModalObservabilidadIA(); };
+
+    const pct = d.consumo_pct || 0;
+    const colorBarra = pct >= 100 ? 'var(--red)' : pct >= 75 ? 'var(--color-accent)' : 'var(--color-accent2)';
+
+    // Desglose por agente
+    const agEntries = Object.entries(d.por_agente || {});
+    const agHtml = agEntries.length ? agEntries.map(([ag, cnt]) => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+        <span>Agente <strong>${ag}</strong></span>
+        <span class="tag">${cnt} turnos</span>
+      </div>
+    `).join('') : '<div style="font-size:12px;color:var(--text-dim)">Sin actividad registrada hoy</div>';
+
+    // Desglose por canal
+    const chEntries = Object.entries(d.por_canal || {});
+    const chHtml = chEntries.map(([ch, cnt]) => `
+      <span class="tag" style="font-size:11px">${ch}: ${cnt}</span>
+    `).join(' ') || 'Sin datos';
+
+    overlay.innerHTML = `
+      <div class="detalle-panel" style="max-width:540px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="widget-title">Telemetría & Presupuesto IA (Kernel)</span>
+          <button class="gw-modo-btn" style="padding:2px 8px;font-size:11px" onclick="cerrarModalObservabilidadIA()">✕</button>
+        </div>
+
+        <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:14px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <span style="font-size:12px;color:var(--text-dim)">Cuota diaria consumida</span>
+            <strong style="font-size:13px">${d.hoy} / ${d.limite} turnos (${pct}%)</strong>
+          </div>
+          <div style="background:var(--surface1);height:10px;border-radius:5px;overflow:hidden;border:1px solid var(--border)">
+            <div style="width:${Math.min(pct, 100)}%;background:${colorBarra};height:100%;transition:width .3s"></div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;border:1px solid var(--border);font-size:12px">
+            <div style="color:var(--text-dim);margin-bottom:2px">Proveedor Activo</div>
+            <strong style="color:var(--color-accent)">${d.proveedor || 'Google Gemini'}</strong>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">${d.modelo || 'gemini-2.5-flash'}</div>
+          </div>
+          <div style="background:var(--surface2);padding:10px;border-radius:8px;border:1px solid var(--border);font-size:12px">
+            <div style="color:var(--text-dim);margin-bottom:2px">Canales Activos</div>
+            <div>${chHtml}</div>
+            <div style="font-size:10px;color:var(--text-dim);margin-top:2px">Latencia prom: ${d.latencia_promedio_ms || 0} ms</div>
+          </div>
+        </div>
+
+        <div class="gw-field" style="margin-bottom:14px">
+          <label style="font-size:11px;font-weight:600;margin-bottom:6px;display:block">Consumo por Agente Hoy</label>
+          <div style="max-height:130px;overflow-y:auto;background:var(--surface1);padding:8px;border-radius:8px;border:1px solid var(--border)">
+            ${agHtml}
+          </div>
+        </div>
+
+        <div class="gw-field" style="border-top:1px solid var(--border);padding-top:12px">
+          <label style="font-size:11px;font-weight:600;margin-bottom:4px;display:block">Ajustar Presupuesto / Límite Diario</label>
+          <div style="display:flex;gap:6px">
+            <input type="number" id="inpLimiteDiario" value="${d.limite}" min="5" max="10000" class="gw-inline-input" style="width:110px">
+            <button class="gw-save-btn" onclick="guardarPresupuestoDiario()">Guardar límite</button>
+          </div>
+          <div style="font-size:10px;color:var(--text-dim);margin-top:4px">Define el tope diario de consultas para controlar cuota o consumo.</div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+  } catch (e) {
+    mostrarToast('Error cargando observabilidad: ' + e.message, 'error');
+  }
+}
+
+function cerrarModalObservabilidadIA() {
+  const el = document.getElementById('obsIAOverlay');
+  if (el) el.remove();
+}
+
+async function guardarPresupuestoDiario() {
+  const inp = document.getElementById('inpLimiteDiario');
+  if (!inp) return;
+  const nuevo = parseInt(inp.value, 10);
+  if (isNaN(nuevo) || nuevo <= 0) {
+    mostrarToast('Ingresa un número válido mayor a 0', 'error');
+    return;
+  }
+  try {
+    const r = await fetch('/api/uso-ia/presupuesto', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ limite_diario: nuevo }),
+    });
+    const d = await r.json();
+    if (d.ok) {
+      mostrarToast(`Límite diario actualizado a ${nuevo} consultas`, 'success');
+      cerrarModalObservabilidadIA();
+      actualizarStatus();
+    } else {
+      mostrarToast('Error: ' + (d.error || 'falló'), 'error');
+    }
+  } catch (e) {
+    mostrarToast('Error de red: ' + e.message, 'error');
+  }
+}
+
+async function abrirModalHitl() {
+  const anterior = document.getElementById('hitlOverlay');
+  if (anterior) anterior.remove();
+
+  try {
+    const r = await fetch('/api/hitl/pendientes');
+    const d = await r.json();
+    const pendientes = d.solicitudes || [];
+    if (!pendientes.length) {
+      mostrarToast('No hay autorizaciones pendientes', 'info');
+      actualizarStatus();
+      return;
+    }
+
+    const overlay = document.createElement('div');
+    overlay.className = 'detalle-overlay';
+    overlay.id = 'hitlOverlay';
+    overlay.onclick = (e) => { if (e.target === overlay) cerrarModalHitl(); };
+
+    const itemsHtml = pendientes.map(s => `
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <strong style="color:var(--color-accent)">Agente: ${s.agente}</strong>
+          <span style="font-size:11px;color:var(--text-dim)">#${s.id} · ${s.creado_at || ''}</span>
+        </div>
+        <div style="font-size:13px;margin-bottom:8px;font-weight:500">${s.resumen_humano}</div>
+        <div style="font-size:11px;color:var(--text-dim);background:var(--surface1);padding:6px;border-radius:6px;margin-bottom:10px;font-family:var(--font-mono)">
+          Acción: ${s.accion} | Params: ${JSON.stringify(s.parametros || {})}
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button class="gw-modo-btn" style="color:var(--red);border-color:var(--red)" onclick="resolverAccionHitl(${s.id}, 'rechazado')">Rechazar</button>
+          <button class="gw-save-btn" onclick="resolverAccionHitl(${s.id}, 'aprobado')">Aprobar Acción</button>
+        </div>
+      </div>
+    `).join('');
+
+    overlay.innerHTML = `
+      <div class="detalle-panel" style="max-width:550px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span class="widget-title">Human-In-The-Loop: Autorizaciones</span>
+          <button class="gw-modo-btn" style="padding:2px 8px;font-size:11px" onclick="cerrarModalHitl()">✕</button>
+        </div>
+        <p style="font-size:12px;color:var(--text-dim);margin-bottom:14px">
+          Los siguientes agentes solicitaron permiso para ejecutar acciones sensibles en tu sistema:
+        </p>
+        <div style="max-height:400px;overflow-y:auto">
+          ${itemsHtml}
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(overlay);
+  } catch (e) {
+    mostrarToast('Error cargando solicitudes HITL: ' + e, 'error');
+  }
+}
+
+function cerrarModalHitl() {
+  const el = document.getElementById('hitlOverlay');
+  if (el) el.remove();
+}
+
+async function resolverAccionHitl(id, decision) {
+  try {
+    const r = await fetch(`/api/hitl/${id}/resolver`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ decision })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      mostrarToast(`Solicitud #${id} ${decision}`, 'success');
+      cerrarModalHitl();
+      actualizarStatus();
+    } else {
+      mostrarToast('Error: ' + (d.error || 'no resuelto'), 'error');
+    }
+  } catch (e) {
+    mostrarToast('Error de red: ' + e, 'error');
   }
 }
 
@@ -2465,6 +2927,54 @@ async function cambiarEstadoOportunidad(id, estado) {
   } catch (e) {
     mostrarToast('Error: ' + e.message, 'error');
   }
+}
+
+// --- Vista de Código y Desarrollo (Agente Build) ---
+async function cargarEstadoProyecto() {
+  const cont = document.getElementById('codigoEstadoContenido');
+  const badge = document.getElementById('codigoRutaBadge');
+  if (!cont) return;
+  cont.textContent = 'Consultando estado del repositorio y proyecto...';
+  try {
+    const r = await fetch('/api/codigo/estado');
+    const data = await r.json();
+    if (data.ok) {
+      if (badge) {
+        const repoNombre = (data.ruta || '').split(/\\|\//).filter(Boolean).pop() || 'imrryr-os';
+        badge.textContent = `${data.branch} @ ${repoNombre}`;
+      }
+      cont.textContent = data.estado || 'Sin estado registrado.';
+    } else {
+      cont.textContent = 'No se pudo cargar el estado: ' + (data.error || 'error desconocido');
+    }
+  } catch (err) {
+    cont.textContent = 'Error conectando con la API de código: ' + err.message;
+  }
+}
+
+function ejecutarAccionCodigo(accion) {
+  const inp = document.getElementById('chatInp_codigo');
+  const btn = document.getElementById('chatBtn_codigo');
+  if (!inp || !btn) return;
+  let prompt = '';
+  switch (accion) {
+    case 'pytest':
+      prompt = 'Ejecuta los tests del proyecto con pytest (.venv\\Scripts\\pytest -q) e infórmame los resultados detallados.';
+      break;
+    case 'ruff':
+      prompt = 'Ejecuta el linter (.venv\\Scripts\\ruff check .) para verificar sintaxis, imports y calidad de código.';
+      break;
+    case 'git_status':
+      prompt = 'Ejecuta git status y git log -n 5 para revisar los cambios recientes y archivos pendientes.';
+      break;
+    case 'ast_graph':
+      prompt = 'Usa el servidor MCP codebase-memory para inspeccionar la arquitectura del proyecto, listar componentes clave y resumir dependencias.';
+      break;
+    default:
+      prompt = accion;
+  }
+  inp.value = prompt;
+  btn.click();
 }
 
 // --- Init ---

@@ -107,6 +107,11 @@ def _guardar_mensaje(remitente: str, texto: str, tipo: str, archivo_url: str | N
         conn.close()
 
 
+def sanitizar_mensaje_externo(texto: str, remitente: str, canal: str = "WhatsApp") -> str:
+    """Formatea el mensaje entrante de WhatsApp para el agente supervisor."""
+    return f"[{canal} de {remitente}] {texto.strip()}"
+
+
 def procesar_mensaje_entrante(remitente: str, texto: str, tipo: str = "texto", archivo_url: str | None = None) -> None:
     """Punto único de entrada para cualquier mensaje (Cloud API o sidecar local).
 
@@ -121,9 +126,25 @@ def procesar_mensaje_entrante(remitente: str, texto: str, tipo: str = "texto", a
     _guardar_mensaje(remitente, texto_final, tipo, archivo_url)
     log.info(f"Mensaje de {remitente} ({tipo}): {texto_final[:80]}")
 
-    respuesta = _reenviar_a_opencode(texto_final)
+    texto_seguro = sanitizar_mensaje_externo(texto_final, remitente, "WhatsApp")
+    respuesta = _reenviar_a_opencode(texto_seguro)
     if not respuesta:
         return
+
+    try:
+        conn = sqlite3.connect(str(DB_PATH))
+        conn.execute(
+            "INSERT INTO mensajes_chat (sesion_id, agente, rol, texto) VALUES (?, ?, ?, ?)",
+            (remitente, "asistente", "user", f"[WhatsApp] {texto_final}"),
+        )
+        conn.execute(
+            "INSERT INTO mensajes_chat (sesion_id, agente, rol, texto) VALUES (?, ?, ?, ?)",
+            (remitente, "asistente", "assistant", respuesta),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
     pide_audio = any(frase in texto_final.lower() for frase in ("léelo en audio", "leelo en audio", "léemelo", "leemelo"))
     if pide_audio:
@@ -351,12 +372,13 @@ def _reenviar_a_opencode(texto: str) -> str:
     modelo = "imrryr-activo"
     token = base64.b64encode(f"opencode:{password}".encode()).decode()
     headers = {"Authorization": f"Basic {token}", "Content-Type": "application/json"}
+    agente_entrada = "asistente" if (ROOT / "agentes" / "agente_asistente.yaml").exists() else "build"
 
     try:
         r = httpx.post(
             f"http://localhost:{port}/session",
             headers=headers,
-            json={"agent": "build", "model": {"id": modelo, "providerID": "imrryr-llm"}},
+            json={"agent": agente_entrada, "model": {"id": modelo, "providerID": "imrryr-llm"}},
             timeout=15,
         )
         r.raise_for_status()
@@ -368,9 +390,9 @@ def _reenviar_a_opencode(texto: str) -> str:
             f"http://localhost:{port}/session/{sid}/message",
             headers=headers,
             json={
-                "agent": "build",
+                "agent": agente_entrada,
                 "model": {"providerID": "imrryr-llm", "modelID": modelo},
-                "parts": [{"type": "text", "text": f"[WhatsApp] {texto}"}],
+                "parts": [{"type": "text", "text": texto}],
             },
             # Mismo motivo que en dashboard/server.py: delegar en subagentes
             # encadena varias llamadas al modelo y 120s se quedaba corto.
@@ -380,7 +402,7 @@ def _reenviar_a_opencode(texto: str) -> str:
         data = r.json()
 
         from uso_ia import registrar_uso
-        registrar_uso("whatsapp", "build")
+        registrar_uso("whatsapp", agente_entrada)
 
         respuesta = "".join(p.get("text", "") for p in data.get("parts", []) if p.get("type") == "text")
         if not respuesta:

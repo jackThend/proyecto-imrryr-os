@@ -1,0 +1,43 @@
+{
+  "name": "generar_cotizacion_pdf",
+  "description": "Genera un documento PDF formal de cotización y propuesta económica para un cliente, calculando subtotales y guardando el archivo en vault/cotizaciones/.",
+  "script": "skills/generar_cotizacion_pdf.py",
+  "arguments": [
+    {
+      "name": "cliente_nombre",
+      "type": "string",
+      "description": "Nombre de la empresa o cliente destinatario",
+      "required": true
+    },
+    {
+      "name": "proyecto_titulo",
+      "type": "string",
+      "description": "Título o descripción resumida del proyecto o servicio cotizado",
+      "required": true
+    },
+    {
+      "name": "items",
+      "type": "array",
+      "description": "Lista de items o etapas a cotizar (cada uno con 'descripcion', 'cantidad' y 'precio')",
+      "required": true
+    },
+    {
+      "name": "cliente_email",
+      "type": "string",
+      "description": "Email de contacto del cliente (opcional)",
+      "required": false
+    },
+    {
+      "name": "validez_dias",
+      "type": "integer",
+      "description": "Días de validez de la oferta (por defecto 30)",
+      "required": false
+    },
+    {
+      "name": "notas",
+      "type": "string",
+      "description": "Observaciones, condiciones comerciales o plazos de entrega",
+      "required": false
+    }
+  ]
+}

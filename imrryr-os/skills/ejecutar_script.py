@@ -53,13 +53,23 @@ def ejecutar_script(ruta_relativa: str, argumentos: list[str] | None = None, tim
     if not candidata.exists():
         return {"ok": False, "error": "El script no existe"}
 
+    import os
+    env_seguro = dict(os.environ)
+    for secreta in ("GEMINI_API_KEY", "IMRRYR_ACTIVE_API_KEY", "OPENCODE_SERVER_PASSWORD", "GROQ_API_KEY"):
+        env_seguro.pop(secreta, None)
+    env_seguro["PYTHONNOUSERSITE"] = "1"
+    env_seguro["PYTHONIOENCODING"] = "utf-8"
+
+    timeout_real = min(max(timeout_segundos, 5), 180)
+
     try:
         resultado = subprocess.run(
             [str(_python_venv()), str(candidata), *argumentos],
             cwd=str(ROOT),
             capture_output=True,
             text=True,
-            timeout=timeout_segundos,
+            env=env_seguro,
+            timeout=timeout_real,
         )
         return {
             "ok": resultado.returncode == 0,
@@ -68,7 +78,7 @@ def ejecutar_script(ruta_relativa: str, argumentos: list[str] | None = None, tim
             "stderr": resultado.stderr[-4000:],
         }
     except subprocess.TimeoutExpired:
-        return {"ok": False, "error": f"Timeout tras {timeout_segundos}s"}
+        return {"ok": False, "error": f"Timeout tras {timeout_real}s"}
 
 
 def main() -> int:

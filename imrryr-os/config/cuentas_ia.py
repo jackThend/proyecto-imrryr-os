@@ -86,6 +86,17 @@ def cuentas_seguras() -> list[dict[str, Any]]:
     return seguras
 
 
+def obtener_cuenta_activa() -> dict[str, Any] | None:
+    """Devuelve la cuenta marcada como activa, con la api_key enmascarada."""
+    for c in _leer_todas():
+        if c.get("activa"):
+            copia = dict(c)
+            if copia.get("api_key"):
+                copia["api_key"] = "*" * 6
+            return copia
+    return None
+
+
 def listar_modelos_remotos(proveedor: str, api_key: str = "", cuenta_id: str = "") -> dict[str, Any]:
     """Consulta en vivo qué modelos ofrece el proveedor (endpoint /models).
 

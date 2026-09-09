@@ -27,10 +27,12 @@ from fastapi.staticfiles import StaticFiles
 ROOT = Path(__file__).resolve().parent.parent
 ENV_FILE = ROOT / "config" / ".env"
 ADJUNTOS_DIR = ROOT / "semillas" / "adjuntos"
+COTIZACIONES_DIR = ROOT / "vault" / "cotizaciones"
 STATIC_DIR = Path(__file__).parent / "static"
 FONDOS_DIR = STATIC_DIR / "fondos"
 
 ADJUNTOS_DIR.mkdir(parents=True, exist_ok=True)
+COTIZACIONES_DIR.mkdir(parents=True, exist_ok=True)
 FONDOS_DIR.mkdir(parents=True, exist_ok=True)
 sys.path.insert(0, str(Path(__file__).parent))  # para 'from api import ...'
 sys.path.insert(0, str(ROOT / "skills"))
@@ -54,6 +56,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.mount("/adjuntos", StaticFiles(directory=str(ADJUNTOS_DIR)), name="adjuntos")
+app.mount("/cotizaciones", StaticFiles(directory=str(COTIZACIONES_DIR)), name="cotizaciones")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
 from api import ajustes, agenda, chat, compras, core, correo, finanzas, modulos, navegacion, oportunidades, rrss, semillas  # noqa: E402
@@ -83,7 +86,8 @@ def _iniciar_scheduler_finanzas() -> None:
                 importador.sincronizar_diario(finanzas.CUENTA_GMAIL_FINANZAS, finanzas.QUERY_BANCARIA_DEFECTO)
             except Exception as e:
                 print(f"[dashboard] sincronización diaria de Finanzas falló: {e}", flush=True)
-            time.sleep(24 * 60 * 60)
+            intervalo = importador.obtener_intervalo_sync()
+            time.sleep(intervalo)
 
     threading.Thread(target=_loop, daemon=True).start()
 

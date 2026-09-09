@@ -4,6 +4,7 @@ descripcion: "Sistema completo para desarrolladores. Incluye todos los agentes, 
 
 # Agentes incluidos
 agentes:
+  - agente_asistente.yaml
   - agente_build.yaml
   - agente_financiero.yaml
   - agente_investigador.yaml
@@ -14,12 +15,27 @@ agentes:
 # Skills incluidos
 skills:
   - inyectar_gasto.py
+  - leer_gmail.py
   - scraper_fondos.py
   - crear_evento.py
+  - agenda.py
+  - recordatorios.py
+  - pendientes.py
   - tts_local.py
   - transcribir_audio.py
-  - recordatorios.py
-  - leer_gmail.py
+  - consultar_memoria_vectorial.py
+  - generar_cotizacion_pdf.py
+  - memoria_perfil.py
+  - confirmacion_hitl.py
+  - perfil_negocio.py
+  - uso_ia.py
+  - errores_ia.py
+  - ejecutar_script.py
+  - leer_archivo.py
+  - escribir_archivo.py
+  - monitorear_procesos.py
+  - detener_proceso.py
+  - navegar_web.py
 
 # Capacidades bloqueadas (ninguna en tech)
 bloqueos: []

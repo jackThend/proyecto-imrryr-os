@@ -1,0 +1,25 @@
+{
+  "name": "guardar_hecho_memoria",
+  "description": "Guarda o actualiza un hecho relevante, regla o preferencia duradera sobre el usuario (su nombre, empresa, estilo de trabajo, RUT, gustos o restricciones) para recordarlo permanentemente entre sesiones.",
+  "script": "skills/memoria_perfil.py",
+  "arguments": [
+    {
+      "name": "clave",
+      "type": "string",
+      "description": "Identificador corto del hecho (ej: 'rut_empresa', 'horario_preferido', 'estilo_respuesta')",
+      "required": true
+    },
+    {
+      "name": "valor",
+      "type": "string",
+      "description": "El contenido del hecho o preferencia que se debe recordar",
+      "required": true
+    },
+    {
+      "name": "categoria",
+      "type": "string",
+      "description": "Categoría opcional: 'perfil', 'preferencia', 'regla' o 'negocio' (por defecto 'preferencia')",
+      "required": false
+    }
+  ]
+}
