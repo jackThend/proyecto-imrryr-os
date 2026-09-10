@@ -108,6 +108,18 @@ def main() -> int:
                 stdout=out,
                 stderr=out,
             )
+        if proc.returncode != 0:
+            ultimas = ""
+            if log_file.exists():
+                try:
+                    lineas = log_file.read_text(encoding="utf-8", errors="replace").strip().splitlines()
+                    ultimas = "\n".join(lineas[-6:])
+                except Exception:
+                    pass
+            mostrar_error(
+                "Imrryr OS - Error de inicio",
+                f"No se pudieron iniciar los servicios de Imrryr OS.\n\nDetalles:\n{ultimas or 'Código de error: ' + str(proc.returncode)}",
+            )
         return proc.returncode
     except KeyboardInterrupt:
         shutdown_script = root / "scripts" / "shutdown.py"

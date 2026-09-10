@@ -109,23 +109,24 @@ def sync_agentes() -> None:
 # Arranque de servicios
 # --------------------------------------------------------------------------
 def start_litellm(env: dict[str, str], port: int) -> subprocess.Popen:
-    """Levanta el proxy LiteLLM en background."""
+    """Levanta el proxy LiteLLM en background usando el runner UTF-8 autónomo."""
     log_dir = RUN_DIR / "litellm.log"
     # Forzar UTF-8 para que el banner Unicode de LiteLLM no crashee en Windows
-    env = {**env, "PYTHONIOENCODING": "utf-8"}
-    # El CLI de litellm (no python -m litellm).
+    env = {
+        **env,
+        "PYTHONIOENCODING": "utf-8",
+        "PYTHONUTF8": "1",
+    }
+    runner = ROOT / "scripts" / "run_litellm.py"
     cmd = [
-        sys.executable.replace("python.exe", "litellm.exe"),
+        sys.executable,
+        str(runner),
         "--config", str(LITELLM_CONFIG),
         "--port", str(port),
     ]
-    # fallback si el exe no está junto al python
-    litellm_exe = ROOT / ".venv" / "Scripts" / "litellm.exe"
-    if litellm_exe.exists():
-        cmd[0] = str(litellm_exe)
 
     log_dir.parent.mkdir(parents=True, exist_ok=True)
-    logf = log_dir.open("w", encoding="utf-8")
+    logf = log_dir.open("w", encoding="utf-8", errors="replace")
     proc = subprocess.Popen(
         cmd,
         stdout=logf,
