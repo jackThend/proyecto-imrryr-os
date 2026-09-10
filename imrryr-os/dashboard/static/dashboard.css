@@ -978,19 +978,55 @@ body.ayuda-on [data-ayuda].ayuda-below:hover::before { bottom: auto; top: 100%; 
   stroke: #ffd93d !important;
   stroke-width: 3px !important;
 }
-.canvas-edge-line {
+.canvas-edge-line,
+.canvas-edge-path {
+  fill: none;
   stroke: #C09135;
   stroke-width: 2.5px;
   cursor: pointer;
   transition: stroke 0.15s ease, stroke-width 0.15s ease;
 }
-.canvas-edge-line:hover {
+.canvas-edge-line:hover,
+.canvas-edge-path:hover {
   stroke: #ffd93d;
   stroke-width: 3.5px;
 }
-.canvas-edge-line.selected {
+.canvas-edge-line.selected,
+.canvas-edge-path.selected {
   stroke: #ffd93d !important;
   stroke-width: 4px !important;
+}
+.theme-white .canvas-edge-line,
+.theme-white .canvas-edge-path {
+  stroke: #64748b;
+}
+.theme-white .canvas-edge-line:hover,
+.theme-white .canvas-edge-path:hover,
+.theme-white .canvas-edge-line.selected,
+.theme-white .canvas-edge-path.selected {
+  stroke: #2563eb !important;
+}
+
+/* Resize handle para nodos e imágenes */
+.canvas-resize-handle {
+  cursor: nwse-resize;
+  fill: #C09135;
+  opacity: 0.65;
+  transition: opacity 0.15s ease, fill 0.15s ease;
+}
+.canvas-resize-handle:hover {
+  opacity: 1;
+  fill: #ffd93d;
+}
+.theme-white .canvas-resize-handle {
+  fill: #64748b;
+}
+.theme-white .canvas-resize-handle:hover {
+  fill: #2563eb;
+}
+
+.canvas-image-node rect {
+  stroke: #8b5cf6;
 }
 
 /* Grabación pulsante */

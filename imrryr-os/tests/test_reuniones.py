@@ -164,7 +164,80 @@ def test_api_reuniones_endpoints(db_temporal, monkeypatch):
     assert r_ag.status_code == 200
     assert r_ag.json()["ok"] is True
 
-    # 6. Eliminar reunión
+    # 6. Subir imagen para nodo de canvas vía POST
+    r_img = client.post(
+        f"/api/reuniones/{rid}/imagen",
+        files={"archivo": ("diagrama.png", b"\x89PNG\r\n\x1a\nfakeimagecontent", "image/png")},
+    )
+    assert r_img.status_code == 200
+    res_img = r_img.json()
+    assert res_img["ok"] is True
+    assert "url" in res_img
+    assert "/reuniones_audio/imagenes/" in res_img["url"]
+
+    # 7. Eliminar reunión
     r_del = client.delete(f"/api/reuniones/{rid}")
     assert r_del.status_code == 200
     assert r_del.json()["ok"] is True
+
+
+def test_extraccion_heuristica_ignora_saludos_y_extrae_responsables():
+    from dashboard.api.reuniones import _extraer_analisis_heuristico
+
+    transcripcion = (
+        "Buenos días equipo, muchas gracias por conectarse hoy a esta sesión. "
+        "En primer lugar, revisamos el avance del proyecto principal. "
+        "Carlos debe preparar el informe técnico de arquitectura antes del viernes. "
+        "Sofía se encargará de revisar las cotizaciones de los proveedores. "
+        "Acordamos cerrar el diseño de la interfaz antes de fin de mes. "
+        "Saludos cordiales y que tengan una excelente semana."
+    )
+
+    analisis = _extraer_analisis_heuristico(transcripcion)
+    tareas = analisis["tareas"]
+    resumen = analisis["resumen_ejecutivo"]
+
+    # Verificar que los saludos no son tareas
+    for t in tareas:
+        desc = t["tarea"].lower()
+        assert not desc.startswith("buenos días")
+        assert not desc.startswith("saludos cordiales")
+        assert not desc.startswith("muchas gracias")
+
+    # Verificar que se detectaron responsables específicos
+    responsables = [t["responsable"] for t in tareas]
+    assert "Carlos" in responsables or any("Carlos" in t["tarea"] for t in tareas)
+    assert "Sofía" in responsables or any("Sofía" in t["tarea"] for t in tareas)
+
+    # Verificar resumen ejecutivo
+    assert "avance del proyecto" in resumen.lower()
+
+
+def test_mapa_conceptual_agrupa_por_persona_y_curvas_bezier():
+    r = reuniones_module.guardar_reunion(
+        titulo="Comité de Innovación",
+        resumen_ejecutivo="Avance de prototipos de IA para automatización.",
+        conclusiones="Lanzar piloto con clientes clave.",
+        acuerdos_tareas=[
+            {"tarea": "Desarrollar prototipo", "responsable": "Carlos"},
+            {"tarea": "Preparar contrato piloto", "responsable": "Sofía"},
+        ],
+    )
+    rid = r["id"]
+
+    res = reuniones_module.generar_mapa_conceptual(reunion_id=rid)
+    assert res["ok"] is True
+    mapa = res["mapa"]
+    nodos = mapa["nodos"]
+    conexiones = mapa["conexiones"]
+
+    # Nodos persona
+    personas = [n for n in nodos if n["tipo"] == "persona"]
+    assert len(personas) == 2
+    nombres_persona = [p["texto"] for p in personas]
+    assert any("Carlos" in np for np in nombres_persona)
+    assert any("Sofía" in np for np in nombres_persona)
+
+    # Conexiones con curvas bezier
+    assert any(c.get("curva") == "bezier" for c in conexiones)
+

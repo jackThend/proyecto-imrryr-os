@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
+import re
 import sqlite3
 from datetime import date, datetime
 from pathlib import Path
@@ -237,57 +237,51 @@ def generar_mapa_conceptual(
     nodos: list[dict[str, Any]] = []
     conexiones: list[dict[str, Any]] = []
 
-    # 1. Nodo Central
+    # 1. Nodo Central (Reunión)
     root_id = "node-root"
     nodos.append({
         "id": root_id,
         "tipo": "central",
         "texto": titulo_nodo,
         "x": 600,
-        "y": 400,
-        "ancho": 180,
-        "alto": 70,
+        "y": 300,
+        "ancho": 210,
+        "alto": 75,
         "color": "#6366f1",
     })
 
-    # 2. Desglose de Temas Clave del Resumen
+    # 2. Ala Izquierda: Temas Clave del Resumen
     lineas_resumen = [
         line.strip("- *• \t\r\n")
         for line in (resumen or "").split("\n")
         if line.strip("- *• \t\r\n") and len(line.strip("- *• \t\r\n")) > 10
     ]
     if not lineas_resumen and (resumen or "").strip():
-        lineas_resumen = [s.strip() for s in resumen.split(".") if len(s.strip()) > 10][:4]
+        lineas_resumen = [s.strip() for s in re.split(r"[.!?]\s+", resumen) if len(s.strip()) > 10][:4]
 
-    temas = lineas_resumen[:4]
-    radio_temas = 220
-    num_temas = len(temas) or 1
-    tema_ids = []
-
+    temas = lineas_resumen[:3]
     for i, tema_texto in enumerate(temas):
         tid = f"node-tema-{i+1}"
-        tema_ids.append(tid)
-        angulo = (2 * math.pi / num_temas) * i - (math.pi / 2)
-        tx = 600 + int(radio_temas * math.cos(angulo))
-        ty = 400 + int(radio_temas * math.sin(angulo))
+        ty = 180 + (i * 130)
         nodos.append({
             "id": tid,
             "tipo": "tema",
-            "texto": tema_texto[:90],
-            "x": tx,
+            "texto": tema_texto[:85],
+            "x": 220,
             "y": ty,
-            "ancho": 160,
-            "alto": 60,
+            "ancho": 180,
+            "alto": 65,
             "color": "#3b82f6",
         })
         conexiones.append({
             "id": f"edge-root-{tid}",
             "desde": root_id,
             "hacia": tid,
-            "etiqueta": "tema",
+            "etiqueta": "trata de",
+            "curva": "bezier",
         })
 
-    # 3. Conclusiones y Decisiones
+    # 3. Ala Derecha: Conclusiones y Acuerdos Estratégicos
     lineas_concl = [
         line.strip("- *• \t\r\n")
         for line in (conclusiones or "").split("\n")
@@ -295,27 +289,26 @@ def generar_mapa_conceptual(
     ]
     for j, dec in enumerate(lineas_concl[:3]):
         did = f"node-decision-{j+1}"
-        dx = 350 + (j * 250)
-        dy = 680
+        dy = 180 + (j * 130)
         nodos.append({
             "id": did,
             "tipo": "decision",
-            "texto": f"Acuerdo: {dec[:80]}",
-            "x": dx,
+            "texto": f"Acuerdo: {dec[:85]}",
+            "x": 980,
             "y": dy,
-            "ancho": 170,
-            "alto": 60,
+            "ancho": 180,
+            "alto": 65,
             "color": "#10b981",
         })
-        origen = tema_ids[j % len(tema_ids)] if tema_ids else root_id
         conexiones.append({
-            "id": f"edge-dec-{did}",
-            "desde": origen,
+            "id": f"edge-root-{did}",
+            "desde": root_id,
             "hacia": did,
-            "etiqueta": "acuerdo",
+            "etiqueta": "acuerda",
+            "curva": "bezier",
         })
 
-    # 4. Tareas y Acciones
+    # 4. Zona Inferior: Personas y Plan de Acción
     lista_tareas: list[dict[str, Any]] = []
     if isinstance(tareas, str):
         try:
@@ -325,32 +318,64 @@ def generar_mapa_conceptual(
     elif isinstance(tareas, list):
         lista_tareas = tareas
 
-    for k, t in enumerate(lista_tareas[:6]):
-        kid = f"node-tarea-{k+1}"
-        desc = t.get("tarea", "") or str(t)
-        resp = t.get("responsable", "")
-        texto_t = f"Tarea: {desc[:60]}"
-        if resp:
-            texto_t += f" ({resp})"
-        kx = 200 + (k % 3) * 380
-        ky = 120 + (k // 3) * 110
+    # Agrupar tareas por responsable
+    tareas_por_persona: dict[str, list[dict[str, Any]]] = {}
+    for t in lista_tareas:
+        resp = t.get("responsable", "").strip() or "Equipo"
+        tareas_por_persona.setdefault(resp, []).append(t)
+
+    personas = list(tareas_por_persona.keys())[:4]
+    espacio_x = 240
+    inicio_x = 600 - int(((len(personas) - 1) * espacio_x) / 2) if personas else 600
+
+    task_counter = 0
+    for p_idx, persona in enumerate(personas):
+        px = inicio_x + (p_idx * espacio_x)
+        pid = f"node-persona-{p_idx+1}"
         nodos.append({
-            "id": kid,
-            "tipo": "tarea",
-            "texto": texto_t,
-            "x": kx,
-            "y": ky,
-            "ancho": 170,
-            "alto": 55,
-            "color": "#f59e0b",
+            "id": pid,
+            "tipo": "persona",
+            "texto": f"👤 {persona}",
+            "x": px - 15,
+            "y": 480,
+            "ancho": 160,
+            "alto": 50,
+            "color": "#8b5cf6",
         })
-        origen_t = tema_ids[k % len(tema_ids)] if tema_ids else root_id
         conexiones.append({
-            "id": f"edge-tar-{kid}",
-            "desde": origen_t,
-            "hacia": kid,
-            "etiqueta": "asigna",
+            "id": f"edge-root-{pid}",
+            "desde": root_id,
+            "hacia": pid,
+            "etiqueta": "asigna a",
+            "curva": "bezier",
         })
+
+        # Tareas de esta persona
+        for t_idx, t_item in enumerate(tareas_por_persona[persona][:2]):
+            task_counter += 1
+            kid = f"node-tarea-{task_counter}"
+            t_desc = t_item.get("tarea", "") or str(t_item)
+            fecha_l = t_item.get("fecha_limite", "")
+            texto_t = f"Tarea: {t_desc[:65]}"
+            if fecha_l:
+                texto_t += f"\n📅 {fecha_l}"
+            nodos.append({
+                "id": kid,
+                "tipo": "tarea",
+                "texto": texto_t,
+                "x": px - 25,
+                "y": 570 + (t_idx * 90),
+                "ancho": 180,
+                "alto": 65,
+                "color": "#f59e0b",
+            })
+            conexiones.append({
+                "id": f"edge-{pid}-{kid}",
+                "desde": pid,
+                "hacia": kid,
+                "etiqueta": "compromiso",
+                "curva": "bezier",
+            })
 
     mapa = {
         "nodos": nodos,

@@ -109,24 +109,35 @@ async def crear_o_actualizar_reunion(datos: dict[str, Any]):
 
 
 async def _extraer_analisis_llm(transcripcion: str, titulo: str) -> dict[str, Any]:
-    """Intenta procesar la transcripción con LiteLLM/OpenCode o recurre a heurística estructurada."""
-    prompt = f"""Eres el Agente de Reuniones de Imrryr OS.
+    """Extrae resumen, roles, conclusiones y tareas por persona, filtrando saludos y ruido."""
+    prompt = f"""Eres el Agente Especialista de Reuniones y Minutas Ejecutivas de Imrryr OS.
 Analiza la siguiente transcripción de una reunión de trabajo titulada "{titulo}".
-Genera estrictamente un objeto JSON con la siguiente estructura:
+
+REGLAS ESTRICTAS DE EXTRACCIÓN:
+1. NUNCA tomes saludos, bienvenidas, cortesías ni frases introductorias (ej: "Buenos días equipo", "Hola a todos", "Gracias por venir", "Bienvenidos...") como tareas ni como conclusiones. Esos saludos NO son tareas.
+2. Identifica a los participantes mencionados y sus aportes o responsabilidades.
+3. Separa y agrupa las tareas por PERSONA ESPECÍFICA (responsable individual). La tarea debe ser la acción concreta que le corresponde a esa persona.
+4. Las conclusiones deben ser acuerdos firmes, decisiones estratégicas o hitos aprobados.
+5. El resumen ejecutivo debe ser una síntesis coherente de 2 a 3 párrafos de alto nivel con los temas discutidos.
+
+Genera estrictamente un objeto JSON con esta estructura exacta (sin texto ni markdown adicional):
 {{
-  "resumen_ejecutivo": "Síntesis en 2 a 4 párrafos de alto nivel con los temas discutidos.",
-  "conclusiones": "Lista de acuerdos clave, hitos alcanzados y decisiones finales tomadas.",
+  "resumen_ejecutivo": "Síntesis en 2 a 3 párrafos profesionales con los objetivos y temas abordados.",
+  "participantes_roles": [
+    {{"nombre": "Nombre de la persona", "rol_o_aporte": "Descripción de su aporte o responsabilidad"}}
+  ],
+  "conclusiones": "• Acuerdo o decisión clave 1\\n• Acuerdo o decisión clave 2",
   "tareas": [
     {{
-      "tarea": "Descripción clara de la acción requerida",
-      "responsable": "Nombre del asignado o 'Sin asignar'",
-      "fecha_limite": "YYYY-MM-DD o vacía si no se mencionó"
+      "responsable": "Nombre específico de la persona (ej: Carlos, Sofía, Equipo)",
+      "tarea": "Acción concreta y redactada con claridad",
+      "fecha_limite": "YYYY-MM-DD o vacía si no se mencionó fecha"
     }}
   ]
 }}
 
 Transcripción de la reunión:
-{transcripcion[:8000]}
+{transcripcion[:10000]}
 """
     try:
         async with httpx.AsyncClient(timeout=45.0) as client:
@@ -135,55 +146,132 @@ Transcripción de la reunión:
                 json={
                     "model": "imrryr-activo",
                     "messages": [
-                        {"role": "system", "content": "Responde solo con el JSON requerido, sin markdown adicional."},
+                        {"role": "system", "content": "Eres un asistente extractor de minutas. Responde ÚNICAMENTE con el objeto JSON solicitado."},
                         {"role": "user", "content": prompt},
                     ],
-                    "temperature": 0.2,
+                    "temperature": 0.1,
                 },
             )
             if r.status_code == 200:
                 data = r.json()
                 contenido = data["choices"][0]["message"]["content"]
-                # Extraer JSON limpio
                 match = re.search(r"\{.*\}", contenido, re.DOTALL)
                 if match:
-                    return json.loads(match.group(0))
+                    parsed = json.loads(match.group(0))
+                    # Validar que no tenga saludos en tareas
+                    tareas_limpias = []
+                    for t in parsed.get("tareas", []):
+                        t_desc = t.get("tarea", "").strip()
+                        t_low = t_desc.lower()
+                        if not any(t_low.startswith(s) for s in ["buenos días", "buenas tardes", "hola", "bienvenidos"]):
+                            t["agendada"] = False
+                            tareas_limpias.append(t)
+                    parsed["tareas"] = tareas_limpias
+                    return parsed
     except Exception:
         pass
 
-    # Heurística local de respaldo (si el LLM no está activo o no respondió a tiempo)
-    parrafos = [p.strip() for p in transcripcion.split("\n") if len(p.strip()) > 20]
-    resumen = "\n\n".join(parrafos[:3]) if parrafos else transcripcion[:300]
-    conclusiones = "• Se revisaron los objetivos principales discutidos.\n• Se definieron próximos pasos y acuerdos de equipo."
-    tareas = []
+    return _extraer_analisis_heuristico(transcripcion, titulo)
 
-    # Extraer posibles líneas con compromisos o tareas
-    for p in parrafos:
-        p_low = p.lower()
-        if any(w in p_low for w in ["acuerdo", "tarea", "hacer", "pendiente", "compromiso", "entregar", "revisar"]):
-            partes = p.split(":")
-            responsable = partes[0].strip() if len(partes) > 1 else "Equipo"
-            desc = partes[1].strip() if len(partes) > 1 else p
+
+def _extraer_analisis_heuristico(transcripcion: str, titulo: str = "") -> dict[str, Any]:
+    """Heurística estructurada de respaldo (offline / fallback inteligente)."""
+    # 1. Separar en oraciones limpias
+    oraciones = [
+        s.strip()
+        for s in re.split(r"[.!?]\s+|\n+", transcripcion)
+        if s.strip() and len(s.strip()) > 8
+    ]
+
+    # 2. Filtrar saludos y cortesías de la lista de trabajo
+    saludos_prefijos = [
+        "buenos días", "buenas tardes", "buenas noches", "hola equipo",
+        "hola a todos", "bienvenidos", "gracias por asistir", "gracias a todos",
+        "en esta reunión vamos a", "estamos reunidos para",
+    ]
+    oraciones_utiles = [
+        s for s in oraciones
+        if not any(s.lower().startswith(p) for p in saludos_prefijos)
+    ]
+
+    tareas = []
+    conclusiones_lista = []
+    participantes_set = set()
+
+    # Patrones de asignación de tareas a personas
+    patron_persona_tarea = re.compile(
+        r"(?P<quien>[A-ZÁÉÍÓÚ][a-záéíóú]+(?:\s+[A-ZÁÉÍÓÚ][a-záéíóú]+)?)\s+"
+        r"(?:estará a cargo de|se encargará de|quedará a cargo de|preparará|revisará|enviará|desarrollará|diseñará|realizará|completará|liderará|debe|tiene que)\s+"
+        r"(?P<que>.+)",
+        re.IGNORECASE,
+    )
+    patron_tarea_general = re.compile(
+        r"(?:queda como tarea pendiente|como tarea pendiente|tarea:\s*)(?:que\s+)?(?P<que>.+)",
+        re.IGNORECASE,
+    )
+    patron_acuerdo = re.compile(
+        r"(?:acordamos|aprobamos|decidimos|como acuerdo principal|como conclusión|se acuerda|se aprueba|se decide)\s+(?P<concl>.+)",
+        re.IGNORECASE,
+    )
+
+    for o in oraciones_utiles:
+        # Detectar acuerdos
+        m_acuerdo = patron_acuerdo.search(o)
+        if m_acuerdo:
+            texto_c = m_acuerdo.group("concl").strip()
+            conclusiones_lista.append(f"• {texto_c[:120]}")
+            continue
+
+        # Detectar tareas por persona
+        m_persona = patron_persona_tarea.search(o)
+        if m_persona:
+            quien = m_persona.group("quien").strip().capitalize()
+            que = m_persona.group("que").strip()
+            # Limpiar cola de oración
+            que = re.sub(r"\s+antes del.*|\s+el próximo.*", "", que, flags=re.IGNORECASE).strip()
+            participantes_set.add(quien)
             tareas.append({
-                "tarea": desc[:100],
-                "responsable": responsable[:30],
+                "responsable": quien,
+                "tarea": que[:110],
                 "fecha_limite": date.today().isoformat(),
                 "agendada": False,
             })
-            if len(tareas) >= 5:
-                break
+            continue
+
+        # Detectar tarea general
+        m_gen = patron_tarea_general.search(o)
+        if m_gen:
+            que_gen = m_gen.group("que").strip()
+            tareas.append({
+                "responsable": "Equipo",
+                "tarea": que_gen[:110],
+                "fecha_limite": date.today().isoformat(),
+                "agendada": False,
+            })
+            continue
+
+    if not conclusiones_lista:
+        conclusiones_lista = [
+            "• Se revisaron y acordaron los objetivos prioritarios del proyecto.",
+            "• Se formalizaron los próximos pasos y el plan de entrega.",
+        ]
 
     if not tareas:
         tareas.append({
-            "tarea": "Revisar minuta y validar compromisos",
             "responsable": "Participantes",
+            "tarea": "Revisar minuta y validar compromisos de la reunión",
             "fecha_limite": date.today().isoformat(),
             "agendada": False,
         })
 
+    # Resumen ejecutivo coherente
+    resumen_candidatos = [o for o in oraciones_utiles if len(o) > 25][:3]
+    resumen_texto = " ".join(resumen_candidatos) if resumen_candidatos else transcripcion[:350]
+
     return {
-        "resumen_ejecutivo": resumen,
-        "conclusiones": conclusiones,
+        "resumen_ejecutivo": resumen_texto,
+        "conclusiones": "\n".join(conclusiones_lista),
+        "participantes": ", ".join(sorted(participantes_set)) if participantes_set else "",
         "tareas": tareas,
     }
 
@@ -251,6 +339,26 @@ async def agendar_tareas_reunion(reunion_id: int, datos: dict[str, Any]):
         agendar_en_eventos=agendar_eventos,
         agendar_en_pendientes=agendar_pendientes,
     )
+
+
+@router.post("/api/reuniones/{reunion_id}/imagen")
+async def subir_imagen_canvas(reunion_id: int, archivo: UploadFile = File(...)):
+    """Sube una imagen para insertarla como nodo visual en el canvas infinito."""
+    try:
+        img_dir = AUDIO_DIR / "imagenes"
+        img_dir.mkdir(parents=True, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        nombre_limpio = Path(archivo.filename or "imagen.png").name
+        nombre_destino = f"{timestamp}_{nombre_limpio}"
+        destino = img_dir / nombre_destino
+
+        contenido = await archivo.read()
+        destino.write_bytes(contenido)
+
+        url_publica = f"/reuniones_audio/imagenes/{nombre_destino}"
+        return {"ok": True, "url": url_publica, "nombre": nombre_limpio}
+    except Exception as e:
+        return JSONResponse({"ok": False, "error": str(e)}, status_code=500)
 
 
 @router.delete("/api/reuniones/{reunion_id}")

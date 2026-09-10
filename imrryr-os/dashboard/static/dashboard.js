@@ -3009,6 +3009,11 @@ const canvasState = {
   draggedNode: null,
   dragOffsetX: 0,
   dragOffsetY: 0,
+  resizingNode: null,
+  resizeStartX: 0,
+  resizeStartY: 0,
+  initialWidth: 0,
+  initialHeight: 0,
   theme: 'black',
   mapa: { nodos: [], conexiones: [] },
 };
@@ -3099,22 +3104,41 @@ function mostrarDetalleReunion(reunion) {
   document.getElementById('reunionResumenTexto').textContent = reunion.resumen_ejecutivo || 'Aún no hay resumen generado. Haz clic en "Procesar Minuta y Grafo".';
   document.getElementById('reunionConclusionesTexto').textContent = reunion.conclusiones || 'Aún no hay acuerdos registrados.';
 
-  // 3. Tareas y Compromisos
+  // 3. Tareas y Compromisos agrupadas por responsable
   const contenedorTareas = document.getElementById('reunionTareasLista');
   const tareas = reunion.acuerdos_tareas || [];
   if (tareas.length === 0) {
     contenedorTareas.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px 0">No hay tareas detectadas todavía. Procesa la minuta para extraerlas.</div>';
   } else {
-    contenedorTareas.innerHTML = tareas.map((t, idx) => {
-      const resp = t.responsable ? `<span style="font-size:11px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 6px;border-radius:4px;margin-left:6px">${t.responsable}</span>` : '';
-      const fecha = t.fecha_limite ? `<span style="font-size:11px;color:var(--text-dim);margin-left:6px">📅 ${t.fecha_limite}</span>` : '';
-      const agendada = t.agendada ? '<span style="font-size:10px;color:#10b981;margin-left:auto;font-weight:600">✓ En Agenda</span>' : '';
+    const agrupadas = {};
+    tareas.forEach((t, idx) => {
+      const resp = (t.responsable || '').trim() || 'General / Sin asignar';
+      if (!agrupadas[resp]) agrupadas[resp] = [];
+      agrupadas[resp].push({ ...t, origIdx: idx });
+    });
+
+    contenedorTareas.innerHTML = Object.entries(agrupadas).map(([resp, items]) => {
+      const itemsHtml = items.map(t => {
+        const fecha = t.fecha_limite ? `<span style="font-size:11px;color:var(--text-dim);margin-left:6px">📅 ${t.fecha_limite}</span>` : '';
+        const agendada = t.agendada ? '<span style="font-size:10px;color:#10b981;margin-left:auto;font-weight:600">✓ En Agenda</span>' : '';
+        return `
+          <label style="display:flex;align-items:center;gap:10px;background:var(--surface2);padding:9px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer;margin-bottom:6px">
+            <input type="checkbox" class="chk-tarea-reunion" data-index="${t.origIdx}" ${t.agendada ? 'disabled' : 'checked'}>
+            <span style="font-size:13px;color:var(--text);flex:1">${t.tarea || 'Tarea sin descripción'} ${fecha}</span>
+            ${agendada}
+          </label>
+        `;
+      }).join('');
+
       return `
-        <label style="display:flex;align-items:center;gap:10px;background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer">
-          <input type="checkbox" class="chk-tarea-reunion" data-index="${idx}" ${t.agendada ? 'disabled' : 'checked'}>
-          <span style="font-size:13px;color:var(--text);flex:1">${t.tarea || 'Tarea sin descripción'} ${resp} ${fecha}</span>
-          ${agendada}
-        </label>
+        <div style="margin-bottom:14px">
+          <div style="font-size:12px;font-weight:600;color:var(--color-accent);margin-bottom:6px;display:flex;align-items:center;gap:6px">
+            <svg class="icon" style="width:14px;height:14px"><use href="#icon-users"/></svg>
+            <span>${resp}</span>
+            <span style="font-size:10px;color:var(--text-dim);font-weight:normal">(${items.length} ${items.length === 1 ? 'compromiso' : 'compromisos'})</span>
+          </div>
+          <div>${itemsHtml}</div>
+        </div>
       `;
     }).join('');
   }
@@ -3320,9 +3344,9 @@ function initConceptMapCanvas() {
     canvasZoom(factor);
   }, { passive: false });
 
-  // Panning y Dragging
+  // Panning y Creación
   svg.addEventListener('mousedown', e => {
-    if (e.target.closest('.canvas-node-g')) return; // Manejado por el nodo
+    if (e.target.closest('.canvas-node-g') || e.target.closest('.canvas-resize-handle')) return;
 
     if (canvasState.activeTool === 'select' || canvasState.activeTool === 'conector') {
       canvasState.isPanning = true;
@@ -3334,7 +3358,6 @@ function initConceptMapCanvas() {
         actualizarSeleccionCanvas();
       }
     } else if (['idea', 'tarea', 'decision'].includes(canvasState.activeTool)) {
-      // Crear nuevo nodo en la posición del click
       const rect = svg.getBoundingClientRect();
       const clickX = (e.clientX - rect.left - canvasState.panX) / canvasState.scale;
       const clickY = (e.clientY - rect.top - canvasState.panY) / canvasState.scale;
@@ -3348,6 +3371,12 @@ function initConceptMapCanvas() {
       canvasState.panX = e.clientX - canvasState.startX;
       canvasState.panY = e.clientY - canvasState.startY;
       updateCanvasTransform();
+    } else if (canvasState.resizingNode) {
+      const deltaX = (e.clientX - canvasState.resizeStartX) / canvasState.scale;
+      const deltaY = (e.clientY - canvasState.resizeStartY) / canvasState.scale;
+      canvasState.resizingNode.ancho = Math.max(90, Math.round(canvasState.initialWidth + deltaX));
+      canvasState.resizingNode.alto = Math.max(45, Math.round(canvasState.initialHeight + deltaY));
+      renderConceptMapCanvas(canvasState.mapa);
     } else if (canvasState.draggedNode) {
       const svgRect = svg.getBoundingClientRect();
       const nx = (e.clientX - svgRect.left - canvasState.panX) / canvasState.scale - canvasState.dragOffsetX;
@@ -3362,6 +3391,9 @@ function initConceptMapCanvas() {
     if (canvasState.isPanning) {
       canvasState.isPanning = false;
       svg.style.cursor = canvasState.activeTool === 'select' ? 'grab' : (canvasState.activeTool === 'conector' ? 'crosshair' : 'copy');
+    }
+    if (canvasState.resizingNode) {
+      canvasState.resizingNode = null;
     }
     if (canvasState.draggedNode) {
       canvasState.draggedNode = null;
@@ -3436,6 +3468,62 @@ function toggleCanvasTheme() {
   renderConceptMapCanvas(canvasState.mapa);
 }
 
+function abrirSubirImagenCanvas() {
+  if (!reunionActiva) {
+    mostrarToast('Selecciona o sube primero una reunión para adjuntar imágenes en el canvas', 'info');
+    return;
+  }
+  const inp = document.getElementById('canvasImageFileInput');
+  if (inp) inp.click();
+}
+
+async function imagenCanvasSeleccionada(input) {
+  const file = input.files && input.files[0];
+  if (!file || !reunionActiva) return;
+
+  mostrarToast('Subiendo imagen al canvas...', 'info');
+  try {
+    const formData = new FormData();
+    formData.append('archivo', file);
+
+    const r = await fetch(`/api/reuniones/${reunionActiva.id}/imagen`, {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await r.json();
+    if (data && data.ok) {
+      const mapa = canvasState.mapa;
+      if (!mapa.nodos) mapa.nodos = [];
+
+      const svg = document.getElementById('conceptMapSvg');
+      const rect = svg ? svg.getBoundingClientRect() : { width: 800, height: 600 };
+      const cx = (rect.width / 2 - canvasState.panX) / canvasState.scale;
+      const cy = (rect.height / 2 - canvasState.panY) / canvasState.scale;
+
+      const imgNode = {
+        id: `node-img-${Date.now()}`,
+        tipo: 'imagen',
+        texto: data.nombre || 'Imagen Adjunta',
+        url: data.url,
+        x: Math.round(cx - 110),
+        y: Math.round(cy - 90),
+        ancho: 220,
+        alto: 170,
+        color: '#8b5cf6',
+      };
+      mapa.nodos.push(imgNode);
+      renderConceptMapCanvas(mapa);
+      mostrarToast('Imagen insertada en el canvas. Puedes moverla o redimensionarla arrastrando.', 'success');
+    } else {
+      mostrarToast('Error subiendo imagen: ' + (data.error || 'Error desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error en carga de imagen: ' + err.message, 'error');
+  } finally {
+    input.value = '';
+  }
+}
+
 function crearNodoEnCanvas(tipo, x, y) {
   const mapa = canvasState.mapa;
   if (!mapa.nodos) mapa.nodos = [];
@@ -3453,14 +3541,14 @@ function crearNodoEnCanvas(tipo, x, y) {
     id: nid,
     tipo: tipo,
     texto: texto,
-    x: Math.round(x - 80),
-    y: Math.round(y - 30),
-    ancho: 160,
-    alto: 60,
+    x: Math.round(x - 85),
+    y: Math.round(y - 32),
+    ancho: 170,
+    alto: 65,
     color: color,
   });
   renderConceptMapCanvas(mapa);
-  mostrarToast('Nodo agregado. Haz doble clic para editar su texto.', 'info');
+  mostrarToast('Nodo agregado. Haz doble clic para editar o arrastra desde la esquina para redimensionar.', 'info');
 }
 
 function renderConceptMapCanvas(mapa) {
@@ -3476,42 +3564,64 @@ function renderConceptMapCanvas(mapa) {
   const nodoMap = new Map();
   nodos.forEach(n => nodoMap.set(n.id, n));
 
-  // 1. Render Conexiones / Flechas
+  // 1. Render Conexiones con Curvas Bézier Suaves
   conexiones.forEach(c => {
     const from = nodoMap.get(c.desde);
     const to = nodoMap.get(c.hacia);
     if (!from || !to) return;
 
-    const x1 = from.x + (from.ancho || 160) / 2;
-    const y1 = from.y + (from.alto || 60) / 2;
-    const x2 = to.x + (to.ancho || 160) / 2;
-    const y2 = to.y + (to.alto || 60) / 2;
+    const fromW = from.ancho || 160;
+    const fromH = from.alto || 60;
+    const toW = to.ancho || 160;
+    const toH = to.alto || 60;
+
+    const x1 = from.x + fromW / 2;
+    const y1 = from.y + fromH / 2;
+    const x2 = to.x + toW / 2;
+    const y2 = to.y + toH / 2;
+
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+
+    // Cálculo de puntos de control cúbicos Bézier
+    let cx1, cy1, cx2, cy2;
+    if (Math.abs(dx) >= Math.abs(dy)) {
+      const offset = dx * 0.5;
+      cx1 = x1 + offset;
+      cy1 = y1;
+      cx2 = x2 - offset;
+      cy2 = y2;
+    } else {
+      const offset = dy * 0.5;
+      cx1 = x1;
+      cy1 = y1 + offset;
+      cx2 = x2;
+      cy2 = y2 - offset;
+    }
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
     g.dataset.id = c.id;
 
-    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-    line.setAttribute('x1', x1);
-    line.setAttribute('y1', y1);
-    line.setAttribute('x2', x2);
-    line.setAttribute('y2', y2);
-    line.setAttribute('marker-end', 'url(#arrowMarker)');
-    line.setAttribute('class', 'canvas-edge-line' + (canvasState.selectedElement && canvasState.selectedElement.id === c.id ? ' selected' : ''));
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${x1} ${y1} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${x2} ${y2}`);
+    path.setAttribute('marker-end', 'url(#arrowMarker)');
+    path.setAttribute('class', 'canvas-edge-path' + (canvasState.selectedElement && canvasState.selectedElement.id === c.id ? ' selected' : ''));
     if (canvasState.theme === 'white') {
-      line.setAttribute('stroke', '#64748b');
+      path.setAttribute('stroke', '#64748b');
     }
 
-    line.addEventListener('click', e => {
+    path.addEventListener('click', e => {
       e.stopPropagation();
       canvasState.selectedElement = { type: 'edge', id: c.id };
       actualizarSeleccionCanvas();
     });
 
-    g.appendChild(line);
+    g.appendChild(path);
 
     if (c.etiqueta) {
-      const mx = (x1 + x2) / 2;
-      const my = (y1 + y2) / 2;
+      // Punto medio exacto de la curva Bézier en t=0.5
+      const mx = 0.125 * x1 + 0.375 * cx1 + 0.375 * cx2 + 0.125 * x2;
+      const my = 0.125 * y1 + 0.375 * cy1 + 0.375 * cy2 + 0.125 * y2;
       const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       txt.setAttribute('x', mx);
       txt.setAttribute('y', my - 6);
@@ -3526,10 +3636,10 @@ function renderConceptMapCanvas(mapa) {
     edgesLayer.appendChild(g);
   });
 
-  // 2. Render Nodos
+  // 2. Render Nodos (Texto o Imagen con redimensionamiento y edición)
   nodos.forEach(n => {
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    g.setAttribute('class', 'canvas-node-g' + (canvasState.selectedElement && canvasState.selectedElement.id === n.id ? ' selected' : ''));
+    g.setAttribute('class', 'canvas-node-g' + (n.tipo === 'imagen' ? ' canvas-image-node' : '') + (canvasState.selectedElement && canvasState.selectedElement.id === n.id ? ' selected' : ''));
     g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
     g.dataset.id = n.id;
 
@@ -3538,49 +3648,107 @@ function renderConceptMapCanvas(mapa) {
     const bgFill = canvasState.theme === 'white' ? '#ffffff' : '#18181f';
     const textColor = canvasState.theme === 'white' ? '#0f172a' : '#dedee6';
 
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('width', w);
-    rect.setAttribute('height', h);
-    rect.setAttribute('rx', n.tipo === 'central' ? '12' : '8');
-    rect.setAttribute('fill', bgFill);
-    rect.setAttribute('stroke', n.color || '#6366f1');
-    rect.setAttribute('stroke-width', n.tipo === 'central' ? '3' : '2');
-    g.appendChild(rect);
+    if (n.tipo === 'imagen') {
+      // Tarjeta de Imagen
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('width', w);
+      rect.setAttribute('height', h);
+      rect.setAttribute('rx', '8');
+      rect.setAttribute('fill', bgFill);
+      rect.setAttribute('stroke', n.color || '#8b5cf6');
+      rect.setAttribute('stroke-width', '2');
+      g.appendChild(rect);
 
-    // Barra de color superior o píldora de tipo
-    const topBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    topBar.setAttribute('x', '0');
-    topBar.setAttribute('y', '0');
-    topBar.setAttribute('width', w);
-    topBar.setAttribute('height', '5');
-    topBar.setAttribute('rx', '3');
-    topBar.setAttribute('fill', n.color || '#6366f1');
-    g.appendChild(topBar);
+      const img = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      img.setAttribute('href', n.url);
+      img.setAttribute('x', 6);
+      img.setAttribute('y', 6);
+      img.setAttribute('width', Math.max(10, w - 12));
+      img.setAttribute('height', Math.max(10, h - (n.texto ? 30 : 12)));
+      img.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      g.appendChild(img);
 
-    // Texto con ajuste básico
-    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    txt.setAttribute('x', w / 2);
-    txt.setAttribute('y', h / 2 + 4);
-    txt.setAttribute('text-anchor', 'middle');
-    txt.setAttribute('fill', textColor);
-    txt.setAttribute('font-size', n.tipo === 'central' ? '13' : '12');
-    txt.setAttribute('font-weight', n.tipo === 'central' ? '600' : '500');
-    txt.setAttribute('font-family', 'Inter, sans-serif');
-
-    const lineas = ajustarTextoNodo(n.texto || '', 20);
-    if (lineas.length === 1) {
-      txt.textContent = lineas[0];
+      if (n.texto) {
+        const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        txt.setAttribute('x', w / 2);
+        txt.setAttribute('y', h - 10);
+        txt.setAttribute('text-anchor', 'middle');
+        txt.setAttribute('fill', textColor);
+        txt.setAttribute('font-size', '11');
+        txt.setAttribute('font-weight', '500');
+        txt.setAttribute('font-family', 'Inter, sans-serif');
+        txt.textContent = n.texto.length > 25 ? n.texto.substring(0, 22) + '...' : n.texto;
+        g.appendChild(txt);
+      }
     } else {
-      txt.setAttribute('y', h / 2 - (lineas.length * 6) + 8);
-      lineas.forEach((lin, idx) => {
-        const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
-        tspan.setAttribute('x', w / 2);
-        tspan.setAttribute('dy', idx === 0 ? '0' : '15');
-        tspan.textContent = lin;
-        txt.appendChild(tspan);
-      });
+      // Nodo de Texto Estándar
+      const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      rect.setAttribute('width', w);
+      rect.setAttribute('height', h);
+      rect.setAttribute('rx', n.tipo === 'central' ? '12' : (n.tipo === 'persona' ? '10' : '8'));
+      rect.setAttribute('fill', bgFill);
+      rect.setAttribute('stroke', n.color || '#6366f1');
+      rect.setAttribute('stroke-width', n.tipo === 'central' ? '3' : '2');
+      g.appendChild(rect);
+
+      // Barra superior de categoría
+      const topBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      topBar.setAttribute('x', '0');
+      topBar.setAttribute('y', '0');
+      topBar.setAttribute('width', w);
+      topBar.setAttribute('height', '5');
+      topBar.setAttribute('rx', '3');
+      topBar.setAttribute('fill', n.color || '#6366f1');
+      g.appendChild(topBar);
+
+      // Texto multilinea autoajustado
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', w / 2);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('fill', textColor);
+      txt.setAttribute('font-size', n.tipo === 'central' ? '13' : '12');
+      txt.setAttribute('font-weight', n.tipo === 'central' ? '600' : '500');
+      txt.setAttribute('font-family', 'Inter, sans-serif');
+
+      const maxChars = Math.max(12, Math.floor(w / 8.5));
+      const lineas = ajustarTextoNodo(n.texto || '', maxChars);
+      if (lineas.length === 1) {
+        txt.setAttribute('y', h / 2 + 4);
+        txt.textContent = lineas[0];
+      } else {
+        const startY = h / 2 - ((lineas.length - 1) * 7.5) + 3;
+        txt.setAttribute('y', startY);
+        lineas.forEach((lin, idx) => {
+          const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+          tspan.setAttribute('x', w / 2);
+          tspan.setAttribute('dy', idx === 0 ? '0' : '15');
+          tspan.textContent = lin;
+          txt.appendChild(tspan);
+        });
+      }
+      g.appendChild(txt);
     }
-    g.appendChild(txt);
+
+    // Tirador de Redimensionamiento (Resize Handle)
+    const handleSize = 10;
+    const resizeHandle = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    resizeHandle.setAttribute('class', 'canvas-resize-handle');
+    resizeHandle.setAttribute('x', w - handleSize);
+    resizeHandle.setAttribute('y', h - handleSize);
+    resizeHandle.setAttribute('width', handleSize);
+    resizeHandle.setAttribute('height', handleSize);
+    resizeHandle.setAttribute('rx', '2');
+    resizeHandle.setAttribute('title', 'Arrastra para cambiar el tamaño');
+
+    resizeHandle.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      canvasState.resizingNode = n;
+      canvasState.resizeStartX = e.clientX;
+      canvasState.resizeStartY = e.clientY;
+      canvasState.initialWidth = n.ancho || 160;
+      canvasState.initialHeight = n.alto || 60;
+    });
+    g.appendChild(resizeHandle);
 
     // Eventos del Nodo
     g.addEventListener('mousedown', e => {
@@ -3588,7 +3756,7 @@ function renderConceptMapCanvas(mapa) {
       if (canvasState.activeTool === 'conector') {
         if (!canvasState.connectingSourceId) {
           canvasState.connectingSourceId = n.id;
-          mostrarToast(`Conectando desde "${n.texto.substring(0, 20)}...". Haz clic en el nodo de destino.`, 'info');
+          mostrarToast(`Conectando desde "${(n.texto || '').substring(0, 20)}...". Haz clic en el nodo de destino.`, 'info');
           g.classList.add('selected');
         } else if (canvasState.connectingSourceId !== n.id) {
           conectarNodosCanvas(canvasState.connectingSourceId, n.id);
@@ -3599,7 +3767,6 @@ function renderConceptMapCanvas(mapa) {
         canvasState.selectedElement = { type: 'node', id: n.id };
         actualizarSeleccionCanvas();
 
-        // Iniciar Drag del nodo
         const svg = document.getElementById('conceptMapSvg');
         const svgRect = svg.getBoundingClientRect();
         canvasState.draggedNode = n;
@@ -3618,27 +3785,34 @@ function renderConceptMapCanvas(mapa) {
 }
 
 function ajustarTextoNodo(str, maxChars) {
-  const palabras = str.split(' ');
+  if (!str) return [];
+  const lineasRaw = str.split('\n');
   const lineas = [];
-  let actual = '';
-  for (const p of palabras) {
-    if ((actual + ' ' + p).trim().length > maxChars) {
-      if (actual) lineas.push(actual);
-      actual = p;
-      if (lineas.length >= 2) {
-        lineas.push(actual + '...');
-        return lineas;
+  for (const parrafo of lineasRaw) {
+    const palabras = parrafo.split(' ');
+    let actual = '';
+    for (const p of palabras) {
+      if ((actual + ' ' + p).trim().length > maxChars) {
+        if (actual) lineas.push(actual);
+        actual = p;
+        if (lineas.length >= 4) {
+          lineas.push(actual + '...');
+          return lineas;
+        }
+      } else {
+        actual = (actual + ' ' + p).trim();
       }
-    } else {
-      actual = (actual + ' ' + p).trim();
     }
+    if (actual) lineas.push(actual);
   }
-  if (actual) lineas.push(actual);
-  return lineas.slice(0, 3);
+  return lineas.slice(0, 4);
 }
 
 function editarTextoNodo(nodo) {
-  const nuevoTexto = prompt('Modificar texto del elemento:', nodo.texto);
+  const promptMsg = nodo.tipo === 'imagen'
+    ? 'Modificar descripción o etiqueta de la imagen:'
+    : 'Modificar texto del elemento:\n(Puedes incluir saltos de línea para estructurarlo)';
+  const nuevoTexto = prompt(promptMsg, nodo.texto);
   if (nuevoTexto !== null && nuevoTexto.trim() !== '') {
     nodo.texto = nuevoTexto.trim();
     renderConceptMapCanvas(canvasState.mapa);
@@ -3655,9 +3829,10 @@ function conectarNodosCanvas(sourceId, targetId) {
       desde: sourceId,
       hacia: targetId,
       etiqueta: '',
+      curva: 'bezier',
     });
     renderConceptMapCanvas(mapa);
-    mostrarToast('Relación conectada', 'success');
+    mostrarToast('Relación conectada con curva Bézier', 'success');
   }
 }
 
@@ -3666,7 +3841,7 @@ function actualizarSeleccionCanvas() {
     const isSel = canvasState.selectedElement && canvasState.selectedElement.type === 'node' && canvasState.selectedElement.id === g.dataset.id;
     g.classList.toggle('selected', isSel);
   });
-  document.querySelectorAll('.canvas-edge-line').forEach(l => {
+  document.querySelectorAll('.canvas-edge-path, .canvas-edge-line').forEach(l => {
     const p = l.parentElement;
     const isSel = canvasState.selectedElement && canvasState.selectedElement.type === 'edge' && canvasState.selectedElement.id === p.dataset.id;
     l.classList.toggle('selected', isSel);
