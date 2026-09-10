@@ -327,6 +327,17 @@ async def guardar_mapa_canvas(reunion_id: int, datos: dict[str, Any]):
     )
 
 
+@router.put("/api/reuniones/{reunion_id}/transcripcion")
+async def guardar_transcripcion_reunion(reunion_id: int, datos: dict[str, Any]):
+    """Actualiza la transcripción cruda o editada por el usuario."""
+    transcripcion = datos.get("transcripcion", "")
+    return guardar_reunion(
+        titulo="",
+        transcripcion_cruda=transcripcion,
+        reunion_id=reunion_id,
+    )
+
+
 @router.post("/api/reuniones/{reunion_id}/agendar-tareas")
 async def agendar_tareas_reunion(reunion_id: int, datos: dict[str, Any]):
     """Vuelca las tareas seleccionadas a la Agenda (eventos) y/o lista de Pendientes."""

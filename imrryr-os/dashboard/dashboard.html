@@ -270,6 +270,9 @@
         <select id="reunionesSelector" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 10px;min-width:220px;max-width:320px" onchange="seleccionarReunion(this.value)">
           <option value="">-- Seleccionar reunión --</option>
         </select>
+        <button class="gw-modo-btn" onclick="crearNuevaReunionModal()" title="Crea una reunión para pegar texto directamente o subir audio">
+          <svg class="icon"><use href="#icon-plus"/></svg> Nueva Reunión
+        </button>
         <button class="gw-save-btn" id="btnGrabarReunion" onclick="toggleGrabacionReunion()" style="background:#dc2626;border-color:#ef4444">
           <svg class="icon"><use href="#icon-mic"/></svg> <span id="lblGrabarReunion">Grabar Reunión</span>
           <span id="reunionTimerBadge" style="display:none;margin-left:6px;font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">00:00</span>
@@ -402,14 +405,17 @@
         </div>
       </div>
 
-      <!-- Subtab 3: Transcripción Cruda -->
+      <!-- Subtab 3: Transcripción Cruda / Editada -->
       <div id="reunionTranscripcionContainer" style="display:none;margin-top:14px">
         <div style="background:var(--surface1);border:1px solid var(--border);border-radius:8px;padding:16px">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-            <div class="widget-title">Transcripción Completa del Audio</div>
-            <button class="gw-modo-btn" onclick="copiarTranscripcionReunion()"><svg class="icon"><use href="#icon-edit"/></svg> Copiar Texto</button>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+            <div class="widget-title">Transcripción de la Reunión (Editable)</div>
+            <div style="display:flex;gap:8px">
+              <button class="gw-save-btn" onclick="guardarTranscripcionReunion()"><svg class="icon"><use href="#icon-download"/></svg> Guardar Transcripción</button>
+              <button class="gw-modo-btn" onclick="copiarTranscripcionReunion()"><svg class="icon"><use href="#icon-edit"/></svg> Copiar Texto</button>
+            </div>
           </div>
-          <textarea id="reunionTranscripcionTexto" style="width:100%;height:350px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:12px;font-size:13px;line-height:1.5;resize:vertical" readonly></textarea>
+          <textarea id="reunionTranscripcionTexto" style="width:100%;height:350px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:12px;font-size:13px;line-height:1.5;resize:vertical" placeholder="Escribe o pega aquí la transcripción de la reunión, o sube un audio para transcribir automáticamente..."></textarea>
         </div>
       </div>
 

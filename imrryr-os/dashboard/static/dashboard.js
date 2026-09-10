@@ -3330,6 +3330,60 @@ function copiarTranscripcionReunion() {
     .catch(() => mostrarToast('No se pudo copiar el texto', 'error'));
 }
 
+async function guardarTranscripcionReunion() {
+  if (!reunionActiva) {
+    mostrarToast('Selecciona o crea primero una reunión antes de guardar la transcripción', 'info');
+    return;
+  }
+  const txt = document.getElementById('reunionTranscripcionTexto').value;
+  try {
+    const r = await fetch(`/api/reuniones/${reunionActiva.id}/transcripcion`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ transcripcion: txt }),
+    });
+    const data = await r.json();
+    if (data && data.ok) {
+      reunionActiva.transcripcion_cruda = txt;
+      mostrarToast('Transcripción guardada. Ya puedes hacer clic en "Procesar Minuta y Grafo"', 'success');
+    } else {
+      mostrarToast('Error guardando transcripción: ' + (data.error || 'Error desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error guardando texto: ' + err.message, 'error');
+  }
+}
+
+async function crearNuevaReunionModal() {
+  const titulo = prompt('Ingresa el título para la nueva reunión:', 'Reunión de Equipo');
+  if (!titulo || !titulo.trim()) return;
+
+  const participantes = prompt('Participantes (separados por coma, opcional):', '');
+
+  try {
+    const r = await fetch('/api/reuniones', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        titulo: titulo.trim(),
+        participantes: participantes ? participantes.trim() : '',
+        transcripcion_cruda: '',
+      }),
+    });
+    const data = await r.json();
+    if (data && data.ok && data.id) {
+      await cargarReunionesView();
+      await seleccionarReunion(data.id);
+      cambiarSubtabReunion('transcripcion');
+      mostrarToast('Reunión creada. Pega el texto en la pestaña Transcripción o sube un audio.', 'success');
+    } else {
+      mostrarToast('No se pudo crear la reunión: ' + (data.error || 'Error desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error creando reunión: ' + err.message, 'error');
+  }
+}
+
 // ============================================
 // MOTOR DE CANVAS CONCEPTUAL INFINITO
 // ============================================
