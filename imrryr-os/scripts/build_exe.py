@@ -38,37 +38,47 @@ def get_python_exe() -> str:
 
 
 def compilar_lanzadores(dest_dir: Path) -> bool:
-    """Compila los lanzadores nativos Iniciar y Detener hacia dest_dir."""
+    """Compila los lanzadores nativos Imrryr OS y Detener hacia dest_dir sin consola y con icono."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     python_exe = get_python_exe()
+    ico_path = ROOT / "imrryr.ico"
 
     log(f"Compilando lanzadores nativos hacia: {dest_dir}")
 
-    # 1. Compilar Iniciar Imrryr OS.exe
+    # Asegurar que el icono esté disponible en el paquete
+    if ico_path.exists():
+        shutil.copy2(str(ico_path), str(dest_dir / "imrryr.ico"))
+
+    # 1. Compilar Imrryr OS.exe (sin consola, modo ventana)
     cmd_iniciar = [
         python_exe,
         "-m",
         "PyInstaller",
         "--onefile",
+        "--windowed",
         "--name",
-        "Iniciar Imrryr OS",
+        "Imrryr OS",
         "--clean",
         str(SCRIPTS_DIR / "launcher_iniciar.py"),
         "--distpath",
         str(dest_dir),
     ]
-    log("  [1/2] Compilando 'Iniciar Imrryr OS.exe'...")
+    if ico_path.exists():
+        cmd_iniciar.extend(["--icon", str(ico_path)])
+
+    log("  [1/2] Compilando 'Imrryr OS.exe' (modo aplicación sin consola)...")
     res1 = subprocess.run(cmd_iniciar, cwd=str(ROOT), capture_output=True, text=True)
     if res1.returncode != 0:
-        log(f"ERROR compilando Iniciar Imrryr OS: {res1.stderr}")
+        log(f"ERROR compilando Imrryr OS: {res1.stderr}")
         return False
 
-    # 2. Compilar Detener Imrryr OS.exe
+    # 2. Compilar Detener Imrryr OS.exe (sin consola)
     cmd_detener = [
         python_exe,
         "-m",
         "PyInstaller",
         "--onefile",
+        "--windowed",
         "--name",
         "Detener Imrryr OS",
         "--clean",
@@ -76,6 +86,9 @@ def compilar_lanzadores(dest_dir: Path) -> bool:
         "--distpath",
         str(dest_dir),
     ]
+    if ico_path.exists():
+        cmd_detener.extend(["--icon", str(ico_path)])
+
     log("  [2/2] Compilando 'Detener Imrryr OS.exe'...")
     res2 = subprocess.run(cmd_detener, cwd=str(ROOT), capture_output=True, text=True)
     if res2.returncode != 0:
@@ -85,7 +98,7 @@ def compilar_lanzadores(dest_dir: Path) -> bool:
     # 3. Limpiar residuos de build
     limpiar_residuos()
 
-    exe_iniciar = dest_dir / "Iniciar Imrryr OS.exe"
+    exe_iniciar = dest_dir / "Imrryr OS.exe"
     exe_detener = dest_dir / "Detener Imrryr OS.exe"
     if exe_iniciar.exists() and exe_detener.exists():
         log(f"  OK: {exe_iniciar.name} ({exe_iniciar.stat().st_size / (1024*1024):.1f} MB)")
@@ -162,12 +175,15 @@ def compilar_inno_setup(profile_name: str = "pyme") -> bool:
 def generar_inno_setup_script(profile_name: str = "pyme") -> Path:
     """Genera el archivo imrryr_setup.iss para compilar instaladores con Inno Setup."""
     iss_path = ROOT / "imrryr_setup.iss"
+    ico_path = ROOT / "imrryr.ico"
+    setup_icon = f"SetupIconFile={ico_path}\n" if ico_path.exists() else ""
+
     iss_content = f"""; Imrryr OS — Inno Setup Script
 #define MyAppName "Imrryr OS"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Imrryr OS"
 #define MyAppURL "http://localhost:3000"
-#define MyAppExeName "Iniciar Imrryr OS.exe"
+#define MyAppExeName "Imrryr OS.exe"
 #ifndef MyAppProfile
   #define MyAppProfile "{profile_name}"
 #endif
@@ -184,7 +200,7 @@ DefaultGroupName={{#MyAppName}}
 DisableProgramGroupPage=yes
 OutputDir={DIST_DIR}
 OutputBaseFilename=Imrryr_OS_Setup_{{#MyAppProfile}}
-Compression=lzma2/max
+{setup_icon}Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 
@@ -194,14 +210,19 @@ Name: "spanish"; MessagesFile: "compiler:Languages\\Spanish.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{{cm:CreateDesktopIcon}}"; GroupDescription: "{{cm:AdditionalIcons}}"
 
+[InstallDelete]
+; Limpiar accesos directos antiguos si existieran de versiones previas
+Type: files; Name: "{{autodesktop}}\\Iniciar Imrryr OS.lnk"
+Type: files; Name: "{{autodesktop}}\\Detener Imrryr OS.lnk"
+
 [Files]
 Source: "{DIST_DIR}\\imrryr-os-pkg\\*"; DestDir: "{{app}}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{ROOT}\\imrryr.ico"; DestDir: "{{app}}"; Flags: ignoreversion
 
 [Icons]
-Name: "{{group}}\\{{#MyAppName}}"; Filename: "{{app}}\\{{#MyAppExeName}}"
-Name: "{{group}}\\Detener Imrryr OS"; Filename: "{{app}}\\Detener Imrryr OS.exe"
-Name: "{{autodesktop}}\\{{#MyAppName}}"; Filename: "{{app}}\\{{#MyAppExeName}}"; Tasks: desktopicon
-Name: "{{autodesktop}}\\Detener Imrryr OS"; Filename: "{{app}}\\Detener Imrryr OS.exe"; Tasks: desktopicon
+Name: "{{group}}\\{{#MyAppName}}"; Filename: "{{app}}\\{{#MyAppExeName}}"; IconFilename: "{{app}}\\imrryr.ico"
+Name: "{{group}}\\Detener Imrryr OS"; Filename: "{{app}}\\Detener Imrryr OS.exe"; IconFilename: "{{app}}\\imrryr.ico"
+Name: "{{autodesktop}}\\{{#MyAppName}}"; Filename: "{{app}}\\{{#MyAppExeName}}"; Tasks: desktopicon; IconFilename: "{{app}}\\imrryr.ico"
 
 [Run]
 Filename: "{{app}}\\{{#MyAppExeName}}"; Description: "{{cm:LaunchProgram,{{#StringChange(MyAppName, '&', '&&')}}}}"; Flags: nowait postinstall skipifsilent

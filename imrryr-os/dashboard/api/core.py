@@ -163,3 +163,27 @@ async def get_codigo_estado():
     }
 
 
+# ---------------------------------------------------------------------------
+# API: Cierre ordenado del sistema desde la interfaz
+# ---------------------------------------------------------------------------
+@router.post("/api/sistema/apagar")
+async def apagar_sistema():
+    """Apaga ordenadamente los servicios de Imrryr OS."""
+    import sys
+    import threading
+
+    def _shutdown():
+        import subprocess
+        import time
+        time.sleep(0.5)
+        root = deps.ROOT
+        py_exe = sys.executable
+        shutdown_script = root / "scripts" / "shutdown.py"
+        if shutdown_script.exists():
+            subprocess.run([py_exe, str(shutdown_script)], cwd=str(root))
+
+    threading.Thread(target=_shutdown, daemon=True).start()
+    return {"ok": True, "mensaje": "Imrryr OS se está deteniendo..."}
+
+
+

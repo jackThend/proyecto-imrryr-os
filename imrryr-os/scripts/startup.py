@@ -319,8 +319,46 @@ def _wait(url: str, headers: dict, name: str) -> bool:
 # --------------------------------------------------------------------------
 def _new_process_group() -> int:
     if os.name == "nt":
-        return subprocess.CREATE_NEW_PROCESS_GROUP  # type: ignore[attr-defined]
+        # CREATE_NEW_PROCESS_GROUP (0x200) | CREATE_NO_WINDOW (0x08000000)
+        return 0x00000200 | 0x08000000
     return 0
+
+
+def abrir_interfaz(port: int) -> None:
+    """Abre Imrryr OS como ventana de aplicación de escritorio independiente o en el navegador."""
+    url = f"http://localhost:{port}"
+
+    # 1. Modo aplicación nativa con Microsoft Edge (estándar en Windows 10/11)
+    edge_paths = [
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / r"Microsoft\Edge\Application\msedge.exe",
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / r"Microsoft\Edge\Application\msedge.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / r"Microsoft\Edge\Application\msedge.exe",
+    ]
+    for edge in edge_paths:
+        if edge.exists():
+            try:
+                subprocess.Popen([str(edge), f"--app={url}"])
+                return
+            except Exception:
+                pass
+
+    # 2. Modo aplicación con Google Chrome
+    chrome_paths = [
+        Path(os.environ.get("ProgramFiles", r"C:\Program Files")) / r"Google\Chrome\Application\chrome.exe",
+        Path(os.environ.get("ProgramFiles(x86)", r"C:\Program Files (x86)")) / r"Google\Chrome\Application\chrome.exe",
+        Path(os.environ.get("LOCALAPPDATA", "")) / r"Google\Chrome\Application\chrome.exe",
+    ]
+    for chrome in chrome_paths:
+        if chrome.exists():
+            try:
+                subprocess.Popen([str(chrome), f"--app={url}"])
+                return
+            except Exception:
+                pass
+
+    # 3. Fallback al navegador web predeterminado
+    import webbrowser
+    webbrowser.open(url)
 
 
 def main() -> int:
@@ -398,8 +436,7 @@ def main() -> int:
     log("=" * 60)
 
     if not args.no_browser:
-        import webbrowser
-        webbrowser.open(f"http://localhost:{dashboard_port}")
+        abrir_interfaz(dashboard_port)
 
     return 0
 

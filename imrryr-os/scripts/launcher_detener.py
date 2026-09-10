@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 
@@ -25,8 +24,11 @@ def obtener_root() -> Path:
 
 def obtener_python_runtime(root: Path) -> Path:
     candidatos = [
+        root / "runtime" / "pythonw.exe",
         root / "runtime" / "python.exe",
+        root / "runtime" / "Scripts" / "pythonw.exe",
         root / "runtime" / "Scripts" / "python.exe",
+        root / ".venv" / "Scripts" / "pythonw.exe",
         root / ".venv" / "Scripts" / "python.exe",
         root / ".venv" / "bin" / "python",
     ]
@@ -36,29 +38,33 @@ def obtener_python_runtime(root: Path) -> Path:
     if not getattr(sys, "frozen", False):
         return Path(sys.executable)
     import shutil
-    py_path = shutil.which("python")
-    if py_path:
-        return Path(py_path)
+    for name in ("pythonw", "python"):
+        py_path = shutil.which(name)
+        if py_path:
+            return Path(py_path)
     return Path("")
 
 
 def main() -> int:
     root = obtener_root()
-    print("=" * 60)
-    print("  Deteniendo Imrryr OS...")
-    print("=" * 60)
-
     py_exe = obtener_python_runtime(root)
     exe_py = str(py_exe) if py_exe and py_exe.exists() else sys.executable
 
+    flags = 0x08000000 if sys.platform == "win32" else 0
+
     shutdown_script = root / "scripts" / "shutdown.py"
     if shutdown_script.exists():
-        subprocess.run([exe_py, str(shutdown_script)], cwd=str(root))
-    else:
-        print(f"[ERROR] No se encontro {shutdown_script}.")
-
-    print("\n[V] Todos los servicios de Imrryr OS fueron detenidos.")
-    time.sleep(2)
+        log_dir = root / "vault" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "launcher_detener.log"
+        with log_file.open("a", encoding="utf-8") as out:
+            subprocess.run(
+                [exe_py, str(shutdown_script)],
+                cwd=str(root),
+                creationflags=flags,
+                stdout=out,
+                stderr=out,
+            )
     return 0
 
 

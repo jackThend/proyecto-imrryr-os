@@ -22,11 +22,23 @@ def obtener_root() -> Path:
     return aqui.parent
 
 
+def mostrar_error(titulo: str, mensaje: str) -> None:
+    """Muestra un diálogo de error nativo en Windows."""
+    try:
+        import ctypes
+        ctypes.windll.user32.MessageBoxW(0, mensaje, titulo, 0x10)
+    except Exception:
+        pass
+
+
 def obtener_python_runtime(root: Path) -> Path:
-    """Busca el intérprete Python portátil autónomo en runtime/ o en .venv/."""
+    """Busca el intérprete Python GUI (pythonw.exe) o portátil en runtime/ o en .venv/."""
     candidatos = [
+        root / "runtime" / "pythonw.exe",
         root / "runtime" / "python.exe",
+        root / "runtime" / "Scripts" / "pythonw.exe",
         root / "runtime" / "Scripts" / "python.exe",
+        root / ".venv" / "Scripts" / "pythonw.exe",
         root / ".venv" / "Scripts" / "python.exe",
         root / ".venv" / "bin" / "python",
     ]
@@ -40,61 +52,67 @@ def obtener_python_runtime(root: Path) -> Path:
 
     # Buscar en PATH del sistema como último recurso
     import shutil
-    py_path = shutil.which("python")
-    if py_path:
-        return Path(py_path)
+    for name in ("pythonw", "python"):
+        py_path = shutil.which(name)
+        if py_path:
+            return Path(py_path)
 
     return Path("")
 
 
 def main() -> int:
     root = obtener_root()
-    print("=" * 60)
-    print("  Iniciando Imrryr OS (Lanzador Autónomo)")
-    print(f"  Directorio base: {root}")
-    print("=" * 60)
 
     # 1. Detectar entorno o runtime de Python
     python_exe = obtener_python_runtime(root)
 
     if not python_exe or not python_exe.exists():
-        print("\n[!] No se detectó un entorno de Python ('runtime/' o '.venv/').")
         install_script = root / "install.py"
         if not install_script.exists():
             install_script = root / "scripts" / "install.py"
 
         if install_script.exists() and not getattr(sys, "frozen", False):
-            print("[*] Iniciando instalación automática del sistema...")
-            res = subprocess.run([sys.executable, str(install_script)], cwd=str(root))
+            flags = 0x08000000 if sys.platform == "win32" else 0
+            res = subprocess.run([sys.executable, str(install_script)], cwd=str(root), creationflags=flags)
             if res.returncode != 0:
-                print("\n[ERROR] Falló la instalación inicial. Revisa los mensajes anteriores.")
-                input("\nPresiona Enter para salir...")
+                mostrar_error("Imrryr OS", "Falló la instalación inicial de dependencias.")
                 return 1
             python_exe = obtener_python_runtime(root)
         else:
-            print("\n[ERROR] No se encontró el runtime embebido de Imrryr OS.")
-            print("Por favor, reinstala la aplicación usando el instalador oficial 'Imrryr_OS_Setup.exe'.")
-            input("\nPresiona Enter para salir...")
+            mostrar_error(
+                "Imrryr OS",
+                "No se encontró el runtime embebido de Imrryr OS.\n"
+                "Por favor reinstala la aplicación usando 'Imrryr_OS_Setup.exe'.",
+            )
             return 1
 
     # 2. Ejecutar startup.py
     startup_script = root / "scripts" / "startup.py"
     if not startup_script.exists():
-        print(f"[ERROR] No se encontró el archivo de arranque en: {startup_script}")
-        input("\nPresiona Enter para salir...")
+        mostrar_error("Imrryr OS", f"No se encontró el script de arranque en:\n{startup_script}")
         return 1
 
-    print(f"\n[*] Usando motor Python: {python_exe}")
-    print("[*] Levantando servicios de Imrryr OS...")
     cmd = [str(python_exe), str(startup_script)] + sys.argv[1:]
+    flags = 0x08000000 if sys.platform == "win32" else 0
+
     try:
-        proc = subprocess.run(cmd, cwd=str(root))
+        log_dir = root / "vault" / "logs"
+        log_dir.mkdir(parents=True, exist_ok=True)
+        log_file = log_dir / "launcher.log"
+
+        with log_file.open("a", encoding="utf-8") as out:
+            proc = subprocess.run(
+                cmd,
+                cwd=str(root),
+                creationflags=flags,
+                stdout=out,
+                stderr=out,
+            )
         return proc.returncode
     except KeyboardInterrupt:
-        print("\n[*] Interrupcion recibida. Deteniendo servicios...")
         shutdown_script = root / "scripts" / "shutdown.py"
         if shutdown_script.exists():
-            subprocess.run([str(python_exe), str(shutdown_script)], cwd=str(root))
+            subprocess.run([str(python_exe), str(shutdown_script)], cwd=str(root), creationflags=flags)
         return 0
 
 

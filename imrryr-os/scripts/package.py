@@ -44,6 +44,7 @@ CORE_FILES = [
     "requirements.txt",
     "install.ps1",
     "install.sh",
+    "imrryr.ico",
 ]
 
 # Espejo del .gitignore: lo que es secreto o dato del usuario NUNCA entra al
