@@ -57,7 +57,7 @@ GATEWAY_PORT = 5050
 WHATSAPP_LOCAL_PORT = 5051
 DASHBOARD_PORT = 3000
 from config.defaults import OPENCODE_PASSWORD_DEFAULT as OPENCODE_PASSWORD  # noqa: E402
-HEALTH_TIMEOUT = 60  # segundos máx esperando cada servicio
+HEALTH_TIMEOUT = 120  # segundos máx esperando cada servicio (permite arranque en frío seguro)
 
 
 # --------------------------------------------------------------------------

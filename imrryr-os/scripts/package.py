@@ -384,6 +384,17 @@ import site
 """
     (runtime_dir / "python313._pth").write_text(pth_content, encoding="utf-8")
     log("  Runtime: python313._pth configurado para resolución autónoma.")
+
+    # Precompilar bytecode de paquetes pesados para acelerar el arranque en frío
+    try:
+        import compileall
+        log("  Runtime: Precompilando bytecode (.pyc) para acelerar primer arranque...")
+        compileall.compile_dir(str(runtime_dir / "Lib" / "site-packages" / "litellm"), quiet=1)
+        compileall.compile_dir(str(runtime_dir / "Lib" / "site-packages" / "fastapi"), quiet=1)
+        compileall.compile_dir(str(runtime_dir / "Lib" / "site-packages" / "uvicorn"), quiet=1)
+    except Exception:
+        pass
+
     return True
 
 
