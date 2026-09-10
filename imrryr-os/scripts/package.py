@@ -36,6 +36,7 @@ CORE_DIRS = [
     "finanzas",
     "correo",
     "mcp_server",
+    "bin",
 ]
 
 # Archivos base siempre incluidos
@@ -326,6 +327,65 @@ def create_manifest(profile: dict):
     log("  manifest.json creado")
 
 
+def bundle_portable_runtime(pkg_dir: Path) -> bool:
+    """Empaqueta un runtime de Python portátil y autónomo en pkg_dir/runtime."""
+    runtime_dir = pkg_dir / "runtime"
+    if runtime_dir.exists():
+        shutil.rmtree(runtime_dir)
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+
+    base = Path(sys.base_prefix)
+    venv = Path(sys.prefix)
+
+    log("  Runtime: Copiando intérprete Python y librerías base...")
+    for f in base.glob("*.exe"):
+        shutil.copy2(f, runtime_dir / f.name)
+    for f in base.glob("*.dll"):
+        shutil.copy2(f, runtime_dir / f.name)
+
+    # DLLs
+    if (base / "DLLs").exists():
+        shutil.copytree(base / "DLLs", runtime_dir / "DLLs", ignore=shutil.ignore_patterns("*.pdb"))
+
+    # Lib estándar
+    if (base / "Lib").exists():
+        shutil.copytree(
+            base / "Lib",
+            runtime_dir / "Lib",
+            ignore=shutil.ignore_patterns("site-packages", "test", "idlelib", "__pycache__"),
+        )
+
+    # site-packages desde el entorno virtual
+    log("  Runtime: Copiando paquetes preinstalados (site-packages)...")
+    site_packages = venv / "Lib" / "site-packages"
+    if site_packages.exists():
+        shutil.copytree(
+            site_packages,
+            runtime_dir / "Lib" / "site-packages",
+            ignore=shutil.ignore_patterns("__pycache__"),
+        )
+
+    # Scripts del venv (incluye litellm.exe, etc.)
+    scripts_src = venv / "Scripts"
+    if scripts_src.exists():
+        shutil.copytree(
+            scripts_src,
+            runtime_dir / "Scripts",
+            ignore=shutil.ignore_patterns("__pycache__"),
+        )
+
+    # Archivo ._pth para resolución relativa
+    pth_content = """.
+DLLs
+Lib
+Lib\\site-packages
+import site
+"""
+    (runtime_dir / "python313._pth").write_text(pth_content, encoding="utf-8")
+    log("  Runtime: python313._pth configurado para resolución autónoma.")
+    return True
+
+
 def create_zip(profile_name: str):
     """Comprime el paquete en un zip."""
     zip_path = DIST_DIR / f"imrryr-os-{profile_name}.zip"
@@ -346,6 +406,8 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Empaquetador White-Label Imrryr OS")
     ap.add_argument("--profile", "-p", choices=list_profiles() + ["custom"], help="Perfil a empaquetar")
     ap.add_argument("--list-profiles", action="store_true", help="Listar perfiles disponibles")
+    ap.add_argument("--standalone", action="store_true", help="Incluir runtime portátil de Python para distribución autónoma")
+    ap.add_argument("--no-zip", action="store_true", help="No crear archivo .zip final (útil para compilar instalador .exe)")
     args = ap.parse_args()
 
     if args.list_profiles:
@@ -372,15 +434,21 @@ def main() -> int:
     create_install_script(profile)
     create_manifest(profile)
 
-    zip_path = create_zip(args.profile)
-    size_mb = zip_path.stat().st_size / (1024 * 1024)
+    if args.standalone:
+        log("Incorporando runtime portátil de Python en el paquete...")
+        bundle_portable_runtime(PKG_DIR)
 
-    log("Empaquetado completado:")
-    log(f"  Perfil: {profile['nombre']}")
-    log(f"  Archivo: {zip_path.name}")
-    log(f"  Tamaño: {size_mb:.1f} MB")
+    if not args.no_zip:
+        zip_path = create_zip(args.profile)
+        size_mb = zip_path.stat().st_size / (1024 * 1024)
+        log("Empaquetado completado:")
+        log(f"  Perfil: {profile['nombre']}")
+        log(f"  Archivo: {zip_path.name}")
+        log(f"  Tamaño: {size_mb:.1f} MB")
+    else:
+        log("Empaquetado en carpeta completado (sin zip): dist/imrryr-os-pkg")
+
     log(f"  Contenido: {len(profile.get('agentes', []))} agentes, {len(profile.get('skills', []))} skills")
-
     return 0
 
 

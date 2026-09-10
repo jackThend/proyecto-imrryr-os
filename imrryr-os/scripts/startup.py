@@ -69,16 +69,25 @@ def log(msg: str) -> None:
 
 def load_env() -> dict[str, str]:
     if not ENV_FILE.exists():
-        log(f"ERROR: no existe {ENV_FILE}. Copia config/.env.example y rellénalo.")
-        sys.exit(1)
-    # override=True es OBLIGATORIO acá: al cambiar de cuenta de IA, el
-    # dashboard reescribe IMRRYR_ACTIVE_API_KEY en .env y luego lanza
-    # restart_litellm.py como subproceso. Ese subproceso HEREDA la variable
-    # vieja del proceso padre y, sin override, load_dotenv la respeta — así
-    # LiteLLM arrancaba con la clave del proveedor anterior y el nuevo lo
-    # rechazaba con "Invalid API key". El .env es la fuente de verdad.
+        example = CONFIG_DIR / ".env.example"
+        if example.exists():
+            log(f"Configuración no encontrada. Creando {ENV_FILE} desde plantilla...")
+            shutil.copy2(example, ENV_FILE)
+        else:
+            log(f"ERROR: no existe {ENV_FILE}. Copia config/.env.example y rellénalo.")
+            sys.exit(1)
     load_dotenv(ENV_FILE, override=True)
     return dict(os.environ)
+
+
+def asegurar_base_datos() -> None:
+    """Verifica e inicializa la base de datos si es la primera ejecución."""
+    db_path = ROOT / "vault" / "sqlite" / "imrryr.db"
+    if not db_path.exists():
+        log("Base de datos no encontrada. Inicializando tablas y esquemas SQLite...")
+        init_script = ROOT / "scripts" / "init_db.py"
+        if init_script.exists():
+            subprocess.run([sys.executable, str(init_script)], cwd=str(ROOT))
 
 
 def basic_auth_header(password: str) -> dict[str, str]:
@@ -131,11 +140,19 @@ def start_litellm(env: dict[str, str], port: int) -> subprocess.Popen:
 
 
 def _resolve_executable(name: str) -> str:
-    """Resuelve el binario real de 'opencode' (en Windows es un shim .cmd/.ps1)."""
+    """Resuelve el binario de 'opencode', priorizando binario embebido local para portabilidad total."""
+    # 1. Priorizar binario autónomo embebido en bin/ (para distribución zero-dependency)
+    for ext in ("", ".exe", ".cmd", ".bat"):
+        local_bin = ROOT / "bin" / f"{name}{ext}"
+        if local_bin.exists():
+            return str(local_bin)
+
+    # 2. Búsqueda en PATH del sistema operativo
     found = shutil.which(name)
     if found:
         return found
-    # fallback típico de npm global en Windows
+
+    # 3. Fallback de npm global en Windows
     for ext in (".cmd", ".ps1", ".exe", ".bat"):
         guess = Path(os.environ.get("APPDATA", "")) / "npm" / f"{name}{ext}"
         if guess.exists():
@@ -323,6 +340,7 @@ def main() -> int:
     password = env.get("OPENCODE_SERVER_PASSWORD") or OPENCODE_PASSWORD
 
     if not args.check_only:
+        asegurar_base_datos()
         sync_agentes()
 
     if args.check_only:

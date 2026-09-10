@@ -110,6 +110,55 @@ def limpiar_residuos() -> None:
             pass
 
 
+def find_iscc() -> Path | None:
+    """Busca el compilador de Inno Setup (ISCC.exe)."""
+    iscc = shutil.which("ISCC") or shutil.which("ISCC.exe")
+    if iscc:
+        return Path(iscc)
+    candidatos = [
+        Path(r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"),
+        Path(r"C:\Program Files\Inno Setup 6\ISCC.exe"),
+        Path(r"C:\Users") / Path.home().name / r"AppData\Local\Programs\Inno Setup 6\ISCC.exe",
+    ]
+    for cand in candidatos:
+        if cand.exists():
+            return cand
+    return None
+
+
+def compilar_inno_setup(profile_name: str = "pyme") -> bool:
+    """Compila el instalador de Windows (.exe) usando Inno Setup."""
+    iscc = find_iscc()
+    if not iscc:
+        log("AVISO: Compilador Inno Setup (ISCC.exe) no detectado en el sistema.")
+        log("       Para generar el instalador .exe, instale Inno Setup 6.")
+        return False
+
+    iss_path = ROOT / "imrryr_setup.iss"
+    if not iss_path.exists():
+        generar_inno_setup_script(profile_name)
+
+    log(f"Compilando instalador oficial con Inno Setup ({iscc.name})...")
+    cmd = [
+        str(iscc),
+        f"/DMyAppProfile={profile_name}",
+        str(iss_path),
+    ]
+    res = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True)
+    if res.returncode != 0:
+        log(f"ERROR al compilar con Inno Setup:\n{res.stderr}\n{res.stdout}")
+        return False
+
+    installer_path = DIST_DIR / f"Imrryr_OS_Setup_{profile_name}.exe"
+    if installer_path.exists():
+        size_mb = installer_path.stat().st_size / (1024 * 1024)
+        log(f"  [EXITO] Instalador compilado: {installer_path.name} ({size_mb:.1f} MB)")
+        log(f"  Ruta completa: {installer_path}")
+        return True
+    log("Inno Setup finalizó pero no se localizó el archivo de salida.")
+    return False
+
+
 def generar_inno_setup_script(profile_name: str = "pyme") -> Path:
     """Genera el archivo imrryr_setup.iss para compilar instaladores con Inno Setup."""
     iss_path = ROOT / "imrryr_setup.iss"
@@ -119,6 +168,9 @@ def generar_inno_setup_script(profile_name: str = "pyme") -> Path:
 #define MyAppPublisher "Imrryr OS"
 #define MyAppURL "http://localhost:3000"
 #define MyAppExeName "Iniciar Imrryr OS.exe"
+#ifndef MyAppProfile
+  #define MyAppProfile "{profile_name}"
+#endif
 
 [Setup]
 AppId={{{{657FCC94-E6CC-4E4E-A72A-8FE81B16EC51}}}}
@@ -126,12 +178,13 @@ AppName={{#MyAppName}}
 AppVersion={{#MyAppVersion}}
 AppPublisher={{#MyAppPublisher}}
 AppPublisherURL={{#MyAppURL}}
-DefaultDirName={{autopf}}\\{{#MyAppName}}
+PrivilegesRequired=lowest
+DefaultDirName={{localappdata}}\\Programs\\{{#MyAppName}}
 DefaultGroupName={{#MyAppName}}
 DisableProgramGroupPage=yes
 OutputDir={DIST_DIR}
-OutputBaseFilename=Imrryr_OS_Setup_{profile_name}
-Compression=lzma
+OutputBaseFilename=Imrryr_OS_Setup_{{#MyAppProfile}}
+Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 
@@ -152,6 +205,9 @@ Name: "{{autodesktop}}\\Detener Imrryr OS"; Filename: "{{app}}\\Detener Imrryr O
 
 [Run]
 Filename: "{{app}}\\{{#MyAppExeName}}"; Description: "{{cm:LaunchProgram,{{#StringChange(MyAppName, '&', '&&')}}}}"; Flags: nowait postinstall skipifsilent
+
+[UninstallRun]
+Filename: "{{app}}\\Detener Imrryr OS.exe"; Flags: runhidden waituntilterminated
 """
     iss_path.write_text(iss_content, encoding="utf-8")
     log(f"Guión de instalador Inno Setup generado: {iss_path.name}")
@@ -162,14 +218,28 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Compilador de Ejecutables Nativos para Imrryr OS")
     ap.add_argument("--dest", "-d", type=str, default=None, help="Directorio destino de los ejecutables")
     ap.add_argument("--profile", "-p", type=str, default=None, help="Perfil a empaquetar y compilar (ej. pyme o tech)")
+    ap.add_argument("--no-standalone", action="store_true", help="No incluir runtime portátil de Python en el paquete")
+    ap.add_argument("--skip-installer", action="store_true", help="Omitir compilación del instalador Inno Setup")
+    ap.add_argument("--installer-only", action="store_true", help="Solo compilar instalador Inno Setup desde dist/imrryr-os-pkg")
     args = ap.parse_args()
+
+    profile_name = args.profile or "pyme"
+
+    if args.installer_only:
+        generar_inno_setup_script(profile_name)
+        ok = compilar_inno_setup(profile_name)
+        return 0 if ok else 1
 
     target_dir = Path(args.dest) if args.dest else BIN_DIR
 
     if args.profile:
-        log(f"Empaquetando perfil '{args.profile}' con ejecutables...")
+        log(f"Empaquetando perfil '{args.profile}' con dependencias autónomas...")
         pkg_script = SCRIPTS_DIR / "package.py"
-        res_pkg = subprocess.run([get_python_exe(), str(pkg_script), "--profile", args.profile], cwd=str(ROOT))
+        cmd_pkg = [get_python_exe(), str(pkg_script), "--profile", args.profile, "--no-zip"]
+        if not args.no_standalone:
+            cmd_pkg.append("--standalone")
+
+        res_pkg = subprocess.run(cmd_pkg, cwd=str(ROOT))
         if res_pkg.returncode != 0:
             log("ERROR durante el empaquetado base.")
             return 1
@@ -180,9 +250,12 @@ def main() -> int:
         log("Fallo en la compilación de ejecutables.")
         return 1
 
-    generar_inno_setup_script(args.profile or "default")
+    generar_inno_setup_script(profile_name)
 
-    log("Compilación de ejecutables completada con éxito.")
+    if not args.skip_installer and (target_dir == DIST_DIR / "imrryr-os-pkg" or args.profile):
+        compilar_inno_setup(profile_name)
+
+    log("Compilación completada con éxito.")
     return 0
 
 

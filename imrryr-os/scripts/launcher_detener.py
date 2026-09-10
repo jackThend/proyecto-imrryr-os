@@ -8,7 +8,6 @@ activos del sistema.
 """
 from __future__ import annotations
 
-import os
 import subprocess
 import sys
 import time
@@ -24,14 +23,33 @@ def obtener_root() -> Path:
     return aqui.parent
 
 
+def obtener_python_runtime(root: Path) -> Path:
+    candidatos = [
+        root / "runtime" / "python.exe",
+        root / "runtime" / "Scripts" / "python.exe",
+        root / ".venv" / "Scripts" / "python.exe",
+        root / ".venv" / "bin" / "python",
+    ]
+    for cand in candidatos:
+        if cand.exists():
+            return cand
+    if not getattr(sys, "frozen", False):
+        return Path(sys.executable)
+    import shutil
+    py_path = shutil.which("python")
+    if py_path:
+        return Path(py_path)
+    return Path("")
+
+
 def main() -> int:
     root = obtener_root()
     print("=" * 60)
     print("  Deteniendo Imrryr OS...")
     print("=" * 60)
 
-    python_venv = root / ".venv" / "Scripts" / "python.exe" if os.name == "nt" else root / ".venv" / "bin" / "python"
-    exe_py = str(python_venv) if python_venv.exists() else sys.executable
+    py_exe = obtener_python_runtime(root)
+    exe_py = str(py_exe) if py_exe and py_exe.exists() else sys.executable
 
     shutdown_script = root / "scripts" / "shutdown.py"
     if shutdown_script.exists():
