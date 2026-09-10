@@ -22,6 +22,7 @@ const APPS = [
   { id: 'agenda', nombre: 'Agenda', icono: 'calendar', agente: 'agenda', chatLabel: 'Agente de Agenda', ayuda: 'Agenda tus actividades y te dice qué tienes hoy, mañana o esta semana — puede avisarte por WhatsApp si se lo pides.' },
   { id: 'navegacion', nombre: 'Navegación', icono: 'search', agente: 'navegacion', chatLabel: 'Agente de Navegación', ayuda: 'Busca y lee contenido web, y te lo puede leer en voz alta mientras trabajas en otra parte del sistema.' },
   { id: 'codigo', nombre: 'Código', icono: 'terminal', agente: 'build', chatLabel: 'CTO Adjunto (Build)', ayuda: 'Entorno de desarrollo con permisos completos de OpenCode, comandos bash, edición directa y navegación por grafos AST.' },
+  { id: 'reuniones', nombre: 'Reuniones', icono: 'mic', agente: 'reuniones', chatLabel: 'Agente de Reuniones', ayuda: 'Graba o sube audios de reuniones, genera minutas ejecutivas y crea mapas conceptuales en un canvas infinito interactivo.' },
   { id: 'ajustes', nombre: 'Ajustes', icono: 'gear', agente: null, ayuda: 'Configura WhatsApp, tu Perfil de Negocio y qué IA usan tus agentes.' },
   { id: 'modulos', nombre: 'Módulos', icono: 'modulos', agente: null, ayuda: 'Activa, desactiva o elimina agentes — protegido con contraseña.' },
 ];
@@ -284,6 +285,10 @@ function inicializarVista(id) {
     case 'agenda': initChat('agenda', 'agenda', cargarAgendaView); break;
     case 'navegacion': initChat('navegacion', 'navegacion', revisarUltimoAudioNavegacion); break;
     case 'codigo': initChat('codigo', 'build', cargarEstadoProyecto); break;
+    case 'reuniones':
+      initChat('reuniones', 'reuniones', cargarReunionesView);
+      inicializarReunionesView();
+      break;
   }
 }
 
@@ -295,6 +300,7 @@ function cargarVista(id) {
     case 'oportunidades': cargarOportunidadesView(); break;
     case 'finanzas': cargarFinanzasView(); break;
     case 'codigo': cargarEstadoProyecto(); break;
+    case 'reuniones': cargarReunionesView(); break;
     case 'ajustes': cambiarSubtabAjustes(ajustesSubtabActual); break;
     case 'modulos': cargarModulosView(); break;
     case 'rrss': cargarRrssView(); break;
@@ -309,7 +315,7 @@ function cargarVista(id) {
 // igual que el tema o el modo ayuda — no hace falta ida y vuelta al servidor). ---
 const INICIO_PREFS_DEFAULT = {
   hero: ['correo', 'oportunidades', 'ideas'],
-  secundaria: ['finanzas', 'crm', 'codigo', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda', 'navegacion'],
+  secundaria: ['finanzas', 'crm', 'codigo', 'reuniones', 'ajustes', 'seguridad', 'modulos', 'rrss', 'compras', 'agenda', 'navegacion'],
 };
 
 function leerInicioPrefs() {
@@ -331,6 +337,7 @@ const SECUNDARIA_SUB_ESTATICO = {
   crm: 'Clientes y propuestas', ajustes: 'WhatsApp y Perfil de Negocio', seguridad: 'Observabilidad del sistema',
   modulos: 'Gestiona tus agentes', rrss: 'GitHub + Instagram/Facebook', compras: 'Cotizador de productos',
   agenda: 'Tus actividades del día', navegacion: 'Busca y lee la web en voz alta',
+  reuniones: 'Minutas, tareas y canvas conceptual',
 };
 const SECUNDARIA_LOADERS = { finanzas: cargarMiniFinanzasImpl };
 
@@ -2976,6 +2983,739 @@ function ejecutarAccionCodigo(accion) {
   inp.value = prompt;
   btn.click();
 }
+
+// ============================================
+// REUNIONES & CANVAS CONCEPTUAL INFINITO
+// ============================================
+let reunionesLista = [];
+let reunionActiva = null;
+let reunionSubtabActual = 'canvas';
+let grabadorReunion = null;
+let chunksGrabacionReunion = [];
+let grabacionReunionInterval = null;
+let segundosGrabacionReunion = 0;
+let canvasInicializado = false;
+
+const canvasState = {
+  panX: 40,
+  panY: 30,
+  scale: 1.0,
+  isPanning: false,
+  startX: 0,
+  startY: 0,
+  activeTool: 'select',
+  selectedElement: null,
+  connectingSourceId: null,
+  draggedNode: null,
+  dragOffsetX: 0,
+  dragOffsetY: 0,
+  theme: 'black',
+  mapa: { nodos: [], conexiones: [] },
+};
+
+function inicializarReunionesView() {
+  if (!canvasInicializado) {
+    initConceptMapCanvas();
+    canvasInicializado = true;
+  }
+}
+
+async function cargarReunionesView() {
+  inicializarReunionesView();
+  try {
+    const r = await fetch('/api/reuniones');
+    const data = await r.json();
+    if (data && data.ok) {
+      reunionesLista = data.reuniones || [];
+      poblarSelectorReuniones();
+      if (reunionesLista.length > 0) {
+        const idASeleccionar = reunionActiva ? reunionActiva.id : reunionesLista[0].id;
+        await seleccionarReunion(idASeleccionar);
+      } else {
+        limpiarDetalleReunion();
+      }
+    }
+  } catch (err) {
+    mostrarToast('Error cargando reuniones: ' + err.message, 'error');
+  }
+}
+
+function poblarSelectorReuniones() {
+  const sel = document.getElementById('reunionesSelector');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">-- Seleccionar reunión --</option>' +
+    reunionesLista.map(reu => {
+      const f = reu.fecha ? ` (${reu.fecha})` : '';
+      return `<option value="${reu.id}">${(reu.titulo || 'Sin título') + f}</option>`;
+    }).join('');
+  if (reunionActiva) {
+    sel.value = String(reunionActiva.id);
+  }
+}
+
+async function seleccionarReunion(reunionId) {
+  if (!reunionId) return;
+  try {
+    const r = await fetch(`/api/reuniones/${reunionId}`);
+    const data = await r.json();
+    if (data && data.ok && data.reunion) {
+      reunionActiva = data.reunion;
+      const sel = document.getElementById('reunionesSelector');
+      if (sel) sel.value = String(reunionId);
+      mostrarDetalleReunion(reunionActiva);
+    }
+  } catch (err) {
+    mostrarToast('Error obteniendo reunión: ' + err.message, 'error');
+  }
+}
+
+function limpiarDetalleReunion() {
+  reunionActiva = null;
+  document.getElementById('reunionAudioBanner').style.display = 'none';
+  document.getElementById('reunionResumenTexto').textContent = 'No hay reuniones registradas todavía. Graba o sube una reunión.';
+  document.getElementById('reunionConclusionesTexto').textContent = 'No hay acuerdos registrados.';
+  document.getElementById('reunionTareasLista').innerHTML = '<div style="color:var(--text-dim);font-size:12px">No hay tareas pendientes.</div>';
+  document.getElementById('reunionTranscripcionTexto').value = '';
+  canvasState.mapa = { nodos: [], conexiones: [] };
+  renderConceptMapCanvas(canvasState.mapa);
+}
+
+function mostrarDetalleReunion(reunion) {
+  // 1. Audio Banner
+  const banner = document.getElementById('reunionAudioBanner');
+  const player = document.getElementById('reunionAudioPlayer');
+  const titAudio = document.getElementById('reunionAudioTitulo');
+  if (reunion.audio_ruta) {
+    const filename = reunion.audio_ruta.split(/[/\\]/).pop();
+    player.src = `/reuniones_audio/${filename}`;
+    titAudio.textContent = `Audio: ${reunion.titulo || filename}`;
+    banner.style.display = 'flex';
+  } else {
+    banner.style.display = 'none';
+    player.src = '';
+  }
+
+  // 2. Minuta Resumen y Conclusiones
+  document.getElementById('reunionResumenTexto').textContent = reunion.resumen_ejecutivo || 'Aún no hay resumen generado. Haz clic en "Procesar Minuta y Grafo".';
+  document.getElementById('reunionConclusionesTexto').textContent = reunion.conclusiones || 'Aún no hay acuerdos registrados.';
+
+  // 3. Tareas y Compromisos
+  const contenedorTareas = document.getElementById('reunionTareasLista');
+  const tareas = reunion.acuerdos_tareas || [];
+  if (tareas.length === 0) {
+    contenedorTareas.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:8px 0">No hay tareas detectadas todavía. Procesa la minuta para extraerlas.</div>';
+  } else {
+    contenedorTareas.innerHTML = tareas.map((t, idx) => {
+      const resp = t.responsable ? `<span style="font-size:11px;background:rgba(59,130,246,0.15);color:#3b82f6;padding:2px 6px;border-radius:4px;margin-left:6px">${t.responsable}</span>` : '';
+      const fecha = t.fecha_limite ? `<span style="font-size:11px;color:var(--text-dim);margin-left:6px">📅 ${t.fecha_limite}</span>` : '';
+      const agendada = t.agendada ? '<span style="font-size:10px;color:#10b981;margin-left:auto;font-weight:600">✓ En Agenda</span>' : '';
+      return `
+        <label style="display:flex;align-items:center;gap:10px;background:var(--surface2);padding:10px 12px;border-radius:6px;border:1px solid var(--border);cursor:pointer">
+          <input type="checkbox" class="chk-tarea-reunion" data-index="${idx}" ${t.agendada ? 'disabled' : 'checked'}>
+          <span style="font-size:13px;color:var(--text);flex:1">${t.tarea || 'Tarea sin descripción'} ${resp} ${fecha}</span>
+          ${agendada}
+        </label>
+      `;
+    }).join('');
+  }
+
+  // 4. Transcripción Cruda
+  document.getElementById('reunionTranscripcionTexto').value = reunion.transcripcion_cruda || '';
+
+  // 5. Canvas Mapa Conceptual
+  canvasState.mapa = reunion.mapa_conceptual_json && reunion.mapa_conceptual_json.nodos ? reunion.mapa_conceptual_json : { nodos: [], conexiones: [] };
+  renderConceptMapCanvas(canvasState.mapa);
+}
+
+function cambiarSubtabReunion(subtab) {
+  reunionSubtabActual = subtab;
+  document.querySelectorAll('#reunionSub-canvas, #reunionSub-minuta, #reunionSub-transcripcion').forEach(b => {
+    b.classList.toggle('active', b.id === 'reunionSub-' + subtab);
+  });
+  document.getElementById('reunionCanvasContainer').style.display = subtab === 'canvas' ? 'block' : 'none';
+  document.getElementById('reunionMinutaContainer').style.display = subtab === 'minuta' ? 'block' : 'none';
+  document.getElementById('reunionTranscripcionContainer').style.display = subtab === 'transcripcion' ? 'block' : 'none';
+  if (subtab === 'canvas') {
+    updateCanvasTransform();
+  }
+}
+
+// --- Grabación en Vivo con Micrófono ---
+async function toggleGrabacionReunion() {
+  const btn = document.getElementById('btnGrabarReunion');
+  const lbl = document.getElementById('lblGrabarReunion');
+  const badge = document.getElementById('reunionTimerBadge');
+
+  if (grabadorReunion && grabadorReunion.state === 'recording') {
+    grabadorReunion.stop();
+    return;
+  }
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    grabadorReunion = new MediaRecorder(stream);
+    chunksGrabacionReunion = [];
+    segundosGrabacionReunion = 0;
+
+    grabadorReunion.ondataavailable = e => chunksGrabacionReunion.push(e.data);
+    grabadorReunion.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      clearInterval(grabacionReunionInterval);
+      btn.classList.remove('btn-grabando-reunion');
+      lbl.textContent = 'Procesando Grabación...';
+      btn.disabled = true;
+
+      const blob = new Blob(chunksGrabacionReunion, { type: 'audio/webm' });
+      await enviarAudioReunion(blob, 'grabacion_reunion.webm');
+
+      lbl.textContent = 'Grabar Reunión';
+      btn.disabled = false;
+      badge.style.display = 'none';
+    };
+
+    grabadorReunion.start();
+    btn.classList.add('btn-grabando-reunion');
+    lbl.textContent = 'Detener Grabación';
+    badge.textContent = '00:00';
+    badge.style.display = 'inline-block';
+
+    grabacionReunionInterval = setInterval(() => {
+      segundosGrabacionReunion++;
+      const m = String(Math.floor(segundosGrabacionReunion / 60)).padStart(2, '0');
+      const s = String(segundosGrabacionReunion % 60).padStart(2, '0');
+      badge.textContent = `${m}:${s}`;
+    }, 1000);
+
+    mostrarToast('Grabación de reunión iniciada', 'success');
+  } catch (err) {
+    mostrarToast('No se pudo acceder al micrófono: ' + err.message, 'error');
+  }
+}
+
+// --- Subida de Archivo de Audio ---
+function abrirModalSubirAudio() {
+  document.getElementById('reunionesDropzoneArea').style.display = 'block';
+}
+
+function cerrarModalSubirAudio() {
+  document.getElementById('reunionesDropzoneArea').style.display = 'none';
+  document.getElementById('audioSubirTitulo').value = '';
+  document.getElementById('audioSubirParticipantes').value = '';
+}
+
+async function archivoAudioSeleccionado(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const titulo = document.getElementById('audioSubirTitulo').value.trim();
+  const participantes = document.getElementById('audioSubirParticipantes').value.trim();
+  cerrarModalSubirAudio();
+  await enviarAudioReunion(file, file.name, titulo, participantes);
+  input.value = '';
+}
+
+async function enviarAudioReunion(blobOrFile, nombreArchivo, titulo, participantes) {
+  mostrarToast('Subiendo y transcribiendo audio con Whisper...', 'info');
+  try {
+    const formData = new FormData();
+    formData.append('archivo', blobOrFile, nombreArchivo);
+    if (titulo) formData.append('titulo', titulo);
+    if (participantes) formData.append('participantes', participantes);
+
+    const r = await fetch('/api/reuniones/upload', {
+      method: 'POST',
+      body: formData,
+    });
+    const data = await r.json();
+    if (data && data.ok) {
+      mostrarToast('Transcripción completada con éxito', 'success');
+      await cargarReunionesView();
+      if (data.reunion_id) {
+        await seleccionarReunion(data.reunion_id);
+      }
+    } else {
+      mostrarToast('Error transcribiendo: ' + (data.error || 'Fallo desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error subiendo audio: ' + err.message, 'error');
+  }
+}
+
+// --- Procesar Minuta y Grafo ---
+async function procesarReunionActual() {
+  if (!reunionActiva) {
+    mostrarToast('Selecciona o sube primero una reunión para procesar', 'error');
+    return;
+  }
+  const btn = document.getElementById('btnProcesarReunion');
+  btn.disabled = true;
+  mostrarToast('Agente analizando reunión y generando mapa conceptual...', 'info');
+  try {
+    const r = await fetch(`/api/reuniones/${reunionActiva.id}/procesar`, { method: 'POST' });
+    const data = await r.json();
+    if (data && data.ok && data.reunion) {
+      reunionActiva = data.reunion;
+      mostrarDetalleReunion(reunionActiva);
+      mostrarToast('¡Minuta y mapa conceptual generados!', 'success');
+    } else {
+      mostrarToast('Error procesando: ' + (data.error || 'Respuesta inválida'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error procesando minuta: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// --- Volcar Tareas a Agenda y Pendientes ---
+async function volcarTareasSeleccionadas() {
+  if (!reunionActiva) return;
+  const checkboxes = document.querySelectorAll('.chk-tarea-reunion:checked');
+  const indices = Array.from(checkboxes).map(cb => parseInt(cb.dataset.index, 10));
+  if (indices.length === 0) {
+    mostrarToast('Selecciona al menos una tarea para agendar', 'info');
+    return;
+  }
+
+  try {
+    const r = await fetch(`/api/reuniones/${reunionActiva.id}/agendar-tareas`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        indices: indices,
+        agendar_en_eventos: true,
+        agendar_en_pendientes: true,
+      }),
+    });
+    const data = await r.json();
+    if (data && data.ok) {
+      mostrarToast(`${data.total_procesadas} compromisos volcados a Agenda y Pendientes`, 'success');
+      await seleccionarReunion(reunionActiva.id);
+    } else {
+      mostrarToast('Error volcando tareas: ' + (data.error || 'Error desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error al agendar tareas: ' + err.message, 'error');
+  }
+}
+
+function copiarTranscripcionReunion() {
+  const txt = document.getElementById('reunionTranscripcionTexto').value;
+  if (!txt) return;
+  navigator.clipboard.writeText(txt)
+    .then(() => mostrarToast('Transcripción copiada al portapapeles', 'success'))
+    .catch(() => mostrarToast('No se pudo copiar el texto', 'error'));
+}
+
+// ============================================
+// MOTOR DE CANVAS CONCEPTUAL INFINITO
+// ============================================
+function initConceptMapCanvas() {
+  const svg = document.getElementById('conceptMapSvg');
+  if (!svg) return;
+
+  // Zoom con rueda de mouse
+  svg.addEventListener('wheel', e => {
+    e.preventDefault();
+    const factor = e.deltaY < 0 ? 1.1 : 0.9;
+    canvasZoom(factor);
+  }, { passive: false });
+
+  // Panning y Dragging
+  svg.addEventListener('mousedown', e => {
+    if (e.target.closest('.canvas-node-g')) return; // Manejado por el nodo
+
+    if (canvasState.activeTool === 'select' || canvasState.activeTool === 'conector') {
+      canvasState.isPanning = true;
+      canvasState.startX = e.clientX - canvasState.panX;
+      canvasState.startY = e.clientY - canvasState.panY;
+      svg.style.cursor = 'grabbing';
+      if (canvasState.selectedElement) {
+        canvasState.selectedElement = null;
+        actualizarSeleccionCanvas();
+      }
+    } else if (['idea', 'tarea', 'decision'].includes(canvasState.activeTool)) {
+      // Crear nuevo nodo en la posición del click
+      const rect = svg.getBoundingClientRect();
+      const clickX = (e.clientX - rect.left - canvasState.panX) / canvasState.scale;
+      const clickY = (e.clientY - rect.top - canvasState.panY) / canvasState.scale;
+      crearNodoEnCanvas(canvasState.activeTool, clickX, clickY);
+      setCanvasTool('select');
+    }
+  });
+
+  window.addEventListener('mousemove', e => {
+    if (canvasState.isPanning) {
+      canvasState.panX = e.clientX - canvasState.startX;
+      canvasState.panY = e.clientY - canvasState.startY;
+      updateCanvasTransform();
+    } else if (canvasState.draggedNode) {
+      const svgRect = svg.getBoundingClientRect();
+      const nx = (e.clientX - svgRect.left - canvasState.panX) / canvasState.scale - canvasState.dragOffsetX;
+      const ny = (e.clientY - svgRect.top - canvasState.panY) / canvasState.scale - canvasState.dragOffsetY;
+      canvasState.draggedNode.x = Math.round(nx);
+      canvasState.draggedNode.y = Math.round(ny);
+      renderConceptMapCanvas(canvasState.mapa);
+    }
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (canvasState.isPanning) {
+      canvasState.isPanning = false;
+      svg.style.cursor = canvasState.activeTool === 'select' ? 'grab' : (canvasState.activeTool === 'conector' ? 'crosshair' : 'copy');
+    }
+    if (canvasState.draggedNode) {
+      canvasState.draggedNode = null;
+    }
+  });
+
+  updateCanvasTransform();
+}
+
+function updateCanvasTransform() {
+  const layer = document.getElementById('canvasTransformLayer');
+  const label = document.getElementById('canvasZoomLabel');
+  if (layer) {
+    layer.setAttribute('transform', `translate(${canvasState.panX}, ${canvasState.panY}) scale(${canvasState.scale})`);
+  }
+  if (label) {
+    label.textContent = Math.round(canvasState.scale * 100) + '%';
+  }
+}
+
+function canvasZoom(factor) {
+  const nuevoScale = Math.max(0.2, Math.min(3.0, canvasState.scale * factor));
+  const svg = document.getElementById('conceptMapSvg');
+  if (svg) {
+    const rect = svg.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    canvasState.panX = cx - (cx - canvasState.panX) * (nuevoScale / canvasState.scale);
+    canvasState.panY = cy - (cy - canvasState.panY) * (nuevoScale / canvasState.scale);
+  }
+  canvasState.scale = nuevoScale;
+  updateCanvasTransform();
+}
+
+function canvasResetView() {
+  canvasState.scale = 1.0;
+  canvasState.panX = 60;
+  canvasState.panY = 40;
+  updateCanvasTransform();
+}
+
+function setCanvasTool(tool) {
+  canvasState.activeTool = tool;
+  canvasState.connectingSourceId = null;
+  document.querySelectorAll('.canvas-tool-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.id === 'tool-' + tool);
+  });
+  const svg = document.getElementById('conceptMapSvg');
+  if (!svg) return;
+  if (tool === 'select') {
+    svg.style.cursor = 'grab';
+  } else if (tool === 'conector') {
+    svg.style.cursor = 'crosshair';
+  } else {
+    svg.style.cursor = 'copy';
+  }
+}
+
+function toggleCanvasTheme() {
+  const container = document.getElementById('reunionCanvasContainer');
+  if (!container) return;
+  canvasState.theme = canvasState.theme === 'black' ? 'white' : 'black';
+  container.classList.toggle('theme-white', canvasState.theme === 'white');
+  const bgRect = document.getElementById('canvasBgRect');
+  if (bgRect) {
+    bgRect.setAttribute('fill', canvasState.theme === 'white' ? '#f8fafc' : 'url(#canvasGridPattern)');
+  }
+  const marker = document.getElementById('arrowMarkerPath');
+  if (marker) {
+    marker.setAttribute('fill', canvasState.theme === 'white' ? '#475569' : '#C09135');
+  }
+  renderConceptMapCanvas(canvasState.mapa);
+}
+
+function crearNodoEnCanvas(tipo, x, y) {
+  const mapa = canvasState.mapa;
+  if (!mapa.nodos) mapa.nodos = [];
+  const nid = `node-${tipo}-${Date.now()}`;
+  let texto = 'Nueva Idea';
+  let color = '#3b82f6';
+  if (tipo === 'tarea') {
+    texto = 'Nueva Tarea (Responsable)';
+    color = '#f59e0b';
+  } else if (tipo === 'decision') {
+    texto = 'Nuevo Acuerdo Clave';
+    color = '#10b981';
+  }
+  mapa.nodos.push({
+    id: nid,
+    tipo: tipo,
+    texto: texto,
+    x: Math.round(x - 80),
+    y: Math.round(y - 30),
+    ancho: 160,
+    alto: 60,
+    color: color,
+  });
+  renderConceptMapCanvas(mapa);
+  mostrarToast('Nodo agregado. Haz doble clic para editar su texto.', 'info');
+}
+
+function renderConceptMapCanvas(mapa) {
+  const edgesLayer = document.getElementById('canvasEdgesLayer');
+  const nodesLayer = document.getElementById('canvasNodesLayer');
+  if (!edgesLayer || !nodesLayer) return;
+
+  edgesLayer.innerHTML = '';
+  nodesLayer.innerHTML = '';
+
+  const nodos = mapa.nodos || [];
+  const conexiones = mapa.conexiones || [];
+  const nodoMap = new Map();
+  nodos.forEach(n => nodoMap.set(n.id, n));
+
+  // 1. Render Conexiones / Flechas
+  conexiones.forEach(c => {
+    const from = nodoMap.get(c.desde);
+    const to = nodoMap.get(c.hacia);
+    if (!from || !to) return;
+
+    const x1 = from.x + (from.ancho || 160) / 2;
+    const y1 = from.y + (from.alto || 60) / 2;
+    const x2 = to.x + (to.ancho || 160) / 2;
+    const y2 = to.y + (to.alto || 60) / 2;
+
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.dataset.id = c.id;
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', x1);
+    line.setAttribute('y1', y1);
+    line.setAttribute('x2', x2);
+    line.setAttribute('y2', y2);
+    line.setAttribute('marker-end', 'url(#arrowMarker)');
+    line.setAttribute('class', 'canvas-edge-line' + (canvasState.selectedElement && canvasState.selectedElement.id === c.id ? ' selected' : ''));
+    if (canvasState.theme === 'white') {
+      line.setAttribute('stroke', '#64748b');
+    }
+
+    line.addEventListener('click', e => {
+      e.stopPropagation();
+      canvasState.selectedElement = { type: 'edge', id: c.id };
+      actualizarSeleccionCanvas();
+    });
+
+    g.appendChild(line);
+
+    if (c.etiqueta) {
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      txt.setAttribute('x', mx);
+      txt.setAttribute('y', my - 6);
+      txt.setAttribute('text-anchor', 'middle');
+      txt.setAttribute('fill', canvasState.theme === 'white' ? '#475569' : '#9a9ab2');
+      txt.setAttribute('font-size', '11');
+      txt.setAttribute('font-family', 'sans-serif');
+      txt.textContent = c.etiqueta;
+      g.appendChild(txt);
+    }
+
+    edgesLayer.appendChild(g);
+  });
+
+  // 2. Render Nodos
+  nodos.forEach(n => {
+    const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    g.setAttribute('class', 'canvas-node-g' + (canvasState.selectedElement && canvasState.selectedElement.id === n.id ? ' selected' : ''));
+    g.setAttribute('transform', `translate(${n.x}, ${n.y})`);
+    g.dataset.id = n.id;
+
+    const w = n.ancho || 160;
+    const h = n.alto || 60;
+    const bgFill = canvasState.theme === 'white' ? '#ffffff' : '#18181f';
+    const textColor = canvasState.theme === 'white' ? '#0f172a' : '#dedee6';
+
+    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    rect.setAttribute('width', w);
+    rect.setAttribute('height', h);
+    rect.setAttribute('rx', n.tipo === 'central' ? '12' : '8');
+    rect.setAttribute('fill', bgFill);
+    rect.setAttribute('stroke', n.color || '#6366f1');
+    rect.setAttribute('stroke-width', n.tipo === 'central' ? '3' : '2');
+    g.appendChild(rect);
+
+    // Barra de color superior o píldora de tipo
+    const topBar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    topBar.setAttribute('x', '0');
+    topBar.setAttribute('y', '0');
+    topBar.setAttribute('width', w);
+    topBar.setAttribute('height', '5');
+    topBar.setAttribute('rx', '3');
+    topBar.setAttribute('fill', n.color || '#6366f1');
+    g.appendChild(topBar);
+
+    // Texto con ajuste básico
+    const txt = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    txt.setAttribute('x', w / 2);
+    txt.setAttribute('y', h / 2 + 4);
+    txt.setAttribute('text-anchor', 'middle');
+    txt.setAttribute('fill', textColor);
+    txt.setAttribute('font-size', n.tipo === 'central' ? '13' : '12');
+    txt.setAttribute('font-weight', n.tipo === 'central' ? '600' : '500');
+    txt.setAttribute('font-family', 'Inter, sans-serif');
+
+    const lineas = ajustarTextoNodo(n.texto || '', 20);
+    if (lineas.length === 1) {
+      txt.textContent = lineas[0];
+    } else {
+      txt.setAttribute('y', h / 2 - (lineas.length * 6) + 8);
+      lineas.forEach((lin, idx) => {
+        const tspan = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+        tspan.setAttribute('x', w / 2);
+        tspan.setAttribute('dy', idx === 0 ? '0' : '15');
+        tspan.textContent = lin;
+        txt.appendChild(tspan);
+      });
+    }
+    g.appendChild(txt);
+
+    // Eventos del Nodo
+    g.addEventListener('mousedown', e => {
+      e.stopPropagation();
+      if (canvasState.activeTool === 'conector') {
+        if (!canvasState.connectingSourceId) {
+          canvasState.connectingSourceId = n.id;
+          mostrarToast(`Conectando desde "${n.texto.substring(0, 20)}...". Haz clic en el nodo de destino.`, 'info');
+          g.classList.add('selected');
+        } else if (canvasState.connectingSourceId !== n.id) {
+          conectarNodosCanvas(canvasState.connectingSourceId, n.id);
+          canvasState.connectingSourceId = null;
+          setCanvasTool('select');
+        }
+      } else {
+        canvasState.selectedElement = { type: 'node', id: n.id };
+        actualizarSeleccionCanvas();
+
+        // Iniciar Drag del nodo
+        const svg = document.getElementById('conceptMapSvg');
+        const svgRect = svg.getBoundingClientRect();
+        canvasState.draggedNode = n;
+        canvasState.dragOffsetX = (e.clientX - svgRect.left - canvasState.panX) / canvasState.scale - n.x;
+        canvasState.dragOffsetY = (e.clientY - svgRect.top - canvasState.panY) / canvasState.scale - n.y;
+      }
+    });
+
+    g.addEventListener('dblclick', e => {
+      e.stopPropagation();
+      editarTextoNodo(n);
+    });
+
+    nodesLayer.appendChild(g);
+  });
+}
+
+function ajustarTextoNodo(str, maxChars) {
+  const palabras = str.split(' ');
+  const lineas = [];
+  let actual = '';
+  for (const p of palabras) {
+    if ((actual + ' ' + p).trim().length > maxChars) {
+      if (actual) lineas.push(actual);
+      actual = p;
+      if (lineas.length >= 2) {
+        lineas.push(actual + '...');
+        return lineas;
+      }
+    } else {
+      actual = (actual + ' ' + p).trim();
+    }
+  }
+  if (actual) lineas.push(actual);
+  return lineas.slice(0, 3);
+}
+
+function editarTextoNodo(nodo) {
+  const nuevoTexto = prompt('Modificar texto del elemento:', nodo.texto);
+  if (nuevoTexto !== null && nuevoTexto.trim() !== '') {
+    nodo.texto = nuevoTexto.trim();
+    renderConceptMapCanvas(canvasState.mapa);
+  }
+}
+
+function conectarNodosCanvas(sourceId, targetId) {
+  const mapa = canvasState.mapa;
+  if (!mapa.conexiones) mapa.conexiones = [];
+  const existe = mapa.conexiones.some(c => c.desde === sourceId && c.hacia === targetId);
+  if (!existe) {
+    mapa.conexiones.push({
+      id: `edge-${Date.now()}`,
+      desde: sourceId,
+      hacia: targetId,
+      etiqueta: '',
+    });
+    renderConceptMapCanvas(mapa);
+    mostrarToast('Relación conectada', 'success');
+  }
+}
+
+function actualizarSeleccionCanvas() {
+  document.querySelectorAll('.canvas-node-g').forEach(g => {
+    const isSel = canvasState.selectedElement && canvasState.selectedElement.type === 'node' && canvasState.selectedElement.id === g.dataset.id;
+    g.classList.toggle('selected', isSel);
+  });
+  document.querySelectorAll('.canvas-edge-line').forEach(l => {
+    const p = l.parentElement;
+    const isSel = canvasState.selectedElement && canvasState.selectedElement.type === 'edge' && canvasState.selectedElement.id === p.dataset.id;
+    l.classList.toggle('selected', isSel);
+  });
+}
+
+function eliminarElementoSeleccionadoCanvas() {
+  if (!canvasState.selectedElement) {
+    mostrarToast('Selecciona un nodo o flecha para eliminar', 'info');
+    return;
+  }
+  const mapa = canvasState.mapa;
+  if (canvasState.selectedElement.type === 'node') {
+    const nid = canvasState.selectedElement.id;
+    mapa.nodos = (mapa.nodos || []).filter(n => n.id !== nid);
+    mapa.conexiones = (mapa.conexiones || []).filter(c => c.desde !== nid && c.hacia !== nid);
+    mostrarToast('Nodo eliminado', 'info');
+  } else if (canvasState.selectedElement.type === 'edge') {
+    const eid = canvasState.selectedElement.id;
+    mapa.conexiones = (mapa.conexiones || []).filter(c => c.id !== eid);
+    mostrarToast('Conexión eliminada', 'info');
+  }
+  canvasState.selectedElement = null;
+  renderConceptMapCanvas(mapa);
+}
+
+async function guardarMapaCanvasActual() {
+  if (!reunionActiva) {
+    mostrarToast('No hay una reunión activa seleccionada', 'error');
+    return;
+  }
+  try {
+    const r = await fetch(`/api/reuniones/${reunionActiva.id}/mapa`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mapa: canvasState.mapa }),
+    });
+    const data = await r.json();
+    if (data && data.ok) {
+      mostrarToast('Mapa conceptual guardado con éxito', 'success');
+    } else {
+      mostrarToast('Error guardando mapa: ' + (data.error || 'Error desconocido'), 'error');
+    }
+  } catch (err) {
+    mostrarToast('Error guardando mapa: ' + err.message, 'error');
+  }
+}
+
+
 
 // --- Init ---
 aplicarModoAyuda(localStorage.getItem('imrryr_ayuda_on') === '1');

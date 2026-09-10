@@ -1,0 +1,25 @@
+{
+  "name": "volcar_tareas_agenda",
+  "description": "Vuelca los compromisos y tareas acordados en una reunión directamente a la Agenda (eventos) y a la lista de Pendientes de Imrryr OS",
+  "script": "skills/gestionar_reuniones.py",
+  "arguments": [
+    {
+      "name": "reunion_id",
+      "type": "integer",
+      "description": "ID de la reunión cuyas tareas se volcarán",
+      "required": true
+    },
+    {
+      "name": "agendar_en_eventos",
+      "type": "boolean",
+      "description": "Si es true, crea eventos con fecha en la agenda",
+      "required": false
+    },
+    {
+      "name": "agendar_en_pendientes",
+      "type": "boolean",
+      "description": "Si es true, agrega cada tarea a la lista de pendientes",
+      "required": false
+    }
+  ]
+}

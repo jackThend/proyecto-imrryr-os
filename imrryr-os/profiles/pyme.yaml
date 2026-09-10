@@ -9,6 +9,7 @@ agentes:
   - agente_investigador.yaml
   - agente_creativo.yaml
   - agente_crm.yaml
+  - agente_reuniones.yaml
   - guardia_seguridad.yaml
 
 # Skills incluidos (solo operacionales)
@@ -22,6 +23,7 @@ skills:
   - pendientes.py
   - tts_local.py
   - transcribir_audio.py
+  - gestionar_reuniones.py
   - consultar_memoria_vectorial.py
   - generar_cotizacion_pdf.py
   - memoria_perfil.py

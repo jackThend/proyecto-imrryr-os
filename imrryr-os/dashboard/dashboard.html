@@ -253,6 +253,165 @@
   </div>
 </div>
 
+<div class="view" id="view-reuniones">
+  <div class="app-title-row">
+    <svg class="icon-lg"><use href="#icon-mic"/></svg>
+    <h2>Reuniones y Mapas Conceptuales</h2>
+    <span style="margin-left:auto;font-size:11px;padding:3px 8px;border-radius:12px;background:rgba(192,145,53,0.15);color:var(--accent);border:1px solid rgba(192,145,53,0.3)">
+      Whisper AI • Infinite Canvas Studio
+    </span>
+  </div>
+  <div class="app-layout">
+    <div class="app-chat-panel" data-app="reuniones"></div>
+    <div class="app-main">
+      <!-- Toolbar superior: selector de reunión, nueva grabación, subir audio -->
+      <div class="app-toolbar" style="gap:8px;flex-wrap:wrap;align-items:center">
+        <select id="reunionesSelector" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;padding:6px 10px;min-width:220px;max-width:320px" onchange="seleccionarReunion(this.value)">
+          <option value="">-- Seleccionar reunión --</option>
+        </select>
+        <button class="gw-save-btn" id="btnGrabarReunion" onclick="toggleGrabacionReunion()" style="background:#dc2626;border-color:#ef4444">
+          <svg class="icon"><use href="#icon-mic"/></svg> <span id="lblGrabarReunion">Grabar Reunión</span>
+          <span id="reunionTimerBadge" style="display:none;margin-left:6px;font-family:monospace;background:rgba(0,0,0,0.3);padding:2px 6px;border-radius:4px">00:00</span>
+        </button>
+        <button class="gw-modo-btn" onclick="abrirModalSubirAudio()">
+          <svg class="icon"><use href="#icon-download"/></svg> Subir Audio
+        </button>
+        <button class="gw-modo-btn" id="btnProcesarReunion" onclick="procesarReunionActual()" title="Analiza la transcripción, extrae tareas y genera mapa conceptual">
+          <svg class="icon"><use href="#icon-bulb"/></svg> Procesar Minuta y Grafo
+        </button>
+        <button class="gw-modo-btn" style="margin-left:auto" onclick="cargarReunionesView()">
+          <svg class="icon"><use href="#icon-gear"/></svg> Refrescar
+        </button>
+      </div>
+
+      <!-- Área de subida de audio -->
+      <div id="reunionesDropzoneArea" style="display:none;margin-top:12px;padding:16px;background:var(--surface1);border:2px dashed var(--border);border-radius:8px;text-align:center">
+        <div style="font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text)">Arrastra tu archivo de audio aquí o haz clic para seleccionarlo</div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:12px">Formatos soportados: MP3, WAV, M4A, OGG, WEBM (hasta 100MB)</div>
+        <div style="display:flex;gap:8px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+          <input type="text" id="audioSubirTitulo" placeholder="Título de la reunión (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;width:240px">
+          <input type="text" id="audioSubirParticipantes" placeholder="Participantes ej. Juan, Sofía (opcional)" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:6px 10px;font-size:12px;width:240px">
+        </div>
+        <input type="file" id="audioFileInput" accept="audio/*" style="display:none" onchange="archivoAudioSeleccionado(this)">
+        <button class="gw-save-btn" onclick="document.getElementById('audioFileInput').click()">Seleccionar Archivo</button>
+        <button class="gw-modo-btn" style="margin-left:8px" onclick="cerrarModalSubirAudio()">Cancelar</button>
+      </div>
+
+      <!-- Banner / Reproductor de audio de la reunión activa -->
+      <div id="reunionAudioBanner" style="display:none;margin-top:12px;padding:10px 14px;background:var(--surface1);border:1px solid var(--border);border-radius:8px;align-items:center;gap:12px">
+        <span style="font-size:12px;font-weight:600;color:var(--text)" id="reunionAudioTitulo">Audio de la reunión:</span>
+        <audio id="reunionAudioPlayer" controls style="flex:1;height:32px"></audio>
+      </div>
+
+      <!-- Subtabs: Mapa Conceptual Infinito / Minuta y Tareas / Transcripción -->
+      <div class="app-subtabs" style="margin-top:14px">
+        <button class="app-subtab active" id="reunionSub-canvas" onclick="cambiarSubtabReunion('canvas')">Canvas Conceptual Infinito</button>
+        <button class="app-subtab" id="reunionSub-minuta" onclick="cambiarSubtabReunion('minuta')">Minuta y Tareas</button>
+        <button class="app-subtab" id="reunionSub-transcripcion" onclick="cambiarSubtabReunion('transcripcion')">Transcripción Cruda</button>
+      </div>
+
+      <!-- Contenedor del Canvas Infinito -->
+      <div id="reunionCanvasContainer" class="reunion-canvas-wrapper" style="position:relative;width:100%;height:560px;margin-top:10px;background:#0d0f14;border:1px solid var(--border);border-radius:8px;overflow:hidden">
+        <!-- Barra de herramientas flotante a la izquierda -->
+        <div class="canvas-left-toolbar">
+          <button class="canvas-tool-btn active" id="tool-select" title="Seleccionar y Paneo" onclick="setCanvasTool('select')">
+            <svg class="icon"><use href="#icon-users"/></svg>
+          </button>
+          <button class="canvas-tool-btn" id="tool-idea" title="Agregar Idea / Tema" onclick="setCanvasTool('idea')">
+            <svg class="icon"><use href="#icon-bulb"/></svg>
+          </button>
+          <button class="canvas-tool-btn" id="tool-tarea" title="Agregar Tarea" onclick="setCanvasTool('tarea')">
+            <svg class="icon"><use href="#icon-edit"/></svg>
+          </button>
+          <button class="canvas-tool-btn" id="tool-decision" title="Agregar Decisión / Hito" onclick="setCanvasTool('decision')">
+            <svg class="icon"><use href="#icon-shield"/></svg>
+          </button>
+          <button class="canvas-tool-btn" id="tool-conector" title="Conectar Flecha" onclick="setCanvasTool('conector')">
+            <svg class="icon"><use href="#icon-arrow-right"/></svg>
+          </button>
+          <hr style="border:none;border-top:1px solid var(--border);margin:4px 0;width:80%">
+          <button class="canvas-tool-btn" id="tool-theme" title="Alternar Fondo Blanco / Negro" onclick="toggleCanvasTheme()">
+            <svg class="icon"><use href="#icon-palette"/></svg>
+          </button>
+          <button class="canvas-tool-btn" id="tool-delete" title="Eliminar seleccionado" onclick="eliminarElementoSeleccionadoCanvas()">
+            <svg class="icon"><use href="#icon-trash"/></svg>
+          </button>
+          <button class="canvas-tool-btn" title="Guardar Cambios del Mapa" onclick="guardarMapaCanvasActual()" style="color:#10b981">
+            <svg class="icon"><use href="#icon-download"/></svg>
+          </button>
+        </div>
+
+        <!-- Controles de Zoom en esquina superior derecha -->
+        <div class="canvas-zoom-controls">
+          <button onclick="canvasZoom(1.2)" title="Acercar (Zoom In)">+</button>
+          <span id="canvasZoomLabel">100%</span>
+          <button onclick="canvasZoom(0.8)" title="Alejar (Zoom Out)">−</button>
+          <button onclick="canvasResetView()" title="Centrar Vista">↺</button>
+        </div>
+
+        <!-- SVG Infinito -->
+        <svg id="conceptMapSvg" width="100%" height="100%" style="cursor:grab;display:block">
+          <defs>
+            <pattern id="canvasGridPattern" width="40" height="40" patternUnits="userSpaceOnUse">
+              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" id="gridPathStroke"/>
+            </pattern>
+            <marker id="arrowMarker" viewBox="0 0 10 10" refX="18" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#C09135" id="arrowMarkerPath"/>
+            </marker>
+          </defs>
+          <rect id="canvasBgRect" width="100%" height="100%" fill="url(#canvasGridPattern)"/>
+          <g id="canvasTransformLayer">
+            <g id="canvasEdgesLayer"></g>
+            <g id="canvasNodesLayer"></g>
+          </g>
+        </svg>
+      </div>
+
+      <!-- Subtab 2: Minuta y Tareas -->
+      <div id="reunionMinutaContainer" style="display:none;margin-top:14px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+          <!-- Resumen Ejecutivo -->
+          <div style="background:var(--surface1);border:1px solid var(--border);border-radius:8px;padding:16px">
+            <div class="widget-title" style="margin-bottom:10px">Resumen Ejecutivo</div>
+            <div id="reunionResumenTexto" style="font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap">Aún no hay resumen generado. Haz clic en "Procesar Minuta y Grafo".</div>
+          </div>
+          <!-- Conclusiones y Acuerdos -->
+          <div style="background:var(--surface1);border:1px solid var(--border);border-radius:8px;padding:16px">
+            <div class="widget-title" style="margin-bottom:10px">Conclusiones y Acuerdos Clave</div>
+            <div id="reunionConclusionesTexto" style="font-size:13px;line-height:1.6;color:var(--text);white-space:pre-wrap">Aún no hay acuerdos registrados.</div>
+          </div>
+        </div>
+
+        <!-- Tareas con volcado a Agenda/Pendientes -->
+        <div style="background:var(--surface1);border:1px solid var(--border);border-radius:8px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div>
+              <div class="widget-title">Compromisos y Asignación de Tareas</div>
+              <div style="font-size:11px;color:var(--text-dim)">Selecciona los compromisos que deseas volcar automáticamente a tu Agenda o Pendientes.</div>
+            </div>
+            <button class="gw-save-btn" onclick="volcarTareasSeleccionadas()">
+              <svg class="icon"><use href="#icon-calendar"/></svg> Agendar en Calendario / Pendientes
+            </button>
+          </div>
+          <div id="reunionTareasLista" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+      </div>
+
+      <!-- Subtab 3: Transcripción Cruda -->
+      <div id="reunionTranscripcionContainer" style="display:none;margin-top:14px">
+        <div style="background:var(--surface1);border:1px solid var(--border);border-radius:8px;padding:16px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+            <div class="widget-title">Transcripción Completa del Audio</div>
+            <button class="gw-modo-btn" onclick="copiarTranscripcionReunion()"><svg class="icon"><use href="#icon-edit"/></svg> Copiar Texto</button>
+          </div>
+          <textarea id="reunionTranscripcionTexto" style="width:100%;height:350px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:12px;font-size:13px;line-height:1.5;resize:vertical" readonly></textarea>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <div class="view" id="view-ajustes">
   <div class="app-title-row"><svg class="icon-lg"><use href="#icon-gear"/></svg><h2>Ajustes</h2></div>
   <div class="app-toolbar" style="margin:0 16px 12px">

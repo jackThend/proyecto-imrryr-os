@@ -55,14 +55,18 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+REUNIONES_AUDIO_DIR = ROOT / "vault" / "reuniones"
+REUNIONES_AUDIO_DIR.mkdir(parents=True, exist_ok=True)
+
 app.mount("/adjuntos", StaticFiles(directory=str(ADJUNTOS_DIR)), name="adjuntos")
 app.mount("/cotizaciones", StaticFiles(directory=str(COTIZACIONES_DIR)), name="cotizaciones")
+app.mount("/reuniones_audio", StaticFiles(directory=str(REUNIONES_AUDIO_DIR)), name="reuniones_audio")
 app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 
-from api import ajustes, agenda, chat, compras, core, correo, finanzas, modulos, navegacion, oportunidades, rrss, semillas  # noqa: E402
+from api import ajustes, agenda, chat, compras, core, correo, finanzas, modulos, navegacion, oportunidades, reuniones, rrss, semillas  # noqa: E402
 
 for _modulo in (core, chat, finanzas, semillas, correo,
-                oportunidades, ajustes, modulos, agenda, navegacion, compras, rrss):
+                oportunidades, ajustes, modulos, agenda, navegacion, compras, rrss, reuniones):
     app.include_router(_modulo.router)
 
 

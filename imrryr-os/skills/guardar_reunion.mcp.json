@@ -1,0 +1,67 @@
+{
+  "name": "guardar_reunion",
+  "description": "Crea o actualiza una reunión con su transcripción, resumen ejecutivo, conclusiones, acuerdos/tareas y mapa conceptual",
+  "script": "skills/gestionar_reuniones.py",
+  "arguments": [
+    {
+      "name": "titulo",
+      "type": "string",
+      "description": "Título descriptivo de la reunión",
+      "required": true
+    },
+    {
+      "name": "fecha",
+      "type": "string",
+      "description": "Fecha ISO 8601 (YYYY-MM-DD), default hoy",
+      "required": false
+    },
+    {
+      "name": "duracion_min",
+      "type": "integer",
+      "description": "Duración aproximada en minutos",
+      "required": false
+    },
+    {
+      "name": "participantes",
+      "type": "string",
+      "description": "Nombres de los participantes separados por coma",
+      "required": false
+    },
+    {
+      "name": "audio_ruta",
+      "type": "string",
+      "description": "Ruta al archivo de audio si existe",
+      "required": false
+    },
+    {
+      "name": "transcripcion_cruda",
+      "type": "string",
+      "description": "Texto íntegro transcrito de la reunión",
+      "required": false
+    },
+    {
+      "name": "resumen_ejecutivo",
+      "type": "string",
+      "description": "Síntesis ejecutiva de los puntos tratados",
+      "required": false
+    },
+    {
+      "name": "conclusiones",
+      "type": "string",
+      "description": "Acuerdos y conclusiones principales",
+      "required": false
+    },
+    {
+      "name": "acuerdos_tareas",
+      "type": "string",
+      "description": "JSON serializado con la lista de tareas: [{'tarea': '...', 'responsable': '...', 'fecha_limite': 'YYYY-MM-DD'}]",
+      "required": false
+    },
+    {
+      "name": "reunion_id",
+      "type": "integer",
+      "description": "ID de la reunión si se desea actualizar una existente",
+      "required": false
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "name": "generar_mapa_conceptual",
+  "description": "Genera o actualiza el grafo estructurado del mapa conceptual interactivo (nodos centrales, temas, decisiones, tareas y conexiones) a partir de los datos de la reunión",
+  "script": "skills/gestionar_reuniones.py",
+  "arguments": [
+    {
+      "name": "reunion_id",
+      "type": "integer",
+      "description": "ID de la reunión a la que pertenece el mapa",
+      "required": false
+    },
+    {
+      "name": "titulo",
+      "type": "string",
+      "description": "Título o idea central para el nodo raíz",
+      "required": false
+    },
+    {
+      "name": "resumen",
+      "type": "string",
+      "description": "Texto del resumen ejecutivo para derivar los nodos de temas clave",
+      "required": false
+    },
+    {
+      "name": "conclusiones",
+      "type": "string",
+      "description": "Texto de conclusiones para derivar los nodos de decisiones",
+      "required": false
+    },
+    {
+      "name": "tareas",
+      "type": "string",
+      "description": "JSON serializado con lista de tareas para derivar nodos de acciones asignadas",
+      "required": false
+    }
+  ]
+}

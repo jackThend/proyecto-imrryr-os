@@ -231,6 +231,23 @@ CREATE VIRTUAL TABLE IF NOT EXISTS documentos_fts USING fts5(
     texto
 );
 
+-- Reuniones y minutas ejecutivas con mapa conceptual
+CREATE TABLE IF NOT EXISTS reuniones (
+    id                    INTEGER PRIMARY KEY AUTOINCREMENT,
+    titulo                TEXT    NOT NULL,
+    fecha                 TEXT    NOT NULL,           -- ISO 8601: 2026-07-09
+    duracion_min          INTEGER DEFAULT 0,
+    participantes         TEXT    DEFAULT '',         -- comma-separated o nombres
+    audio_ruta            TEXT,                       -- ruta relativa o absoluta al archivo de audio
+    transcripcion_cruda   TEXT    DEFAULT '',         -- texto íntegro transcripto
+    resumen_ejecutivo     TEXT    DEFAULT '',         -- síntesis ejecutiva de la reunión
+    conclusiones          TEXT    DEFAULT '',         -- acuerdos clave y conclusiones
+    acuerdos_tareas       TEXT    DEFAULT '[]',       -- JSON array de tareas extraídas
+    mapa_conceptual_json  TEXT    DEFAULT '{}',       -- JSON grafo: { nodos: [...], conexiones: [...] }
+    created_at            TEXT    DEFAULT (datetime('now')),
+    updated_at            TEXT    DEFAULT (datetime('now'))
+);
+
 CREATE INDEX IF NOT EXISTS idx_gastos_fecha ON gastos(fecha);
 CREATE INDEX IF NOT EXISTS idx_gastos_categoria ON gastos(categoria);
 CREATE INDEX IF NOT EXISTS idx_proyectos_estado ON proyectos(estado);
@@ -253,6 +270,8 @@ CREATE INDEX IF NOT EXISTS idx_mensajes_chat_sesion ON mensajes_chat(sesion_id);
 CREATE INDEX IF NOT EXISTS idx_memoria_categoria ON memoria_usuario(categoria);
 CREATE INDEX IF NOT EXISTS idx_hitl_estado ON solicitudes_hitl(estado);
 CREATE INDEX IF NOT EXISTS idx_hitl_agente ON solicitudes_hitl(agente);
+CREATE INDEX IF NOT EXISTS idx_reuniones_fecha ON reuniones(fecha);
+CREATE INDEX IF NOT EXISTS idx_reuniones_titulo ON reuniones(titulo);
 """
 
 
@@ -308,6 +327,30 @@ def _migrar_uso_ia(conn: sqlite3.Connection) -> None:
         log("Migración: columna latencia_ms agregada a uso_ia")
 
 
+def _migrar_reuniones(conn: sqlite3.Connection) -> None:
+    """Verifica y asegura columnas necesarias en la tabla reuniones."""
+    columnas = [row[1] for row in conn.execute("PRAGMA table_info(reuniones)").fetchall()]
+    if not columnas:
+        return
+    esperadas = {
+        "titulo": "TEXT NOT NULL DEFAULT ''",
+        "fecha": "TEXT NOT NULL DEFAULT ''",
+        "duracion_min": "INTEGER DEFAULT 0",
+        "participantes": "TEXT DEFAULT ''",
+        "audio_ruta": "TEXT",
+        "transcripcion_cruda": "TEXT DEFAULT ''",
+        "resumen_ejecutivo": "TEXT DEFAULT ''",
+        "conclusiones": "TEXT DEFAULT ''",
+        "acuerdos_tareas": "TEXT DEFAULT '[]'",
+        "mapa_conceptual_json": "TEXT DEFAULT '{}'",
+        "updated_at": "TEXT DEFAULT (datetime('now'))",
+    }
+    for col, tipo in esperadas.items():
+        if col not in columnas:
+            conn.execute(f"ALTER TABLE reuniones ADD COLUMN {col} {tipo}")
+            log(f"Migración: columna {col} agregada a reuniones")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Inicializa la base de datos SQLite")
     ap.add_argument("--reset", action="store_true", help="Borrar y recrear tablas")
@@ -326,7 +369,7 @@ def main() -> int:
             "DROP TABLE IF EXISTS importaciones; DROP TABLE IF EXISTS posts_programados; "
             "DROP TABLE IF EXISTS ofertas_encontradas; DROP TABLE IF EXISTS productos_seguimiento; "
             "DROP TABLE IF EXISTS avisos_evento; DROP TABLE IF EXISTS eventos; "
-            "DROP TABLE IF EXISTS pendientes; DROP TABLE IF EXISTS uso_ia;"
+            "DROP TABLE IF EXISTS pendientes; DROP TABLE IF EXISTS uso_ia; DROP TABLE IF EXISTS reuniones;"
         )
         log("Tablas eliminadas.")
 
@@ -334,6 +377,7 @@ def main() -> int:
     _migrar_gastos_fuente_id(conn)
     _migrar_semillas_ideas(conn)
     _migrar_uso_ia(conn)
+    _migrar_reuniones(conn)
     conn.commit()
 
     cur = conn.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")

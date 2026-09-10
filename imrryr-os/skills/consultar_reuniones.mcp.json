@@ -1,0 +1,37 @@
+{
+  "name": "consultar_reuniones",
+  "description": "Consulta reuniones pasadas: listar las más recientes, buscar por palabra clave en resúmenes/acuerdos, o ver el detalle completo con su mapa conceptual",
+  "script": "skills/gestionar_reuniones.py",
+  "arguments": [
+    {
+      "name": "accion",
+      "type": "string",
+      "description": "listar | buscar | detalle",
+      "required": false
+    },
+    {
+      "name": "query",
+      "type": "string",
+      "description": "Término de búsqueda para buscar en títulos, resúmenes o conclusiones",
+      "required": false
+    },
+    {
+      "name": "fecha",
+      "type": "string",
+      "description": "Filtrar por fecha específica (YYYY-MM-DD)",
+      "required": false
+    },
+    {
+      "name": "reunion_id",
+      "type": "integer",
+      "description": "ID de la reunión para ver el detalle completo",
+      "required": false
+    },
+    {
+      "name": "limite",
+      "type": "integer",
+      "description": "Máximo número de resultados a retornar (default 20)",
+      "required": false
+    }
+  ]
+}

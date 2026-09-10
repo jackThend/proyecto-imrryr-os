@@ -874,3 +874,132 @@ body.ayuda-on [data-ayuda].ayuda-below:hover::before { bottom: auto; top: 100%; 
   .app-layout { flex-direction: column; }
   .app-chat-panel { width: 100%; height: 320px; position: static; }
 }
+
+/* ============================================
+   REUNIONES & CANVAS CONCEPTUAL INFINITO
+   ============================================ */
+.reunion-canvas-wrapper {
+  user-select: none;
+  touch-action: none;
+}
+.reunion-canvas-wrapper.theme-white {
+  background: #f8fafc !important;
+}
+.reunion-canvas-wrapper.theme-white #gridPathStroke {
+  stroke: rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Barra de herramientas izquierda flotante */
+.canvas-left-toolbar {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface1);
+  border: 1px solid var(--border);
+  padding: 8px 6px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+}
+.canvas-tool-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--duration-fast);
+}
+.canvas-tool-btn:hover {
+  background: var(--surface2);
+  color: var(--text);
+  border-color: var(--border);
+}
+.canvas-tool-btn.active {
+  background: rgba(var(--color-gold-rgb) / 0.2);
+  color: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+/* Controles de Zoom */
+.canvas-zoom-controls {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface1);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+.canvas-zoom-controls button {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  cursor: pointer;
+  font-weight: 600;
+}
+.canvas-zoom-controls button:hover {
+  background: var(--border);
+}
+#canvasZoomLabel {
+  font-size: 11px;
+  font-family: monospace;
+  color: var(--text-dim);
+  min-width: 42px;
+  text-align: center;
+}
+
+/* Estilos de Nodos y Conexiones en SVG */
+.canvas-node-g {
+  cursor: move;
+  transition: filter 0.15s ease;
+}
+.canvas-node-g:hover rect {
+  stroke-width: 2.5px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+}
+.canvas-node-g.selected rect {
+  stroke: #ffd93d !important;
+  stroke-width: 3px !important;
+}
+.canvas-edge-line {
+  stroke: #C09135;
+  stroke-width: 2.5px;
+  cursor: pointer;
+  transition: stroke 0.15s ease, stroke-width 0.15s ease;
+}
+.canvas-edge-line:hover {
+  stroke: #ffd93d;
+  stroke-width: 3.5px;
+}
+.canvas-edge-line.selected {
+  stroke: #ffd93d !important;
+  stroke-width: 4px !important;
+}
+
+/* Grabación pulsante */
+@keyframes recPulse {
+  0% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.btn-grabando-reunion {
+  animation: recPulse 1.4s infinite ease-in-out !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.6) !important;
+}
