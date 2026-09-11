@@ -24,6 +24,8 @@ SetupIconFile=C:\Users\caosd\Desktop\Proyectos Software\Proyecto Imrryr OS\imrry
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+CloseApplications=no
+RestartApplications=no
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
@@ -50,3 +52,16 @@ Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChang
 
 [UninstallRun]
 Filename: "{app}\Detener Imrryr OS.exe"; Flags: runhidden waituntilterminated
+
+[Code]
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  if FileExists(ExpandConstant('{app}\Detener Imrryr OS.exe')) then
+  begin
+    Exec(ExpandConstant('{app}\Detener Imrryr OS.exe'), '', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(1000);
+  end;
+  Result := '';
+end;
