@@ -46,7 +46,7 @@ PROVEEDORES = {
     # handler OpenAI-compatible contra ese api_base. Los modelos NO están
     # publicados en la web: se consultan en vivo a su endpoint /models con la
     # API key del usuario (ver listar_modelos_remotos()).
-    "opencode_go": {"nombre": "OpenCode GO", "modelo_base": "", "requiere_key": True, "api_base": "https://opencode.ai/zen/go/v1"},
+    "opencode_go": {"nombre": "OpenCode GO", "modelo_base": "kimi-k2.7-code", "requiere_key": True, "api_base": "https://opencode.ai/zen/go/v1"},
     "ollama": {"nombre": "Ollama (local, sin costo)", "modelo_base": "ollama/qwen2.5", "requiere_key": False},
     "otro": {"nombre": "Otro (avanzado)", "modelo_base": "", "requiere_key": True},
 }
@@ -218,7 +218,11 @@ def _bloque_activo(cuenta: dict[str, Any]) -> str:
     if api_base:
         lineas.append(f"      api_base: {api_base}\n")
     if prov.get("requiere_key", True):
-        lineas.append("      api_key: os.environ/IMRRYR_ACTIVE_API_KEY\n")
+        api_key = cuenta.get("api_key") or "os.environ/IMRRYR_ACTIVE_API_KEY"
+        lineas.append(f"      api_key: {api_key}\n")
+    if cuenta.get("proveedor") == "opencode_go":
+        lineas.append("      extra_headers:\n")
+        lineas.append("        x-opencode-session: ses_imrryr\n")
     lineas.append(MARCADOR_FIN)
     return "".join(lineas)
 
