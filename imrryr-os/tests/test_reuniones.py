@@ -213,6 +213,49 @@ def test_extraccion_heuristica_ignora_saludos_y_extrae_responsables():
     assert "avance del proyecto" in resumen.lower()
 
 
+def test_actualizar_reunion_permite_vaciar_campos_explicitamente():
+    """Bug real: guardar_reunion usaba `if campo:` para decidir si tocar una
+    columna en el UPDATE, así que "" y 0 se confundían con "no enviado". El
+    usuario que borraba el cuadro de Transcripción Cruda y pulsaba "Guardar"
+    recibía un toast de éxito, pero el texto viejo seguía en la base de datos
+    intacto. Ahora el centinela de "no tocar" es None, no el valor vacío."""
+    r = reuniones_module.guardar_reunion(
+        titulo="Reunión con campos a vaciar",
+        transcripcion_cruda="Texto original a borrar",
+        resumen_ejecutivo="Resumen viejo",
+        conclusiones="Conclusión vieja",
+    )
+    rid = r["id"]
+
+    # El usuario borra por completo la transcripción y guarda (como hace el
+    # botón "Guardar Transcripción" -> PUT /api/reuniones/{id}/transcripcion).
+    reuniones_module.guardar_reunion(titulo="", transcripcion_cruda="", reunion_id=rid)
+    det = reuniones_module.consultar_reuniones(accion="detalle", reunion_id=rid)
+    assert det["reunion"]["transcripcion_cruda"] == ""
+
+    # Vaciar resumen y conclusiones a la vez debe respetarse igual.
+    reuniones_module.guardar_reunion(titulo="", resumen_ejecutivo="", conclusiones="", reunion_id=rid)
+    det2 = reuniones_module.consultar_reuniones(accion="detalle", reunion_id=rid)
+    assert det2["reunion"]["resumen_ejecutivo"] == ""
+    assert det2["reunion"]["conclusiones"] == ""
+
+
+def test_actualizar_solo_un_campo_no_borra_los_demas():
+    """Contraparte del fix anterior: un update parcial (solo el mapa, como
+    hace PUT /mapa) NO debe arrastrar los demás campos a vacío."""
+    r = reuniones_module.guardar_reunion(
+        titulo="Reunión con mapa aparte",
+        transcripcion_cruda="Esta transcripción no debe desaparecer",
+    )
+    rid = r["id"]
+
+    reuniones_module.guardar_reunion(
+        titulo="", mapa_conceptual_json={"nodos": [], "conexiones": []}, reunion_id=rid,
+    )
+    det = reuniones_module.consultar_reuniones(accion="detalle", reunion_id=rid)
+    assert det["reunion"]["transcripcion_cruda"] == "Esta transcripción no debe desaparecer"
+
+
 def test_mapa_conceptual_agrupa_por_persona_y_curvas_bezier():
     r = reuniones_module.guardar_reunion(
         titulo="Comité de Innovación",

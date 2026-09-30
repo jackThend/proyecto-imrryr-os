@@ -92,18 +92,26 @@ async def detalle_reunion(reunion_id: int):
 
 @router.post("/api/reuniones")
 async def crear_o_actualizar_reunion(datos: dict[str, Any]):
-    """Crea o actualiza los metadatos de una reunión."""
+    """Crea o actualiza los metadatos de una reunión.
+
+    Se usa `datos.get(campo)` SIN default (=> None cuando el campo no viene
+    en el body) para que guardar_reunion distinga "no me mandaron este campo"
+    de "me mandaron explícitamente un valor vacío" — si aquí se pusiera un
+    default de "" / "[]" / "{}", cualquier POST parcial (ej. solo cambiar el
+    título) borraría en silencio el resto de columnas de la reunión.
+    """
+    duracion = datos.get("duracion_min")
     return guardar_reunion(
         titulo=datos.get("titulo", ""),
-        fecha=datos.get("fecha", ""),
-        duracion_min=int(datos.get("duracion_min", 0)),
-        participantes=datos.get("participantes", ""),
-        audio_ruta=datos.get("audio_ruta", ""),
-        transcripcion_cruda=datos.get("transcripcion_cruda", ""),
-        resumen_ejecutivo=datos.get("resumen_ejecutivo", ""),
-        conclusiones=datos.get("conclusiones", ""),
-        acuerdos_tareas=datos.get("acuerdos_tareas", "[]"),
-        mapa_conceptual_json=datos.get("mapa_conceptual_json", "{}"),
+        fecha=datos.get("fecha"),
+        duracion_min=int(duracion) if duracion is not None else None,
+        participantes=datos.get("participantes"),
+        audio_ruta=datos.get("audio_ruta"),
+        transcripcion_cruda=datos.get("transcripcion_cruda"),
+        resumen_ejecutivo=datos.get("resumen_ejecutivo"),
+        conclusiones=datos.get("conclusiones"),
+        acuerdos_tareas=datos.get("acuerdos_tareas"),
+        mapa_conceptual_json=datos.get("mapa_conceptual_json"),
         reunion_id=datos.get("id"),
     )
 

@@ -36,32 +36,47 @@ def _conn() -> sqlite3.Connection:
 
 def guardar_reunion(
     titulo: str,
-    fecha: str = "",
-    duracion_min: int = 0,
-    participantes: str = "",
-    audio_ruta: str = "",
-    transcripcion_cruda: str = "",
-    resumen_ejecutivo: str = "",
-    conclusiones: str = "",
-    acuerdos_tareas: str | list[dict[str, Any]] = "[]",
-    mapa_conceptual_json: str | dict[str, Any] = "{}",
+    fecha: str | None = None,
+    duracion_min: int | None = None,
+    participantes: str | None = None,
+    audio_ruta: str | None = None,
+    transcripcion_cruda: str | None = None,
+    resumen_ejecutivo: str | None = None,
+    conclusiones: str | None = None,
+    acuerdos_tareas: str | list[dict[str, Any]] | None = None,
+    mapa_conceptual_json: str | dict[str, Any] | None = None,
     reunion_id: int | None = None,
 ) -> dict[str, Any]:
-    """Crea o actualiza una reunión en la base de datos de Imrryr OS."""
+    """Crea o actualiza una reunión en la base de datos de Imrryr OS.
+
+    En modo actualización (reunion_id dado), cada campo usa `None` como
+    centinela de "no tocar este campo" — DISTINTO de "" o 0, que son valores
+    válidos que el usuario puede querer guardar explícitamente (ej. borrar
+    por completo la transcripción para reescribirla, o vaciar el resumen).
+    Antes se usaba una comprobación de veracidad (`if campo:`) que trataba
+    "" y 0 igual que "no enviado", así que un usuario que borraba el cuadro
+    de transcripción y pulsaba "Guardar" recibía un "guardado con éxito"
+    falso: el UPDATE se saltaba esa columna entera y el texto viejo seguía
+    en la base de datos (bug real, verificado en vivo). `titulo` es la única
+    excepción deliberada: sigue usando "" como "no tocar el título", porque
+    así lo asumen ya los tres endpoints que solo actualizan mapa/transcripción
+    (le pasan `titulo=""` a propósito) y no existe un caso de uso real para
+    vaciar el título de una reunión.
+    """
     if not titulo and not reunion_id:
         return {"ok": False, "error": "Se requiere un título o id de reunión"}
 
     fecha_final = fecha or date.today().isoformat()
 
-    if isinstance(acuerdos_tareas, list):
-        tareas_str = json.dumps(acuerdos_tareas, ensure_ascii=False)
-    else:
-        tareas_str = acuerdos_tareas or "[]"
+    def _tareas_a_str(valor: Any) -> str:
+        if isinstance(valor, list):
+            return json.dumps(valor, ensure_ascii=False)
+        return valor or "[]"
 
-    if isinstance(mapa_conceptual_json, dict):
-        mapa_str = json.dumps(mapa_conceptual_json, ensure_ascii=False)
-    else:
-        mapa_str = mapa_conceptual_json or "{}"
+    def _mapa_a_str(valor: Any) -> str:
+        if isinstance(valor, dict):
+            return json.dumps(valor, ensure_ascii=False)
+        return valor or "{}"
 
     conn = _conn()
     try:
@@ -71,33 +86,33 @@ def guardar_reunion(
             if titulo:
                 actualizaciones.append("titulo = ?")
                 params.append(titulo)
-            if fecha:
+            if fecha is not None:
                 actualizaciones.append("fecha = ?")
                 params.append(fecha)
-            if duracion_min:
+            if duracion_min is not None:
                 actualizaciones.append("duracion_min = ?")
                 params.append(duracion_min)
-            if participantes:
+            if participantes is not None:
                 actualizaciones.append("participantes = ?")
                 params.append(participantes)
-            if audio_ruta:
+            if audio_ruta is not None:
                 actualizaciones.append("audio_ruta = ?")
                 params.append(audio_ruta)
-            if transcripcion_cruda:
+            if transcripcion_cruda is not None:
                 actualizaciones.append("transcripcion_cruda = ?")
                 params.append(transcripcion_cruda)
-            if resumen_ejecutivo:
+            if resumen_ejecutivo is not None:
                 actualizaciones.append("resumen_ejecutivo = ?")
                 params.append(resumen_ejecutivo)
-            if conclusiones:
+            if conclusiones is not None:
                 actualizaciones.append("conclusiones = ?")
                 params.append(conclusiones)
-            if tareas_str != "[]":
+            if acuerdos_tareas is not None:
                 actualizaciones.append("acuerdos_tareas = ?")
-                params.append(tareas_str)
-            if mapa_str != "{}":
+                params.append(_tareas_a_str(acuerdos_tareas))
+            if mapa_conceptual_json is not None:
                 actualizaciones.append("mapa_conceptual_json = ?")
-                params.append(mapa_str)
+                params.append(_mapa_a_str(mapa_conceptual_json))
 
             actualizaciones.append("updated_at = ?")
             params.append(datetime.now().isoformat())
@@ -109,6 +124,8 @@ def guardar_reunion(
             log(f"Reunión #{reunion_id} actualizada.")
             rid = reunion_id
         else:
+            tareas_str = _tareas_a_str(acuerdos_tareas)
+            mapa_str = _mapa_a_str(mapa_conceptual_json)
             cur = conn.execute(
                 """
                 INSERT INTO reuniones (
@@ -120,12 +137,12 @@ def guardar_reunion(
                 (
                     titulo,
                     fecha_final,
-                    duracion_min,
-                    participantes,
-                    audio_ruta,
-                    transcripcion_cruda,
-                    resumen_ejecutivo,
-                    conclusiones,
+                    duracion_min or 0,
+                    participantes or "",
+                    audio_ruta or "",
+                    transcripcion_cruda or "",
+                    resumen_ejecutivo or "",
+                    conclusiones or "",
                     tareas_str,
                     mapa_str,
                     datetime.now().isoformat(),
