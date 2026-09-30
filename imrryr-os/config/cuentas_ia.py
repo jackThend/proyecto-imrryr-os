@@ -218,8 +218,13 @@ def _bloque_activo(cuenta: dict[str, Any]) -> str:
     if api_base:
         lineas.append(f"      api_base: {api_base}\n")
     if prov.get("requiere_key", True):
-        api_key = cuenta.get("api_key") or "os.environ/IMRRYR_ACTIVE_API_KEY"
-        lineas.append(f"      api_key: {api_key}\n")
+        # SIEMPRE la referencia de entorno, nunca la clave real: este archivo
+        # está trackeado por git (no es un .env ignorado). activar_cuenta()
+        # ya escribe la clave real en config/.env (sí gitignoreado) antes de
+        # llamar acá — regresión real detectada: una versión anterior escribía
+        # cuenta.get("api_key") tal cual, dejando la clave en texto plano
+        # dentro de litellm_config.yaml, listo para terminar en un commit.
+        lineas.append("      api_key: os.environ/IMRRYR_ACTIVE_API_KEY\n")
     if cuenta.get("proveedor") == "opencode_go":
         lineas.append("      extra_headers:\n")
         lineas.append("        x-opencode-session: ses_imrryr\n")

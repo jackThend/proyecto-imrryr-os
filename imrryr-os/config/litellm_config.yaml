@@ -29,6 +29,8 @@ model_list:
       model: openai/kimi-k2.7-code
       api_base: https://opencode.ai/zen/go/v1
       api_key: os.environ/IMRRYR_ACTIVE_API_KEY
+      extra_headers:
+        x-opencode-session: ses_imrryr
   # --- FIN IMRRYR-ACTIVO ---
 
 litellm_settings:
