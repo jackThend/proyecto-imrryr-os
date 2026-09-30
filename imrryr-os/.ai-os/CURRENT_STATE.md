@@ -1,35 +1,39 @@
 # Estado Vivo — Imrryr OS
 
-## Variables Clave
-- **Proyecto**: imrryr-os
-- **Última iteración**: 2026-09-08 — Transformación de Agente Build (OpenCode nativo + AST Graph MCP + Vista Código)
-- **CI / Tests**: 87/87 pasando (100% verde)
-- **Linter**: Ruff sin errores (0 advertencias)
-- **Agente Programador**: Permisos completos nativos de OpenCode habilitados (bash, edit, read, glob, ast-graph). Vista dedicada en Dashboard.
-- **Compilación Nativa**: Lanzadores ejecutables compilados con PyInstaller (Iniciar Imrryr OS.exe / Detener Imrryr OS.exe) + guion Inno Setup.
-- **Servicios**: dashboard (:3000), litellm (:4000), opencode (:4040), gateway (:5050), whatsapp_local (:5051)
-- **Zips Distributables**: regenerados y validados en entorno sandbox limpio (pyme + tech)
+_Actualizado: 2026-09-29. Este archivo lo muestra la Vista Código del dashboard; se mantiene corto y con datos verificables. El historial de cambios vive en `git log`._
 
-## Estado de Módulos del Manifiesto
-- **config.json**: v1.1.0 con decisiones del usuario (Groq primario/local fallback, skills separadas, CLI, scout stack+agentes+MCPs, sandbox subdirectorio, modelos sugeridos) ✓
-- **PROJECT_SPEC.md**: completo ✓
-- **PLAN.md**: actualizado con progreso real ✓
-- **LOGBOOK.md**: iteración #25 registrada ✓
-- **voice-bridge**: FUNCIONAL — Groq (whisper-large-v3) primario, faster-whisper local fallback, edge-tts síntesis ✓
-- **meta-harness**: FUNCIONAL — scout PyPI detectó 4 breaking changes (mcp 2.x, edge-tts 7.x, psutil 7.x, pytest 9.x), 11 agentes analizados, sandbox aislado verificado sin fuga de credenciales ✓
-- **init-project**: CLI con entrevista estructurada ✓
-- **Skills forjadas**: ast_navigation (protocolo FETCH + registro), sdd_protocol (enforcement SDD + LOGBOOK), deterministic_validate (ruff + pytest, diagnóstico exacto) ✓
+## Salud del proyecto
+- **Tests**: 119 pasando · **Linter (ruff)**: sin advertencias.
+- **Agentes**: 13 (`agentes/*.yaml`) · **Skills**: 35 scripts con 46 manifiestos MCP · **Dashboard**: 14 routers, ~93 endpoints.
+- **Servicios**: dashboard `:3000`, LiteLLM `:4000`, OpenCode `:4040`, gateway WhatsApp `:5050`, sidecar `:5051`.
+- **Base de datos**: SQLite única (`vault/sqlite/imrryr.db`) con respaldo diario automático (14 días).
 
-## Bloqueo Activo
-- **API key**: rotación pendiente antes de producción (decisión del usuario: aplazada)
+## Capa de IA (Ajustes > Cuentas de IA)
+Sin modelo por defecto: el sistema usa la cuenta que el usuario activa.
 
-## Hallazgos del Scout (meta-harness) — RESUELTOS 2026-08-31
-RFC aprobado y aplicado: pins corregidos en requirements.txt.
-- mcp: `>=1.2.0,<2` (techo protector; migración 2.x abierta en PLAN)
-- edge-tts: `>=7.2.8` (6.x rota contra la API actual de Microsoft)
-- psutil: `>=7.2.2,<8`
-- pytest: `>=9.1.1,<10`
-Validación: pip check limpio, ruff limpio, suite 79/79, smoke TTS real OK.
+| Proveedor | Ruta | Estado |
+|---|---|---|
+| Gemini, OpenAI, Anthropic, DeepSeek, Ollama, "otro" | LiteLLM (alias `imrryr-activo`) | Funciona (Gemini free: 20 consultas/día) |
+| OpenCode GO (de pago) | LiteLLM + cabecera `x-opencode-session` | Requiere suscripción activa: hoy devuelve 403 (externo al código) |
+| **OpenCode Zen (gratis)** | **Proveedor nativo de OpenCode, sin LiteLLM** | Funciona con `big-pickle` (verificado con escritura real en la base) |
 
-## Siguiente Paso Pendiente
-Única tarea restante del PLAN: rotar API key antes de producción (aplazada por decisión del usuario).
+Detalles de la ruta nativa (por qué es distinta):
+- El servidor gratuito rechaza (403) cualquier petición que no venga de OpenCode, por eso no puede pasar por LiteLLM.
+- Exige OpenCode **≥ 1.18.0** (el binario embebido `bin/opencode.exe` es el que se usa) y el juego **completo** de herramientas nativas en cada petición.
+- Para no perder seguridad, en esta ruta las herramientas nativas quedan listadas pero bloqueadas con un patrón que nunca coincide (`scripts/sync_agentes.py`), y cada agente lleva un prompt que le dice qué puede usar. Verificado con un intento de inyección: no se creó ningún archivo.
+- Activar la cuenta re-sincroniza agentes y reinicia OpenCode; se niega con motivo si la versión es menor.
+
+## Módulos
+- **Verificados con uso real** (conversación por chat + comprobación directa en SQLite): Agenda, Pendientes, Finanzas, Reuniones (incluye edición de transcripción, mapa conceptual, volcado a agenda/pendientes).
+- **Con tests y sin verificación en vivo reciente**: Compras (Falabella por HTTP; Ripley solo con navegador; Paris y MercadoLibre no funcionan), RRSS/Web, Correo/Secretario, CRM, Navegación por voz.
+- **Guardia de Seguridad**: solo avisa; nunca detiene servicios base (un bug anterior los mataba a los 5 min).
+
+## Empaquetado
+- Perfiles `pyme` y `tech` (`profiles/*.yaml`); instalador con `python scripts/build_exe.py --profile pyme` (PyInstaller para los lanzadores + Inno Setup + runtime portátil).
+- Las skills se empaquetan por lista blanca: una skill nueva compartida entre procesos debe ir en `CORE_SKILLS` de `scripts/package.py` (hay un test que lo vigila para `ruta_modelo`).
+
+## Pendiente
+1. **Rotar la API key de OpenCode GO** antes de distribuir (su valor quedó visible en una sesión de trabajo; decisión del usuario: aplazada).
+2. Reactivar la suscripción de OpenCode GO si se quiere usar (o seguir con Zen gratis / Gemini).
+3. Verificación en vivo de los módulos "sin verificación reciente" (Compras, RRSS, Correo, CRM, Navegación).
+4. PRs de Dependabot abiertos (pip y express 5 del sidecar de WhatsApp): sesión dedicada.

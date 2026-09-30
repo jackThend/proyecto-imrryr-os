@@ -1,5 +1,7 @@
 # AI-OS PLAN — Imrryr OS
 
+> **Histórico** (proceso de especificación previo, cerrado en 2026-08-31). El estado vigente está en `CURRENT_STATE.md`; las cifras de abajo son de esa fecha.
+
 ## Arquitectura Técnica
 
 ### Stack Tecnológico

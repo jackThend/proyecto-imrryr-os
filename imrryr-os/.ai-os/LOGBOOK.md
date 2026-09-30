@@ -90,3 +90,18 @@
 **Decisiones Técnicas (ADR)**: fastapi ceiling <0.141: litellm[proxy] fija fastapi con == exacto y >=0.141 hace ResolutionImpossible (evidencia CI run 33443237461, PR #6 cerrado con comentario); PRs Dependabot #2 #4 #5 (pip) y #3 (express 5 major del sidecar WhatsApp) quedan abiertos para sesión dedicada
 
 **Siguiente Paso Pendiente**: Única tarea restante: rotar API key antes de producción (aplazada por el usuario)
+
+## [2026-09-29 12:00] Iteración #30 — Cierre del registro por sesión
+**Objetivo**: Dejar de mantener una bitácora que llevaba un mes sin reflejar la realidad.
+
+**Contexto**: Entre la iteración #29 (2026-08-31) y hoy hubo trabajo importante que no se anotó aquí: Agente de Reuniones
+(transcripción, canvas conceptual, volcado a agenda), compilación universal con instalador, modo aplicación de escritorio,
+respaldos diarios, corrección del Guardia de Seguridad (mataba los servicios base a los 5 min), OpenCode GO y, en esta
+iteración, la capa gratuita de OpenCode Zen por el proveedor nativo. Todo eso está en `git log` con su justificación.
+
+**Decisiones Técnicas (ADR)**: el `git log` pasa a ser la bitácora; este archivo queda como histórico hasta #30 y
+`CURRENT_STATE.md` como resumen vivo (lo muestra el dashboard). La obligación de registrar cada sesión y el gate de
+especificación previa se retiran de `AGENTS.md`: no se cumplían y daban una falsa sensación de control.
+
+**Siguiente Paso Pendiente**: ver `CURRENT_STATE.md` > Pendiente.
+
