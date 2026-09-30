@@ -53,7 +53,7 @@ playwright>=1.47.0
 # >=7.2.8 obligatorio (RFC 2026-08-31): Microsoft rompió su API Edge TTS en
 # dic 2025; las 6.x ya no generan audio. API Communicate/save compatible.
 edge-tts>=7.2.8
-pyttsx3>=2.90
+pyttsx3>=2.99
 
 # --- Transcripción de audio local (Fase 5.2, skills/transcribir_audio.py) ---
 faster-whisper>=1.0.0
