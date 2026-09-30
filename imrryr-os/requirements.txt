@@ -34,7 +34,7 @@ pyyaml>=6.0.2
 # =====================================================================
 
 # --- Memoria Vectorial (Fase 2.2) ---
-chromadb>=1.5.0
+chromadb>=1.5.9
 
 # --- Lectura de PDFs (Fase 2.2, ingesta docs) ---
 pymupdf>=1.24.0
