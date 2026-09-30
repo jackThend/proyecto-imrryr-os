@@ -203,6 +203,8 @@ OutputBaseFilename=Imrryr_OS_Setup_{{#MyAppProfile}}
 {setup_icon}Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
+CloseApplications=no
+RestartApplications=no
 
 [Languages]
 Name: "spanish"; MessagesFile: "compiler:Languages\\Spanish.isl"
@@ -229,6 +231,19 @@ Filename: "{{app}}\\{{#MyAppExeName}}"; Description: "{{cm:LaunchProgram,{{#Stri
 
 [UninstallRun]
 Filename: "{{app}}\\Detener Imrryr OS.exe"; Flags: runhidden waituntilterminated
+
+[Code]
+function PrepareToInstall(var NeedsRestart: Boolean): String;
+var
+  ResultCode: Integer;
+begin
+  if FileExists(ExpandConstant('{{app}}\\Detener Imrryr OS.exe')) then
+  begin
+    Exec(ExpandConstant('{{app}}\\Detener Imrryr OS.exe'), '', '', SW_HIDE, ewWaitUntilTerminated, ResultCode);
+    Sleep(1000);
+  end;
+  Result := '';
+end;
 """
     iss_path.write_text(iss_content, encoding="utf-8")
     log(f"Guión de instalador Inno Setup generado: {iss_path.name}")
