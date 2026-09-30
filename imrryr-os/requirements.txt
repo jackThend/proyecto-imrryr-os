@@ -60,7 +60,7 @@ faster-whisper>=1.0.0
 
 # --- Gmail API (Fase 3.1, skills/leer_gmail.py — inactivo sin credenciales) ---
 google-auth-oauthlib>=1.2.0
-google-api-python-client>=2.100.0
+google-api-python-client>=2.199.0
 
 # --- Observabilidad de procesos (Fase 4, Guardia de Seguridad) ---
 # Techo <8 (RFC 2026-08-31): psutil 8.0 en desarrollo trae breaking changes.
