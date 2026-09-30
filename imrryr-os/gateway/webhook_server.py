@@ -369,7 +369,10 @@ def _reenviar_a_opencode(texto: str) -> str:
     # lo que rompía la neutralidad de modelos: WhatsApp hablaba con Gemini
     # aunque el usuario hubiera elegido otro proveedor. Sin default: si no hay
     # cuenta activa, el sistema lo dice en vez de asumir un proveedor.
-    modelo = "imrryr-activo"
+    # Igual que el dashboard: LiteLLM por defecto; solo las cuentas de un
+    # proveedor nativo de OpenCode (Zen gratis) salen por otro provider.
+    from ruta_modelo import modelo_para_agente
+    ruta = modelo_para_agente()
     token = base64.b64encode(f"opencode:{password}".encode()).decode()
     headers = {"Authorization": f"Basic {token}", "Content-Type": "application/json"}
     agente_entrada = "asistente" if (ROOT / "agentes" / "agente_asistente.yaml").exists() else "build"
@@ -378,7 +381,7 @@ def _reenviar_a_opencode(texto: str) -> str:
         r = httpx.post(
             f"http://localhost:{port}/session",
             headers=headers,
-            json={"agent": agente_entrada, "model": {"id": modelo, "providerID": "imrryr-llm"}},
+            json={"agent": agente_entrada, "model": {"id": ruta["modelID"], "providerID": ruta["providerID"]}},
             timeout=15,
         )
         r.raise_for_status()
@@ -391,7 +394,7 @@ def _reenviar_a_opencode(texto: str) -> str:
             headers=headers,
             json={
                 "agent": agente_entrada,
-                "model": {"providerID": "imrryr-llm", "modelID": modelo},
+                "model": ruta,
                 "parts": [{"type": "text", "text": texto}],
             },
             # Mismo motivo que en dashboard/server.py: delegar en subagentes

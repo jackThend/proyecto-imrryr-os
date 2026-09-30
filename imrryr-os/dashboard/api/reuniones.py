@@ -11,11 +11,11 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any
 
-import httpx
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 from api import deps
+from api.llm import completar_texto
 from skills.gestionar_reuniones import (
     consultar_reuniones,
     generar_mapa_conceptual,
@@ -148,34 +148,23 @@ Transcripción de la reunión:
 {transcripcion[:10000]}
 """
     try:
-        async with httpx.AsyncClient(timeout=45.0) as client:
-            r = await client.post(
-                "http://localhost:4000/v1/chat/completions",
-                json={
-                    "model": "imrryr-activo",
-                    "messages": [
-                        {"role": "system", "content": "Eres un asistente extractor de minutas. Responde ÚNICAMENTE con el objeto JSON solicitado."},
-                        {"role": "user", "content": prompt},
-                    ],
-                    "temperature": 0.1,
-                },
-            )
-            if r.status_code == 200:
-                data = r.json()
-                contenido = data["choices"][0]["message"]["content"]
-                match = re.search(r"\{.*\}", contenido, re.DOTALL)
-                if match:
-                    parsed = json.loads(match.group(0))
-                    # Validar que no tenga saludos en tareas
-                    tareas_limpias = []
-                    for t in parsed.get("tareas", []):
-                        t_desc = t.get("tarea", "").strip()
-                        t_low = t_desc.lower()
-                        if not any(t_low.startswith(s) for s in ["buenos días", "buenas tardes", "hola", "bienvenidos"]):
-                            t["agendada"] = False
-                            tareas_limpias.append(t)
-                    parsed["tareas"] = tareas_limpias
-                    return parsed
+        contenido = await completar_texto(
+            prompt,
+            system="Eres un asistente extractor de minutas. Responde ÚNICAMENTE con el objeto JSON solicitado.",
+        )
+        match = re.search(r"\{.*\}", contenido, re.DOTALL)
+        if match:
+            parsed = json.loads(match.group(0))
+            # Validar que no tenga saludos en tareas
+            tareas_limpias = []
+            for t in parsed.get("tareas", []):
+                t_desc = t.get("tarea", "").strip()
+                t_low = t_desc.lower()
+                if not any(t_low.startswith(s) for s in ["buenos días", "buenas tardes", "hola", "bienvenidos"]):
+                    t["agendada"] = False
+                    tareas_limpias.append(t)
+            parsed["tareas"] = tareas_limpias
+            return parsed
     except Exception:
         pass
 

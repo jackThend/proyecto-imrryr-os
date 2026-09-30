@@ -1209,6 +1209,17 @@ function renderCuentaIaCampos() {
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin:-2px 0 6px">Tus modelos los entrega OpenCode GO según tu suscripción. La dirección del servicio ya está configurada.</div>`;
   }
+  if (proveedorId === 'opencode_zen') {
+    // Capa gratuita de OpenCode Zen: sin clave ni suscripción. La respuesta
+    // no sale por LiteLLM sino por el proveedor nativo de OpenCode (ver
+    // config/cuentas_ia.py), y solo se listan los modelos gratuitos.
+    html += `<div class="gw-field"><label>Modelo gratuito</label>
+        <select id="ciModelo" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;width:100%">
+          <option value="big-pickle">big-pickle (recomendado)</option>
+        </select>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin:-2px 0 6px">No necesita API key. Pulsa "Ver modelos disponibles" para ver los gratuitos de hoy; algunos pueden fallar en el servidor de OpenCode.</div>`;
+  }
   if (proveedorId === 'ollama') {
     html += `<div class="gw-field"><label>Host (api_base)</label><input id="ciApiBase" value="http://localhost:11434"></div>`;
   }
@@ -1228,12 +1239,12 @@ async function cargarModelosProveedor() {
   const proveedor = document.getElementById('ciProveedor').value;
   const apiKeyEl = document.getElementById('ciApiKey');
   const sel = document.getElementById('ciModelo');
-  if (!apiKeyEl || !apiKeyEl.value.trim()) { mostrarToast('Primero pega tu API key', 'error'); return; }
+  if (cuentasIaProveedores[proveedor]?.requiere_key && (!apiKeyEl || !apiKeyEl.value.trim())) { mostrarToast('Primero pega tu API key', 'error'); return; }
   if (sel) sel.innerHTML = '<option value="">Consultando…</option>';
   try {
     const r = await fetch('/api/ajustes/cuentas-ia/modelos', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proveedor, api_key: apiKeyEl.value.trim() }),
+      body: JSON.stringify({ proveedor, api_key: apiKeyEl ? apiKeyEl.value.trim() : '' }),
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || 'no se pudo obtener la lista');

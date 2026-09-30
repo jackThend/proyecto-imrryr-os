@@ -35,11 +35,16 @@ def _opencode_password() -> str:
     return os.environ.get("OPENCODE_SERVER_PASSWORD") or OPENCODE_PASSWORD_DEFAULT
 
 
-def _modelo_activo() -> str:
-    """Alias estable de LiteLLM (ver config/litellm_config.yaml) que siempre
-    apunta a la cuenta de IA que el usuario eligió en Ajustes > Cuentas de IA
-    (config/cuentas_ia.py). Cambiar de proveedor nunca requiere tocar esto."""
-    return "imrryr-activo"
+def _ruta_modelo() -> dict[str, str]:
+    """{"providerID", "modelID"} de la cuenta de IA activa (Ajustes > Cuentas de IA).
+
+    Por defecto es el alias estable de LiteLLM (imrryr-llm / imrryr-activo):
+    cambiar de proveedor nunca requiere tocar el código. Solo las cuentas de un
+    proveedor nativo de OpenCode (Zen gratis) salen por otro provider; ver
+    config/cuentas_ia.py::modelo_para_agente.
+    """
+    from ruta_modelo import modelo_para_agente
+    return modelo_para_agente()
 
 
 def _opencode_auth_headers() -> dict[str, str]:

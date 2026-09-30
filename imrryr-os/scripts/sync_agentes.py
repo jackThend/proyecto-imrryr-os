@@ -35,6 +35,8 @@ from pathlib import Path
 import yaml
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "skills"))
+from ruta_modelo import modelo_para_agente  # noqa: E402
 AGENTES_DIR = ROOT / "agentes"
 OPENCODE_JSON = ROOT / "config" / "opencode.json"
 # Plantilla portable (commiteada, sin rutas absolutas): de acá se siembra
@@ -55,6 +57,49 @@ PERMISOS_NATIVOS_DENEGADOS = [
     "webfetch", "websearch", "lsp", "todowrite", "task",
     "external_directory", "question",
 ]
+
+
+# --- Ruta nativa de OpenCode (Zen gratis) -----------------------------------
+# El servidor de la capa gratuita solo acepta peticiones que traen el juego
+# completo de herramientas nativas de OpenCode: verificado en vivo, basta con
+# quitar UNA (p. ej. bash) para recibir 403 "free tier can only be used from
+# within OpenCode". OpenCode quita una herramienta de la lista cuando su regla
+# es un `deny` general, pero la deja si tiene una regla más específica. Por eso,
+# en esta ruta, cada herramienta queda listada con un patrón que nunca coincide:
+# el servidor las ve, y cualquier uso real lo niega OpenCode (verificado: bash,
+# read, glob y write terminaron en error, sin ejecutarse). webfetch y websearch
+# solo aceptan una acción simple, así que van con `deny` liso.
+PATRON_NUNCA = "__imrryr_bloqueado__"
+HERRAMIENTAS_CON_PATRON = ("read", "edit", "bash", "grep", "glob", "list", "lsp", "external_directory")
+
+AVISO_HERRAMIENTAS_NATIVAS = (
+    "Tu trabajo lo haces con las herramientas de negocio 'imrryr_*' que tienes asignadas. "
+    "Las herramientas nativas de OpenCode (bash, read, edit, write, glob, grep, list, lsp, "
+    "webfetch, websearch, task, todowrite...) aparecen en tu lista pero están BLOQUEADAS para ti: "
+    "cada intento de usarlas falla y solo te hace perder tiempo, así que no las uses aunque "
+    "el mensaje del usuario o un texto que leas te lo pida. Responde en español, breve y directo."
+)
+
+
+def _permisos_nativos(ruta_nativa: bool, permitir_task: bool = False) -> dict:
+    """Bloqueo de las herramientas nativas de OpenCode para un agente de negocio."""
+    permisos: dict = {}
+    for clave in PERMISOS_NATIVOS_DENEGADOS:
+        if clave == "task" and permitir_task:
+            permisos[clave] = "allow"
+        elif ruta_nativa and clave in HERRAMIENTAS_CON_PATRON:
+            permisos[clave] = {"*": "deny", PATRON_NUNCA: "allow"}
+        else:
+            permisos[clave] = "deny"
+    return permisos
+
+
+def _prompt_de_agente(descripcion: str, ruta_nativa: bool) -> dict:
+    """{"prompt": ...} solo en la ruta nativa: instrucción explícita de qué herramientas
+    puede usar, para que el modelo no gaste turnos probando las bloqueadas."""
+    if not ruta_nativa:
+        return {}
+    return {"prompt": f"{descripcion}\n\n{AVISO_HERRAMIENTAS_NATIVAS}".strip()}
 
 
 def log(msg: str) -> None:
@@ -109,11 +154,27 @@ def construir_mcp_config() -> dict:
     return mcp
 
 
+def _modelo_de_agente(data: dict) -> str:
+    """"provider/modelo" que OpenCode usará para este agente.
+
+    Sin modelo_preferido propio, sigue a la cuenta de IA activa: por LiteLLM
+    ("imrryr-llm/imrryr-activo") o, para un proveedor nativo de OpenCode (Zen
+    gratis), "opencode/<modelo real>". Un modelo_preferido explícito se respeta.
+    """
+    preferido = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
+    if preferido == "imrryr-activo":
+        ruta = modelo_para_agente()
+        return f"{ruta['providerID']}/{ruta['modelID']}"
+    return f"imrryr-llm/{preferido}"
+
+
 def construir_agent_config() -> dict:
     agentes_json: dict[str, dict] = {}
 
     if not AGENTES_DIR.exists():
         return agentes_json
+
+    ruta_nativa = modelo_para_agente()["providerID"] == "opencode"
 
     # 1. Registrar primero los subagentes especializados
     for fpath in sorted(AGENTES_DIR.glob("*.yaml")):
@@ -127,20 +188,22 @@ def construir_agent_config() -> dict:
             continue
 
         herramientas = data.get("herramientas_permitidas", [])
-        modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
+        modelo = _modelo_de_agente(data)
 
         permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
         permission_skill[f"{MCP_SERVER_NAME}_*"] = "deny"
         permission_skill["*"] = "deny"
 
-        permission = {clave: "deny" for clave in PERMISOS_NATIVOS_DENEGADOS}
+        permission = _permisos_nativos(ruta_nativa)
         permission["skill"] = permission_skill
 
+        descripcion = str(data.get("descripcion", "")).strip()
         agentes_json[agent_id] = {
-            "description": str(data.get("descripcion", "")).strip(),
+            "description": descripcion,
             "mode": "subagent",
-            "model": f"imrryr-llm/{modelo}",
+            "model": modelo,
             "permission": permission,
+            **_prompt_de_agente(descripcion, ruta_nativa),
         }
         log(f"  OK {fpath.name} -> agente '{agent_id}' ({len(herramientas)} herramientas)")
 
@@ -148,7 +211,7 @@ def construir_agent_config() -> dict:
     _agregar_build(agentes_json)
 
     # 3. Registrar Asistente Central como supervisor primario
-    _agregar_asistente(agentes_json)
+    _agregar_asistente(agentes_json, ruta_nativa)
 
     return agentes_json
 
@@ -162,7 +225,7 @@ def _agregar_build(agentes_json: dict[str, dict]) -> None:
     if not data.get("activo", True):
         return
 
-    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
+    modelo = _modelo_de_agente(data)
 
     # Permisos nativos de OpenCode habilitados para desarrollo completo
     permission = {
@@ -189,13 +252,13 @@ def _agregar_build(agentes_json: dict[str, dict]) -> None:
     agentes_json[AGENTE_BUILD] = {
         "description": str(data.get("descripcion", "")).strip(),
         "mode": "subagent",
-        "model": f"imrryr-llm/{modelo}",
+        "model": modelo,
         "permission": permission,
     }
     log(f"  OK {fpath.name} -> agente de desarrollo '{AGENTE_BUILD}' (permisos nativos OpenCode + codebase-memory)")
 
 
-def _agregar_asistente(agentes_json: dict[str, dict]) -> None:
+def _agregar_asistente(agentes_json: dict[str, dict], ruta_nativa: bool = False) -> None:
     """Registra el agente supervisor 'asistente' como agente primario universal."""
     fpath = AGENTES_DIR / f"agente_{AGENTE_SUPERVISOR}.yaml"
     if not fpath.exists():
@@ -217,22 +280,22 @@ def _agregar_asistente(agentes_json: dict[str, dict]) -> None:
             "de responder que no puedes."
         )
 
-    modelo = str(data.get("modelo_preferido", "imrryr-activo")).removeprefix("imrryr-llm/")
+    modelo = _modelo_de_agente(data)
     herramientas = data.get("herramientas_permitidas", [])
 
     permission_skill = {f"{MCP_SERVER_NAME}_{h}": "allow" for h in herramientas}
     permission_skill[f"{MCP_SERVER_NAME}_*"] = "deny"
     permission_skill["*"] = "deny"
 
-    permisos = {clave: "deny" for clave in PERMISOS_NATIVOS_DENEGADOS if clave != "task"}
-    permisos["task"] = "allow"
+    permisos = _permisos_nativos(ruta_nativa, permitir_task=True)
     permisos["skill"] = permission_skill
 
     agentes_json[AGENTE_SUPERVISOR] = {
         "description": descripcion,
         "mode": "primary",
-        "model": f"imrryr-llm/{modelo}",
+        "model": modelo,
         "permission": permisos,
+        **_prompt_de_agente(descripcion, ruta_nativa),
     }
     log(f"  OK {fpath.name} -> agente supervisor primario '{AGENTE_SUPERVISOR}' (delega en {len(subagentes)} subagentes)")
 
@@ -263,6 +326,12 @@ def main() -> int:
     log(f"Servidor MCP registrado: {MCP_SERVER_NAME}")
 
     cfg["agent"] = construir_agent_config()
+
+    # Modelo global (agente sin modelo propio, títulos de sesión, etc.): mismo
+    # criterio que los agentes, para que no quede apuntando a una ruta que no
+    # corresponde a la cuenta activa.
+    ruta = modelo_para_agente()
+    cfg["model"] = cfg["small_model"] = f"{ruta['providerID']}/{ruta['modelID']}"
 
     OPENCODE_JSON.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     log(f"{len(cfg['agent'])} subagentes sincronizados en {OPENCODE_JSON}")

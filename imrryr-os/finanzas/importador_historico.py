@@ -352,6 +352,8 @@ def _pedir_extraccion_lote(correos: list[dict]) -> list[dict | None]:
         + "\n\n".join(lineas)
     )
 
+    from ruta_modelo import modelo_para_agente
+    ruta = modelo_para_agente()
     port = _opencode_port()
     headers = _opencode_auth_headers()
     with httpx.Client(timeout=90) as client:
@@ -359,7 +361,7 @@ def _pedir_extraccion_lote(correos: list[dict]) -> list[dict | None]:
             r = client.post(
                 f"http://localhost:{port}/session",
                 headers=headers,
-                json={"agent": "financiero", "model": {"id": "imrryr-activo", "providerID": "imrryr-llm"}},
+                json={"agent": "financiero", "model": {"id": ruta["modelID"], "providerID": ruta["providerID"]}},
             )
             r.raise_for_status()
             sid = r.json().get("data", {}).get("id") or r.json().get("id")
@@ -369,7 +371,7 @@ def _pedir_extraccion_lote(correos: list[dict]) -> list[dict | None]:
                 headers=headers,
                 json={
                     "agent": "financiero",
-                    "model": {"providerID": "imrryr-llm", "modelID": "imrryr-activo"},
+                    "model": ruta,
                     "parts": [{"type": "text", "text": prompt}],
                 },
             )

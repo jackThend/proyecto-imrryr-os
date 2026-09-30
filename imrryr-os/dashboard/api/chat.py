@@ -26,10 +26,11 @@ async def _get_or_create_session(client, agent: str) -> str:
     if agent in _opencode_sessions:
         return _opencode_sessions[agent]
 
+    ruta = deps._ruta_modelo()
     r = await client.post(
         f"http://localhost:{deps._opencode_port()}/session",
         headers=deps._opencode_auth_headers(),
-        json={"agent": agent, "model": {"id": deps._modelo_activo(), "providerID": "imrryr-llm"}},
+        json={"agent": agent, "model": {"id": ruta["modelID"], "providerID": ruta["providerID"]}},
         timeout=15,
     )
     r.raise_for_status()
@@ -143,7 +144,7 @@ async def chat(request: Request):
                 headers=deps._opencode_auth_headers(),
                 json={
                     "agent": agente,
-                    "model": {"providerID": "imrryr-llm", "modelID": deps._modelo_activo()},
+                    "model": deps._ruta_modelo(),
                     "parts": [{"type": "text", "text": mensaje}],
                 },
                 timeout=deps.chat_timeout_seconds(),
@@ -197,7 +198,7 @@ async def chat_stream(request: Request):
                 headers=deps._opencode_auth_headers(),
                 json={
                     "agent": agente,
-                    "model": {"providerID": "imrryr-llm", "modelID": deps._modelo_activo()},
+                    "model": deps._ruta_modelo(),
                     "parts": [{"type": "text", "text": mensaje}],
                 },
                 timeout=deps.chat_timeout_seconds(),

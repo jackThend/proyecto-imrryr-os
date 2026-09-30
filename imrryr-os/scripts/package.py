@@ -139,6 +139,7 @@ def copy_agents(agent_list: list[str]):
 CORE_SKILLS = [
     "uso_ia.py",
     "errores_ia.py",
+    "ruta_modelo.py",
     "perfil_negocio.py",
     "confirmacion_hitl.py",
     "memoria_perfil.py",
