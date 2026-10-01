@@ -120,6 +120,14 @@ def _slug_a_id(nombre_archivo: str) -> str:
     return nombre_archivo.removeprefix("agente_")
 
 
+def _hay_agente_build() -> bool:
+    fpath = AGENTES_DIR / f"agente_{AGENTE_BUILD}.yaml"
+    if not fpath.exists():
+        return False
+    data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
+    return bool(data.get("activo", True))
+
+
 def construir_mcp_config() -> dict:
     """Servidores MCP que ve OpenCode.
 
@@ -142,14 +150,20 @@ def construir_mcp_config() -> dict:
     # denegado por su allowlist de skills, así que no les añade ruido.
     # Requiere `uv` (uvx). Si no está instalado se declara deshabilitado en vez
     # de omitirlo: queda visible en la config, y activarlo es instalar uv.
+    # Tampoco se habilita en una instalación sin agente build (perfil pyme): nadie
+    # lo usaría, y con `uv` instalado pero la caché fría OpenCode lo descargaría
+    # en el primer mensaje del chat, con la espera que eso supone.
     hay_uvx = shutil.which("uvx") is not None
+    hay_build = _hay_agente_build()
     mcp["codebase-memory"] = {
         "type": "local",
         "command": ["uvx", "codebase-memory-mcp"],
-        "enabled": hay_uvx,
+        "enabled": hay_uvx and hay_build,
     }
     if not hay_uvx:
         log("  NOTA: 'uvx' no está instalado; el MCP codebase-memory queda deshabilitado.")
+    elif not hay_build:
+        log("  NOTA: no hay agente build en este perfil; el MCP codebase-memory queda deshabilitado.")
 
     return mcp
 
