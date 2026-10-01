@@ -36,4 +36,4 @@ Detalles de la ruta nativa (por qué es distinta):
 1. **Rotar la API key de OpenCode GO** antes de distribuir (su valor quedó visible en una sesión de trabajo; decisión del usuario: aplazada).
 2. Reactivar la suscripción de OpenCode GO si se quiere usar (o seguir con Zen gratis / Gemini).
 3. Verificación en vivo de los módulos "sin verificación reciente" (Compras, RRSS, Correo, CRM, Navegación).
-4. **CI de GitHub caído por facturación de la cuenta** (los trabajos ni arrancan: "spending limit / payments failed"). Mientras tanto, la verificación es la local (`pytest` + `ruff`). Los 6 PRs de Dependabot se fusionaron el 2026-09-30 tras probarlos en un entorno limpio; falta solo confirmar Express 5 con WhatsApp real (en local, las rutas HTTP del sidecar responden igual que con Express 4).
+4. **CI de GitHub funcionando** (Windows + Ubuntu, repo público desde 2026-09-30). Los 6 PRs de Dependabot se fusionaron tras probarlos en un entorno limpio; falta solo confirmar Express 5 con WhatsApp real (en local, las rutas HTTP del sidecar responden igual que con Express 4).
