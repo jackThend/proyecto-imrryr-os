@@ -176,7 +176,9 @@ def generar_inno_setup_script(profile_name: str = "pyme") -> Path:
     """Genera el archivo imrryr_setup.iss para compilar instaladores con Inno Setup."""
     iss_path = ROOT / "imrryr_setup.iss"
     ico_path = ROOT / "imrryr.ico"
-    setup_icon = f"SetupIconFile={ico_path}\n" if ico_path.exists() else ""
+    # Rutas relativas al propio .iss ({#SourcePath}): el archivo se versiona y no debe
+    # llevar la ruta de quien compila (ni su nombre de usuario).
+    setup_icon = "SetupIconFile={#SourcePath}imrryr.ico\n" if ico_path.exists() else ""
 
     iss_content = f"""; Imrryr OS — Inno Setup Script
 #define MyAppName "Imrryr OS"
@@ -198,7 +200,7 @@ PrivilegesRequired=lowest
 DefaultDirName={{localappdata}}\\Programs\\{{#MyAppName}}
 DefaultGroupName={{#MyAppName}}
 DisableProgramGroupPage=yes
-OutputDir={DIST_DIR}
+OutputDir={{#SourcePath}}dist
 OutputBaseFilename=Imrryr_OS_Setup_{{#MyAppProfile}}
 {setup_icon}Compression=lzma2/max
 SolidCompression=yes
@@ -218,8 +220,8 @@ Type: files; Name: "{{autodesktop}}\\Iniciar Imrryr OS.lnk"
 Type: files; Name: "{{autodesktop}}\\Detener Imrryr OS.lnk"
 
 [Files]
-Source: "{DIST_DIR}\\imrryr-os-pkg\\*"; DestDir: "{{app}}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "{ROOT}\\imrryr.ico"; DestDir: "{{app}}"; Flags: ignoreversion
+Source: "{{#SourcePath}}dist\\imrryr-os-pkg\\*"; DestDir: "{{app}}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{{#SourcePath}}imrryr.ico"; DestDir: "{{app}}"; Flags: ignoreversion
 
 [Icons]
 Name: "{{group}}\\{{#MyAppName}}"; Filename: "{{app}}\\{{#MyAppExeName}}"; IconFilename: "{{app}}\\imrryr.ico"

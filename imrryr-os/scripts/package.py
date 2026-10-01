@@ -59,6 +59,8 @@ IGNORE_PATTERNS = shutil.ignore_patterns(
     "cuentas_*.json", "admin_modulos.json", "gmail_*", "*.pickle",
     "scheduler_estado.json", "ultimo_audio.json", "compras_prefs.json",
     "region.json", "agenda_prefs.json", "gateway_config.json",
+    # se genera en cada equipo desde opencode.template.json (lleva rutas absolutas y la cuenta activa)
+    "opencode.json",
     # sesión de WhatsApp local
     ".wwebjs_auth", ".wwebjs_cache", "qr.png",
     # contenido personal del usuario dentro de carpetas de código

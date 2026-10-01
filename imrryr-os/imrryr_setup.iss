@@ -18,9 +18,9 @@ PrivilegesRequired=lowest
 DefaultDirName={localappdata}\Programs\{#MyAppName}
 DefaultGroupName={#MyAppName}
 DisableProgramGroupPage=yes
-OutputDir=C:\Users\caosd\Desktop\Proyectos Software\Proyecto Imrryr OS\imrryr-os\dist
+OutputDir={#SourcePath}dist
 OutputBaseFilename=Imrryr_OS_Setup_{#MyAppProfile}
-SetupIconFile=C:\Users\caosd\Desktop\Proyectos Software\Proyecto Imrryr OS\imrryr-os\imrryr.ico
+SetupIconFile={#SourcePath}imrryr.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -39,8 +39,8 @@ Type: files; Name: "{autodesktop}\Iniciar Imrryr OS.lnk"
 Type: files; Name: "{autodesktop}\Detener Imrryr OS.lnk"
 
 [Files]
-Source: "C:\Users\caosd\Desktop\Proyectos Software\Proyecto Imrryr OS\imrryr-os\dist\imrryr-os-pkg\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-Source: "C:\Users\caosd\Desktop\Proyectos Software\Proyecto Imrryr OS\imrryr-os\imrryr.ico"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#SourcePath}dist\imrryr-os-pkg\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#SourcePath}imrryr.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; IconFilename: "{app}\imrryr.ico"

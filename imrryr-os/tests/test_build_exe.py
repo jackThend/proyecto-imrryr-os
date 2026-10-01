@@ -30,14 +30,17 @@ def test_el_instalador_detiene_los_servicios_antes_de_copiar_archivos(tmp_path, 
 
 def test_el_script_generado_coincide_con_el_versionado(tmp_path, monkeypatch):
     """Si alguien vuelve a editar el .iss a mano, este test obliga a llevar el
-    cambio al generador (o el proximo build lo pisaria)."""
+    cambio al generador (o el proximo build lo pisaria). La comparacion es exacta:
+    el script no lleva rutas de ninguna maquina."""
+    (tmp_path / "imrryr.ico").write_bytes(b"")  # el repo versiona el icono: el script real lo referencia
     generado = _generar(tmp_path, monkeypatch)
-    versionado = (Path(__file__).resolve().parent.parent / "imrryr_setup.iss").read_text(encoding="utf-8")
+    versionado =(Path(__file__).resolve().parent.parent / "imrryr_setup.iss").read_text(encoding="utf-8")
+    assert generado.splitlines() == versionado.splitlines()
 
-    def normalizar(texto):
-        # las rutas absolutas dependen de la maquina; el resto debe ser identico
-        return [l.strip() for l in texto.replace("\r", "").splitlines()
-                if l.strip() and not l.startswith(("OutputDir=", "SetupIconFile=", "Source:"))]
 
-    assert normalizar(generado) == normalizar(versionado)
-
+def test_el_script_no_lleva_rutas_de_la_maquina_que_lo_genera(tmp_path, monkeypatch):
+    (tmp_path / "imrryr.ico").write_bytes(b"")
+    iss = _generar(tmp_path, monkeypatch)
+    assert str(tmp_path) not in iss
+    assert "C:" + chr(92) + "Users" not in iss
+    assert "{#SourcePath}" in iss
