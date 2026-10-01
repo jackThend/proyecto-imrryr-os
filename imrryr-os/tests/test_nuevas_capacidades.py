@@ -38,11 +38,14 @@ def test_memoria_perfil(tmp_path, monkeypatch):
     assert res_query[0]["valor"] == "oscuro minimalista"
 
 
-def test_perfil_usuario_y_empresas(tmp_path, monkeypatch):
+def test_perfil_usuario_y_empresas(tmp_path, monkeypatch, db_temporal):
     from skills import perfil_negocio
 
     perfil_file = tmp_path / "perfil_test.json"
     monkeypatch.setattr(perfil_negocio, "PERFIL_PATH", perfil_file)
+    # actualizar_perfil_negocio también sincroniza hacia memoria_usuario en SQLite: sin
+    # aislar la base, cada corrida de la suite pisaba el perfil real del usuario.
+    monkeypatch.setattr(perfil_negocio, "DB_PATH", db_temporal)
 
     datos = {
         "nombre_usuario": "Carlos",
@@ -62,6 +65,12 @@ def test_perfil_usuario_y_empresas(tmp_path, monkeypatch):
     leido = perfil_negocio.leer_perfil_negocio()
     assert leido["nombre_usuario"] == "Carlos"
     assert len(leido["empresas"]) == 2
+
+    # La sincronización cayó en la base aislada, no en la real
+    conn = sqlite3.connect(str(db_temporal))
+    claves = {r[0] for r in conn.execute("SELECT clave FROM memoria_usuario")}
+    conn.close()
+    assert {"nombre_usuario", "empresas"} <= claves
 
 
 def test_cotizacion_pdf(tmp_path, monkeypatch):

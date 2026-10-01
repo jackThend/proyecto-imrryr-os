@@ -117,6 +117,9 @@ def test_activar_cuenta_nativa_no_toca_litellm_pero_si_reinicia_opencode(cuentas
     monkeypatch.setattr(cuentas_ia, "_regenerar_litellm_config", lambda c: llamadas.append("yaml"))
     monkeypatch.setattr(cuentas_ia, "_actualizar_env", lambda k, v: llamadas.append("env"))
     monkeypatch.setattr(cuentas_ia, "_opencode_usa_ruta_nativa", lambda: False)
+    # Sin esto el test depende de que haya un opencode instalado: en CI no lo hay y
+    # activar_cuenta se niega por "versión desconocida".
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
 
     assert cuentas_ia.activar_cuenta("z")["ok"] is True
     assert llamadas == ["opencode"]

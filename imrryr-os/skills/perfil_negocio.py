@@ -21,6 +21,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
 PERFIL_PATH = ROOT / "config" / "perfil_negocio.json"
+DB_PATH = ROOT / "vault" / "sqlite" / "imrryr.db"
 
 DEFAULTS: dict[str, Any] = {
     "nombre_usuario": "",
@@ -80,7 +81,7 @@ def actualizar_perfil_negocio(datos: dict[str, Any]) -> dict[str, Any]:
 
     # Sincronizar hacia memoria_usuario en SQLite para acceso agéntico limpio
     try:
-        db_path = ROOT / "vault" / "sqlite" / "imrryr.db"
+        db_path = DB_PATH
         if db_path.exists():
             import sqlite3
             conn = sqlite3.connect(str(db_path))

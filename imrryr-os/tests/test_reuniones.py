@@ -114,10 +114,17 @@ def test_volcar_tareas_agenda_y_pendientes():
 
 
 def test_api_reuniones_endpoints(db_temporal, monkeypatch):
-    import dashboard.api.deps as api_deps
-    from dashboard.server import app
+    # El router importa `api.deps` (dashboard/ está en sys.path), que es OTRO objeto de
+    # módulo distinto de `dashboard.api.deps`. Parchear solo este último dejaba a
+    # DELETE /api/reuniones/{id} apuntando a la base real: en un equipo con datos
+    # borraba la reunión #1 de verdad, y en CI fallaba por no existir la carpeta.
+    from dashboard.server import app  # añade dashboard/ a sys.path: debe ir antes de `api.deps`
+
+    import api.deps as api_deps
+    import dashboard.api.deps as api_deps_pkg
 
     monkeypatch.setattr(api_deps, "DB_PATH", db_temporal)
+    monkeypatch.setattr(api_deps_pkg, "DB_PATH", db_temporal)
 
     client = TestClient(app)
 
