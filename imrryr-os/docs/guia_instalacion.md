@@ -36,6 +36,7 @@ Entra al chat del **Asistente** y escribe algo simple, por ejemplo: *"Agrega a m
 | Síntoma | Qué hacer |
 |---|---|
 | La ventana no aparece tras 2 minutos | Abre **"Detener Imrryr OS"**, espera 10 segundos y abre de nuevo **"Imrryr OS"** |
+| Aparece "Otro programa del equipo está usando el puerto..." | Imrryr OS necesita ciertos puertos de tu PC (3000, 4000 y 4040) y otro programa los ocupa. Cierra ese programa y vuelve a abrir Imrryr OS. Si no puedes, pide ayuda técnica: se cambia el puerto en `config\.env` |
 | El antivirus bloquea o borra archivos | Agrega la carpeta de instalación como excepción (ver abajo) y reinstala |
 | Los asistentes no responden | Revisa que el paso 3 esté hecho y que haya internet |
 | Nada de lo anterior | Manda a quien te dio el programa el archivo `vault\logs\launcher.log`, dentro de la carpeta de instalación |

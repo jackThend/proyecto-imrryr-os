@@ -161,6 +161,32 @@ def _resolve_executable(name: str) -> str:
     return name  # último recurso; lanzará FileNotFoundError claro
 
 
+def _entorno_opencode(env: dict[str, str], password: str) -> dict[str, str]:
+    """Entorno con el que corre el OpenCode de Imrryr, aislado del equipo donde se instala.
+
+    Cambiar el HOME aísla los *archivos* de configuración del usuario, pero OpenCode
+    también lee variables de entorno: una `OPENCODE_CONFIG` u `OPENCODE_CONFIG_DIR`
+    que el usuario tenga definida colaba sus propios MCP e instrucciones dentro de
+    Imrryr (verificado). Por eso se descartan todas las `OPENCODE_*` heredadas y se
+    fija solo la que Imrryr necesita; lo mismo con las rutas XDG de datos, que de
+    estar definidas sacarían la sesión y el estado fuera de `.opencode_home/`.
+    """
+    limpio = {
+        k: v for k, v in env.items()
+        if not k.upper().startswith("OPENCODE_")
+        and k.upper() not in ("XDG_DATA_HOME", "XDG_STATE_HOME", "XDG_CACHE_HOME")
+    }
+    return {
+        **limpio,
+        "OPENCODE_SERVER_PASSWORD": password,
+        # Node resuelve el "home" por USERPROFILE en Windows y por HOME en
+        # Unix; se fijan ambos para que el aislamiento valga en cualquier SO.
+        "HOME": str(OPENCODE_HOME),
+        "USERPROFILE": str(OPENCODE_HOME),
+        "XDG_CONFIG_HOME": str(OPENCODE_HOME / ".config"),
+    }
+
+
 def start_opencode(env: dict[str, str], port: int, password: str) -> subprocess.Popen:
     """Levanta `opencode serve` headless en background, con su propio HOME.
 
@@ -185,15 +211,7 @@ def start_opencode(env: dict[str, str], port: int, password: str) -> subprocess.
     """
     log_path = RUN_DIR / "opencode.log"
     OPENCODE_HOME.mkdir(parents=True, exist_ok=True)
-    env = {
-        **env,
-        "OPENCODE_SERVER_PASSWORD": password,
-        # Node resuelve el "home" por USERPROFILE en Windows y por HOME en
-        # Unix; se fijan ambos para que el aislamiento valga en cualquier SO.
-        "HOME": str(OPENCODE_HOME),
-        "USERPROFILE": str(OPENCODE_HOME),
-        "XDG_CONFIG_HOME": str(OPENCODE_HOME / ".config"),
-    }
+    env = _entorno_opencode(env, password)
 
     opencode_bin = _resolve_executable("opencode")
     cmd = [
@@ -272,6 +290,37 @@ def start_dashboard(env: dict[str, str], port: int) -> subprocess.Popen:
     (RUN_DIR / "dashboard.pid").write_text(str(proc.pid), encoding="utf-8")
     log(f"Dashboard arrancado (PID {proc.pid}) en http://localhost:{port}")
     return proc
+
+
+# --------------------------------------------------------------------------
+# Puertos: distinguir "ya está corriendo Imrryr" de "otro programa ocupa el puerto"
+# --------------------------------------------------------------------------
+def _es_nuestro(nombre: str, url: str, headers: dict) -> bool:
+    """True si lo que escucha en el puerto es un servicio de Imrryr (responde su
+    healthcheck, o su PID registrado sigue vivo: caso de un segundo clic mientras
+    el primer arranque aún no termina)."""
+    try:
+        if httpx.get(url, headers=headers, timeout=3).status_code == 200:
+            return True
+    except httpx.HTTPError:
+        pass
+    pid_file = RUN_DIR / f"{nombre}.pid"
+    try:
+        from scripts.shutdown import _pid_alive
+        return pid_file.exists() and _pid_alive(int(pid_file.read_text(encoding="utf-8").strip()))
+    except (OSError, ValueError):
+        return False
+
+
+def puertos_ajenos(servicios: list[tuple[str, int, str, dict]]) -> list[tuple[str, int]]:
+    """De (pid_file, puerto, url_health, headers) devuelve los puertos ocupados por
+    algo que NO es de Imrryr. Antes se asumía "puerto ocupado = ya es nuestro", y
+    otro programa en el 3000 o el 4000 (muy comunes) dejaba la app rota, o abierta
+    sobre la aplicación equivocada."""
+    return [
+        (nombre, puerto) for nombre, puerto, url, headers in servicios
+        if _port_open(puerto) and not _es_nuestro(nombre, url, headers)
+    ]
 
 
 # --------------------------------------------------------------------------
@@ -379,6 +428,20 @@ def main() -> int:
     password = env.get("OPENCODE_SERVER_PASSWORD") or OPENCODE_PASSWORD
 
     if not args.check_only:
+        # Antes de arrancar nada: si otro programa ocupa un puerto que necesitamos,
+        # decirlo claro y salir, en vez de esperar 2 minutos y fallar sin explicación.
+        ajenos = puertos_ajenos([
+            ("litellm", litellm_port, f"http://localhost:{litellm_port}/health/liveliness", {}),
+            ("opencode", opencode_port, f"http://localhost:{opencode_port}/api/health", basic_auth_header(password)),
+            ("dashboard", dashboard_port, f"http://localhost:{dashboard_port}/api/status", {}),
+        ])
+        if ajenos:
+            nombres = {"litellm": "el motor de IA", "opencode": "los agentes", "dashboard": "el panel"}
+            detalle = ", ".join(f"{nombres.get(n, n)} (puerto {p})" for n, p in ajenos)
+            log(f"X Otro programa del equipo está usando el puerto que necesita Imrryr OS para {detalle}.")
+            log("Cierra ese programa y vuelve a abrir Imrryr OS. Si no puedes cerrarlo, cambia el puerto en")
+            log("config/.env (LITELLM_PORT, OPENCODE_PORT o DASHBOARD_PORT) y vuelve a abrir Imrryr OS.")
+            return 1
         asegurar_base_datos()
         sync_agentes()
 
