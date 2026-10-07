@@ -16,7 +16,7 @@ python-dotenv>=1.0.1
 # fastapi con == exacto; >=0.141 hace ResolutionImpossible con cualquier
 # litellm del rango. El floor lo gobierna litellm hasta que migre.
 fastapi>=0.115.0,<0.141
-uvicorn[standard]>=0.32.0
+uvicorn[standard]>=0.54.0
 
 # --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---
 # Migrado a 2.x (RFC 2026-08-31 + iteración #28): skills_server.py usa
