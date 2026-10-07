@@ -21,7 +21,7 @@ uvicorn[standard]>=0.32.0
 # --- Model Context Protocol: cliente (habla con OpenCode) + servidor (expone skills) ---
 # Migrado a 2.x (RFC 2026-08-31 + iteración #28): skills_server.py usa
 # MCPServer (FastMCP fue renombrado). Smoke stdio real verificado.
-mcp>=2.1.1,<3
+mcp>=2.3.0,<3
 
 # --- Cliente HTTP para healthchecks y llamadas a APIs locales ---
 httpx>=0.27.0
