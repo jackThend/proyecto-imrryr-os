@@ -47,7 +47,7 @@ beautifulsoup4>=4.12.0
 # Primera dependencia "pesada" del proyecto: además de este paquete, hace
 # falta correr una vez `python -m playwright install chromium` para bajar
 # el binario del navegador (~110MB) — no ocurre solo con pip install.
-playwright>=1.47.0
+playwright>=1.63.0
 
 # --- Text-to-Speech local (Fase 3.2, skills/tts_local.py) ---
 # >=7.2.8 obligatorio (RFC 2026-08-31): Microsoft rompió su API Edge TTS en
