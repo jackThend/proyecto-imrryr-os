@@ -9,7 +9,7 @@
 litellm[proxy]>=1.52.0
 
 # --- Carga de credenciales locales ---
-python-dotenv>=1.0.1
+python-dotenv>=1.2.4
 
 # --- Backend del dashboard (Fase 6) y servidores locales ---
 # Techo <0.141 obligatorio (evidencia CI 2026-08-31): litellm[proxy] fija
