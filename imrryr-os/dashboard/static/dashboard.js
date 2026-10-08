@@ -2040,41 +2040,32 @@ async function confirmarEliminarModulo(id) {
     const d = await r.json();
     if (!d.ok) { mostrarToast(d.error || 'No se pudo eliminar', 'error'); return; }
     mostrarToast('Módulo eliminado', 'success');
-    cargarModulosLista();
+    sessionStorage.setItem('imrryr_abrir_app', 'modulos');
+    setTimeout(() => location.reload(), 700);
   } catch (e) {
     mostrarToast('Error: ' + e.message, 'error');
   }
 }
 
-async function activarModulo(id) {
+// Activar/desactivar/restaurar cambia qué agentes existen: el servidor reinicia OpenCode (~40 s)
+// para que el cambio sea real, y la página se recarga para que aparezcan o desaparezcan las
+// pestañas (se filtran al cargar). Antes no se miraba la respuesta: avisaba "activado" aunque fallara.
+async function cambiarModulo(id, accion, textoEspera, textoListo) {
+  mostrarToast(textoEspera + ' Puede tardar un minuto…', 'success');
   try {
-    await fetch(`/api/modulos/${id}/activar`, { method: 'POST' });
-    mostrarToast('Módulo activado', 'success');
-    cargarModulosLista();
+    const r = await fetch(`/api/modulos/${id}/${accion}`, { method: 'POST' });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok || !d.ok) throw new Error(d.error || ('HTTP ' + r.status));
+    mostrarToast(textoListo + (d.opencode_reiniciado === false ? ' (no se pudo reiniciar el motor: reinicia la app para aplicarlo)' : ''), d.opencode_reiniciado === false ? 'error' : 'success');
+    sessionStorage.setItem('imrryr_abrir_app', 'modulos');
+    setTimeout(() => location.reload(), 700);
   } catch (e) {
     mostrarToast('Error: ' + e.message, 'error');
   }
 }
-
-async function desactivarModulo(id) {
-  try {
-    await fetch(`/api/modulos/${id}/desactivar`, { method: 'POST' });
-    mostrarToast('Módulo desactivado', 'success');
-    cargarModulosLista();
-  } catch (e) {
-    mostrarToast('Error: ' + e.message, 'error');
-  }
-}
-
-async function restaurarModulo(id) {
-  try {
-    await fetch(`/api/modulos/${id}/restaurar`, { method: 'POST' });
-    mostrarToast('Módulo restaurado', 'success');
-    cargarModulosLista();
-  } catch (e) {
-    mostrarToast('Error: ' + e.message, 'error');
-  }
-}
+function activarModulo(id) { return cambiarModulo(id, 'activar', 'Activando módulo.', 'Módulo activado'); }
+function desactivarModulo(id) { return cambiarModulo(id, 'desactivar', 'Desactivando módulo.', 'Módulo desactivado'); }
+function restaurarModulo(id) { return cambiarModulo(id, 'restaurar', 'Restaurando módulo.', 'Módulo restaurado'); }
 
 // --- Correo (app completa: sub-tabs Bandeja / Borradores) ---
 let correoCuentas = [];
@@ -3980,7 +3971,10 @@ inicializarPosicionAyuda();
 filtrarAppsPorAgentesDisponibles().then(() => {
   renderNavTabs();
   montarChatPanels();
-  abrirApp('inicio');
+  // tras activar/desactivar un módulo la página se recarga: volver a donde estaba el usuario
+  const volver = sessionStorage.getItem('imrryr_abrir_app');
+  sessionStorage.removeItem('imrryr_abrir_app');
+  abrirApp(volver && appPorId(volver) ? volver : 'inicio');
   actualizarStatus();
   setInterval(actualizarStatus, 15000);
 });

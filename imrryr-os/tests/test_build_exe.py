@@ -10,10 +10,10 @@ from pathlib import Path
 from scripts import build_exe
 
 
-def _generar(tmp_path, monkeypatch):
+def _generar(tmp_path, monkeypatch, perfil="pyme"):
     monkeypatch.setattr(build_exe, "ROOT", tmp_path)
     monkeypatch.setattr(build_exe, "DIST_DIR", tmp_path / "dist")
-    return build_exe.generar_inno_setup_script("pyme").read_text(encoding="utf-8")
+    return build_exe.generar_inno_setup_script(perfil).read_text(encoding="utf-8")
 
 
 def test_el_instalador_no_reinicia_ni_cierra_aplicaciones_por_su_cuenta(tmp_path, monkeypatch):
@@ -44,3 +44,10 @@ def test_el_script_no_lleva_rutas_de_la_maquina_que_lo_genera(tmp_path, monkeypa
     assert str(tmp_path) not in iss
     assert "C:" + chr(92) + "Users" not in iss
     assert "{#SourcePath}" in iss
+
+
+def test_el_script_es_el_mismo_para_cualquier_perfil(tmp_path, monkeypatch):
+    """El perfil lo pone ISCC con /DMyAppProfile al compilar. Si el .iss cambiara según el perfil,
+    compilar `tech` dejaría modificado el archivo versionado en `pyme`."""
+    (tmp_path / "imrryr.ico").write_bytes(b"")
+    assert _generar(tmp_path, monkeypatch, "pyme") == _generar(tmp_path, monkeypatch, "tech")

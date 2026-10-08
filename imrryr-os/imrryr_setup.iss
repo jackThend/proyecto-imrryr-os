@@ -4,6 +4,8 @@
 #define MyAppPublisher "Imrryr OS"
 #define MyAppURL "http://localhost:3000"
 #define MyAppExeName "Imrryr OS.exe"
+; El perfil real lo fija ISCC con /DMyAppProfile=<perfil> (nombra el instalador); este valor solo
+; es el de respaldo y es fijo para que el .iss versionado no cambie según el perfil compilado.
 #ifndef MyAppProfile
   #define MyAppProfile "pyme"
 #endif

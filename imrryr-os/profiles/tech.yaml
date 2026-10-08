@@ -13,6 +13,15 @@ agentes:
   - agente_reuniones.yaml
   - guardia_seguridad.yaml
 
+# Agentes que viajan DESACTIVADOS: se activan con un clic desde el panel de Módulos. Se
+# empaquetan con sus herramientas para que activarlos no exija instalar nada más.
+agentes_opcionales:
+  - agente_agenda.yaml
+  - agente_compras.yaml
+  - agente_navegacion.yaml
+  - agente_rrss_web.yaml
+  - agente_secretario.yaml
+
 # Skills incluidos
 skills:
   - inyectar_gasto.py

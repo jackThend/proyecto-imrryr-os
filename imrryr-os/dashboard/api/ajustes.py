@@ -60,7 +60,9 @@ async def eliminar_cuenta_ia(cuenta_id: str):
 
 
 @router.post("/api/ajustes/cuentas-ia/{cuenta_id}/activar")
-async def activar_cuenta_ia(cuenta_id: str):
+def activar_cuenta_ia(cuenta_id: str):
+    # función normal, no `async def`: reinicia OpenCode (~40 s) y bloqueando el bucle de eventos
+    # dejaría el panel entero sin responder durante ese tiempo.
     from config import cuentas_ia
     return cuentas_ia.activar_cuenta(cuenta_id)
 

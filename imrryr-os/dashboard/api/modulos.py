@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import re
 import sqlite3
-import subprocess
-import sys
 from pathlib import Path
 
 import yaml
@@ -79,8 +77,15 @@ def _fijar_activo_yaml(fpath: Path, activo: bool) -> None:
     fpath.write_text(texto, encoding="utf-8")
 
 
-def _sincronizar_agentes() -> None:
-    subprocess.run([sys.executable, str(deps.ROOT / "scripts" / "sync_agentes.py")], cwd=str(deps.ROOT))
+def _sincronizar_agentes() -> bool:
+    """Regenera la config de agentes y reinicia OpenCode (restart_opencode.py hace las dos cosas).
+
+    OpenCode lee su configuración solo al arrancar: sin el reinicio, un agente recién activado
+    no existiría para el chat hasta el próximo arranque de la app. Tarda ~40 s, por eso los
+    endpoints que lo llaman son funciones normales (FastAPI las corre en un hilo) y no
+    `async def`: bloqueante dentro del bucle de eventos congelaría todo el panel esos segundos."""
+    from config import cuentas_ia
+    return cuentas_ia._reiniciar_opencode()
 
 
 @router.get("/api/agentes-disponibles")
@@ -129,27 +134,25 @@ async def modulos_verificar_password(datos: dict):
 
 
 @router.post("/api/modulos/{modulo_id}/activar")
-async def activar_modulo(modulo_id: str):
+def activar_modulo(modulo_id: str):
     fpath = deps.AGENTES_DIR / f"{modulo_id}.yaml"
     if not fpath.exists():
         return JSONResponse({"ok": False, "error": "no existe ese módulo"}, status_code=404)
     _fijar_activo_yaml(fpath, True)
-    _sincronizar_agentes()
-    return {"ok": True}
+    return {"ok": True, "opencode_reiniciado": _sincronizar_agentes()}
 
 
 @router.post("/api/modulos/{modulo_id}/desactivar")
-async def desactivar_modulo(modulo_id: str):
+def desactivar_modulo(modulo_id: str):
     fpath = deps.AGENTES_DIR / f"{modulo_id}.yaml"
     if not fpath.exists():
         return JSONResponse({"ok": False, "error": "no existe ese módulo"}, status_code=404)
     _fijar_activo_yaml(fpath, False)
-    _sincronizar_agentes()
-    return {"ok": True}
+    return {"ok": True, "opencode_reiniciado": _sincronizar_agentes()}
 
 
 @router.post("/api/modulos/{modulo_id}/eliminar")
-async def eliminar_modulo(modulo_id: str, datos: dict):
+def eliminar_modulo(modulo_id: str, datos: dict):
     from config import admin_modulos
     if not admin_modulos.verificar_password(datos.get("password", "")):
         return JSONResponse({"ok": False, "error": "Contraseña incorrecta"}, status_code=403)
@@ -170,15 +173,13 @@ async def eliminar_modulo(modulo_id: str, datos: dict):
         finally:
             conn.close()
 
-    _sincronizar_agentes()
-    return {"ok": True}
+    return {"ok": True, "opencode_reiniciado": _sincronizar_agentes()}
 
 
 @router.post("/api/modulos/{modulo_id}/restaurar")
-async def restaurar_modulo(modulo_id: str):
+def restaurar_modulo(modulo_id: str):
     origen = deps.AGENTES_ELIMINADOS_DIR / f"{modulo_id}.yaml"
     if not origen.exists():
         return JSONResponse({"ok": False, "error": "no existe en eliminados"}, status_code=404)
     origen.rename(deps.AGENTES_DIR / f"{modulo_id}.yaml")
-    _sincronizar_agentes()
-    return {"ok": True}
+    return {"ok": True, "opencode_reiniciado": _sincronizar_agentes()}

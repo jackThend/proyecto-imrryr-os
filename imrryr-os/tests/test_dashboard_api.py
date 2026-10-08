@@ -226,3 +226,31 @@ def test_agentes_disponibles_solo_lista_los_que_existen_y_estan_activos(cliente,
     r = cliente.get("/api/agentes-disponibles")
     assert r.status_code == 200
     assert r.json() == {"agentes": ["agenda", "guardia_seguridad"]}
+
+
+def test_activar_y_desactivar_un_modulo_cambia_que_agentes_hay(cliente, tmp_path, monkeypatch):
+    """Los opcionales viajan desactivados; activarlos desde Módulos debe dejarlos disponibles y
+    pedir el reinicio de OpenCode (que lee su config solo al arrancar)."""
+    import api.deps as deps
+    from api import modulos
+
+    (tmp_path / "agente_agenda.yaml").write_text("nombre: Agenda\nactivo: false\n", encoding="utf-8")
+    monkeypatch.setattr(deps, "AGENTES_DIR", tmp_path)
+    reinicios = []
+    monkeypatch.setattr(modulos, "_sincronizar_agentes", lambda: reinicios.append(1) or True)
+
+    assert cliente.get("/api/agentes-disponibles").json() == {"agentes": []}
+    r = cliente.post("/api/modulos/agente_agenda/activar")
+    assert r.status_code == 200 and r.json() == {"ok": True, "opencode_reiniciado": True}
+    assert cliente.get("/api/agentes-disponibles").json() == {"agentes": ["agenda"]}
+
+    r = cliente.post("/api/modulos/agente_agenda/desactivar")
+    assert r.json()["ok"] is True
+    assert cliente.get("/api/agentes-disponibles").json() == {"agentes": []}
+    assert len(reinicios) == 2
+
+
+def test_activar_un_modulo_inexistente_responde_404(cliente, tmp_path, monkeypatch):
+    import api.deps as deps
+    monkeypatch.setattr(deps, "AGENTES_DIR", tmp_path)
+    assert cliente.post("/api/modulos/agente_que_no_existe/activar").status_code == 404

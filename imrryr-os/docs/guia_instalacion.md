@@ -6,7 +6,7 @@
 - **No necesitas ser administrador ni instalar nada más.** El programa lleva todo incluido.
 
 ## 1. Instalar
-1. Haz **doble clic** en `Imrryr_OS_Setup_pyme.exe`.
+1. Haz **doble clic** en el instalador que te entregaron: `Imrryr_OS_Setup_pyme.exe` (versión Pyme, para el negocio) o `Imrryr_OS_Setup_tech.exe` (versión Tech, que además incluye el módulo de Código para quien desarrolla). Instala **solo uno** de los dos en un mismo equipo.
 2. Es probable que Windows muestre una pantalla azul: **"Windows protegió su PC"**. Es normal, porque el programa aún no tiene firma digital. Pulsa **"Más información"** y luego **"Ejecutar de todos modos"**.
 3. El asistente está en español. Pulsa **Siguiente** en cada paso y deja marcada la opción **"Crear un icono en el escritorio"**.
 4. Al terminar, deja marcada **"Iniciar Imrryr OS"** y pulsa **Finalizar**.
@@ -25,6 +25,16 @@ Con la opción gratuita las respuestas pueden tardar desde 2 segundos hasta **un
 
 ## 4. Probar que funciona
 Entra al chat del **Asistente** y escribe algo simple, por ejemplo: *"Agrega a mis pendientes: llamar al contador"*. Luego revisa la sección **Pendientes**: debería aparecer ahí.
+
+## Activar módulos adicionales
+Además de los módulos que ya ves, Imrryr OS trae cinco apagados que puedes encender cuando los necesites: **Agenda**, **Compras**, **Navegación**, **RRSS y Web** y **Correo**.
+1. Entra a **Módulos** en el menú.
+2. En el que quieras, pulsa **Activar**.
+3. Espera **hasta un minuto** (el motor de los asistentes se reinicia). La página se recarga sola y la pestaña nueva aparece en el menú.
+
+Para apagar uno, pulsa **Desactivar** en el mismo lugar: la pestaña desaparece, pero no se borra nada.
+
+Algunos necesitan algo tuyo para funcionar: **Correo** pide conectar tu cuenta de Gmail u otro correo, y **RRSS y Web** pide tu acceso a GitHub y a Instagram o Facebook (se configuran en **Ajustes**). **Compras** y **Navegación** leen páginas web con el navegador que ya tengas instalado en el equipo (Chrome, Edge o Brave).
 
 ## Uso diario
 - **Abrir**: icono **Imrryr OS** del escritorio.

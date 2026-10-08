@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import sys
 import zipfile
@@ -114,8 +115,19 @@ def copy_core():
     log("  Core: semillas/ (estructura vacía, sin datos)")
 
 
-def copy_agents(agent_list: list[str]):
-    """Copia solo los agentes del perfil."""
+def _marcar_inactivo(texto: str) -> str:
+    """Pone `activo: false` en el YAML de un agente (misma regla que el panel de Módulos)."""
+    if re.search(r"(?m)^activo:\s*\S+", texto):
+        return re.sub(r"(?m)^activo:\s*\S+", "activo: false", texto)
+    return texto.rstrip(chr(10)) + chr(10) + "activo: false" + chr(10)
+
+
+def copy_agents(agent_list: list[str], opcionales: list[str] | None = None):
+    """Copia los agentes del perfil (activos) y los opcionales (DESACTIVADOS).
+
+    Los opcionales viajan en el paquete pero apagados: el panel de Módulos solo sabe
+    activar, desactivar, eliminar y restaurar agentes que ya están en la carpeta, no
+    añadir uno que no vino. Así el usuario los enciende con un clic una vez instalado."""
     dst_dir = PKG_DIR / "agentes"
     dst_dir.mkdir(exist_ok=True)
 
@@ -126,6 +138,14 @@ def copy_agents(agent_list: list[str]):
             log(f"  Agente: {agent_file}")
         else:
             log(f"  WARN: agente {agent_file} no encontrado")
+
+    for agent_file in opcionales or []:
+        src = ROOT / "agentes" / agent_file
+        if src.exists():
+            (dst_dir / agent_file).write_text(_marcar_inactivo(src.read_text(encoding="utf-8")), encoding="utf-8")
+            log(f"  Agente opcional (desactivado): {agent_file}")
+        else:
+            log(f"  WARN: agente opcional {agent_file} no encontrado")
 
     # Crear archivo de bloqueo si el perfil no tiene Build
     build_present = any("build" in a.lower() for a in agent_list)
@@ -161,7 +181,8 @@ def resolve_profile_skills(profile: dict) -> tuple[set[str], set[str]]:
     scripts_necesarios.update(CORE_SKILLS)
     mcp_jsons_necesarios = set()
 
-    for agente_file in profile.get("agentes", []):
+    # los opcionales viajan apagados, pero al activarlos necesitan sus herramientas ya presentes
+    for agente_file in profile.get("agentes", []) + profile.get("agentes_opcionales", []):
         agente_path = ROOT / "agentes" / agente_file
         if not agente_path.exists():
             continue
@@ -322,6 +343,7 @@ def create_manifest(profile: dict):
         "fecha": date.today().isoformat(),
         "perfil": profile.get("descripcion", ""),
         "agentes": len(profile.get("agentes", [])),
+        "agentes_opcionales": len(profile.get("agentes_opcionales", [])),
         "skills": len(profile.get("skills", [])),
         "modulos": profile.get("modulos", {}),
     }
@@ -444,7 +466,7 @@ def main() -> int:
     clean_pkg_dir()
 
     copy_core()
-    copy_agents(profile.get("agentes", []))
+    copy_agents(profile.get("agentes", []), profile.get("agentes_opcionales", []))
     copy_skills(profile)
     create_env_template(profile)
     create_install_script(profile)
@@ -464,7 +486,7 @@ def main() -> int:
     else:
         log("Empaquetado en carpeta completado (sin zip): dist/imrryr-os-pkg")
 
-    log(f"  Contenido: {len(profile.get('agentes', []))} agentes, {len(profile.get('skills', []))} skills")
+    log(f"  Contenido: {len(profile.get('agentes', []))} agentes activos + {len(profile.get('agentes_opcionales', []))} opcionales (desactivados), {len(profile.get('skills', []))} skills")
     return 0
 
 
