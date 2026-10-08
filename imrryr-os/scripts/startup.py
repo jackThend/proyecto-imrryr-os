@@ -450,6 +450,10 @@ def main() -> int:
             log("config/.env (LITELLM_PORT, OPENCODE_PORT o DASHBOARD_PORT) y vuelve a abrir Imrryr OS.")
             return 1
         asegurar_base_datos()
+        # Instalación nueva: cuenta de IA gratuita ya activa. Va ANTES de sync_agentes, que
+        # escribe el modelo de cada agente según la cuenta activa.
+        from config import cuentas_ia
+        cuentas_ia.asegurar_cuenta_inicial()
         sync_agentes()
 
     if args.check_only:

@@ -1157,7 +1157,7 @@ function renderCuentasIaView() {
   if (ajustesSubtabActual !== 'ia') return;
   const el = document.getElementById('ajustesSubcontent');
   if (!el) return;
-  let html = '<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Elige qué proveedor de IA usan todos tus agentes (Gemini, OpenAI, Claude, DeepSeek, un modelo local con Ollama, u otro). Solo una cuenta puede estar activa a la vez.</p>';
+  let html = '<p style="font-size:12px;color:var(--text-dim);margin-bottom:10px">Elige qué proveedor de IA usan todos tus agentes. Imrryr OS ya viene con <b>OpenCode Zen (gratis)</b> activo, que no necesita clave; si prefieres otro (OpenCode GO, Gemini, OpenAI, Claude, DeepSeek, un modelo local con Ollama, u otro), agrégalo y actívalo. Solo una cuenta puede estar activa a la vez.</p>';
 
   html += cuentasIaLista.length ? '<div style="margin-bottom:10px">' + cuentasIaLista.map(c => `
     <div class="seed-item" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
@@ -1215,7 +1215,7 @@ function renderCuentaIaCampos() {
     // config/cuentas_ia.py), y solo se listan los modelos gratuitos.
     html += `<div class="gw-field"><label>Modelo gratuito</label>
         <select id="ciModelo" style="background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:11px;padding:6px 8px;width:100%">
-          <option value="big-pickle">big-pickle (recomendado)</option>
+          <option value="${prov.modelo_base}">${prov.modelo_base} (recomendado)</option>
         </select>
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin:-2px 0 6px">No necesita API key. Pulsa "Ver modelos disponibles" para ver los gratuitos de hoy; algunos pueden fallar en el servidor de OpenCode.</div>`;

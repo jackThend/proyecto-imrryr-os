@@ -9,13 +9,13 @@ _Actualizado: 2026-09-29. Este archivo lo muestra la Vista Código del dashboard
 - **Base de datos**: SQLite única (`vault/sqlite/imrryr.db`) con respaldo diario automático (14 días).
 
 ## Capa de IA (Ajustes > Cuentas de IA)
-Sin modelo por defecto: el sistema usa la cuenta que el usuario activa.
+Una instalación nueva arranca con **OpenCode Zen (gratis)** ya activo, sin que el usuario cree ninguna cuenta (`config/cuentas_ia.py::asegurar_cuenta_inicial`, llamada desde `scripts/startup.py`). Solo actúa si no existe `config/cuentas_ia.json`: nunca pisa ni re-siembra cuentas del usuario. El modelo es el primero disponible de `MODELOS_GRATIS_PREFERIDOS`; hoy `mimo-v2.6-flash-free`, elegido por prueba real (ver abajo).
 
 | Proveedor | Ruta | Estado |
 |---|---|---|
 | Gemini, OpenAI, Anthropic, DeepSeek, Ollama, "otro" | LiteLLM (alias `imrryr-activo`) | Funciona (Gemini free: 20 consultas/día) |
 | OpenCode GO (de pago) | LiteLLM + cabecera `x-opencode-session` | Requiere suscripción activa: hoy devuelve 403 (externo al código) |
-| **OpenCode Zen (gratis)** | **Proveedor nativo de OpenCode, sin LiteLLM** | Funciona con `big-pickle` (verificado con escritura real en la base) |
+| **OpenCode Zen (gratis)** | **Proveedor nativo de OpenCode, sin LiteLLM** | Funciona; por defecto `mimo-v2.6-flash-free`. Prueba 2026-10-08 de los 13 modelos gratuitos con herramientas reales (4 tareas + reunión con volcado, comprobado en la base): mimo 4/4 y sin duplicados; nemotron-3.5-lightning 4/4 pero lento y duplica; big-pickle 3/4 y el más lento; 4 modelos fallan de inmediato. Los modelos gratuitos rotan, por eso hay lista de reserva |
 
 Detalles de la ruta nativa (por qué es distinta):
 - El servidor gratuito rechaza (403) cualquier petición que no venga de OpenCode, por eso no puede pasar por LiteLLM.

@@ -46,9 +46,9 @@ def test_zen_gratis_sale_por_el_provider_nativo(cuentas):
     assert cuentas_ia.modelo_para_agente() == {"providerID": "opencode", "modelID": "nemotron-3-ultra-free"}
 
 
-def test_zen_sin_modelo_elegido_usa_big_pickle(cuentas):
+def test_zen_sin_modelo_elegido_usa_el_recomendado(cuentas):
     cuentas([{"id": "z", "proveedor": "opencode_zen", "activa": True}])
-    assert cuentas_ia.modelo_para_agente()["modelID"] == "big-pickle"
+    assert cuentas_ia.modelo_para_agente()["modelID"] == cuentas_ia.PROVEEDORES["opencode_zen"]["modelo_base"]
 
 
 def test_solo_cuenta_la_activa(cuentas):
@@ -232,3 +232,66 @@ def test_el_prompt_de_herramientas_solo_se_agrega_en_la_ruta_nativa():
     assert sync_agentes._prompt_de_agente("Agenda cosas", False) == {}
     prompt = sync_agentes._prompt_de_agente("Agenda cosas", True)["prompt"]
     assert prompt.startswith("Agenda cosas") and "BLOQUEADAS" in prompt and "imrryr_*" in prompt
+
+
+# ---------------------------------------------------------------- cuenta inicial
+def _catalogo(*ids):
+    return lambda proveedor: {"ok": True, "modelos": [{"id": i, "nombre": i} for i in ids]}
+
+
+def test_instalacion_nueva_arranca_con_zen_gratis_activo(cuentas, monkeypatch):
+    """Sin archivo de cuentas (instalación nueva) queda activa la capa gratuita, que no
+    pide clave: antes el usuario tenía que crear una cuenta y el formulario lo llevaba a Gemini."""
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
+    monkeypatch.setattr(cuentas_ia, "listar_modelos_remotos", _catalogo(*cuentas_ia.MODELOS_GRATIS_PREFERIDOS, "otro-free"))
+    assert cuentas_ia.asegurar_cuenta_inicial() is True
+    lista = cuentas_ia.listar_cuentas()
+    assert len(lista) == 1 and lista[0]["activa"] is True
+    assert lista[0]["proveedor"] == "opencode_zen"
+    assert lista[0]["modelo"] == cuentas_ia.MODELOS_GRATIS_PREFERIDOS[0] == "mimo-v2.6-flash-free"
+    assert "api_key" not in lista[0]
+    # y los agentes salen por el proveedor nativo de OpenCode, no por LiteLLM
+    assert cuentas_ia.modelo_para_agente() == {"providerID": "opencode", "modelID": "mimo-v2.6-flash-free"}
+
+
+def test_si_el_mejor_modelo_gratis_ya_no_esta_se_usa_el_siguiente(cuentas, monkeypatch):
+    """Los modelos gratuitos rotan: no se puede dejar una cuenta apuntando a uno que ya no existe."""
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
+    monkeypatch.setattr(cuentas_ia, "listar_modelos_remotos", _catalogo("big-pickle", "nemotron-3.5-lightning-free", "x-free"))
+    cuentas_ia.asegurar_cuenta_inicial()
+    assert cuentas_ia.listar_cuentas()[0]["modelo"] == "nemotron-3.5-lightning-free"
+
+
+def test_sin_red_se_usa_el_modelo_preferido(cuentas, monkeypatch):
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
+    monkeypatch.setattr(cuentas_ia, "listar_modelos_remotos", lambda p: {"ok": False, "error": "sin red"})
+    cuentas_ia.asegurar_cuenta_inicial()
+    assert cuentas_ia.listar_cuentas()[0]["modelo"] == "mimo-v2.6-flash-free"
+
+
+def test_no_pisa_las_cuentas_que_el_usuario_ya_tiene(cuentas, monkeypatch):
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
+    cuentas([{"id": "g", "proveedor": "gemini", "modelo": "gemini/gemini-2.5-flash", "activa": True}])
+    assert cuentas_ia.asegurar_cuenta_inicial() is False
+    assert [c["id"] for c in cuentas_ia.listar_cuentas()] == ["g"]
+
+
+def test_si_el_usuario_vacio_sus_cuentas_no_se_vuelve_a_sembrar(cuentas, monkeypatch):
+    """Archivo presente pero sin cuentas = decisión del usuario, no una instalación nueva."""
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: (1, 18, 32))
+    cuentas([])
+    assert cuentas_ia.asegurar_cuenta_inicial() is False
+    assert cuentas_ia.listar_cuentas() == []
+
+
+@pytest.mark.parametrize("version", [None, (1, 17, 11)])
+def test_no_activa_una_cuenta_rota_si_el_opencode_es_demasiado_viejo(cuentas, monkeypatch, version):
+    monkeypatch.setattr(cuentas_ia, "version_opencode", lambda: version)
+    assert cuentas_ia.asegurar_cuenta_inicial() is False
+    assert cuentas_ia.listar_cuentas() == []
+
+
+def test_zen_es_el_primer_proveedor_del_formulario():
+    """El formulario deja seleccionado el primero: con Gemini ahí, quien quería OpenCode
+    guardaba su cuenta como Gemini (caso real)."""
+    assert next(iter(cuentas_ia.PROVEEDORES)) == "opencode_zen"

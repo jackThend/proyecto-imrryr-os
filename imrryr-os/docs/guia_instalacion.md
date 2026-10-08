@@ -16,11 +16,10 @@
 - Se abrirá una ventana con el panel de Imrryr OS. Funciona como una aplicación normal, con su propio icono.
 - Si aparece un cuadro de error, **sácale una foto o captura** y mándala a quien te dio el programa.
 
-## 3. Elegir la inteligencia artificial
-Sin este paso los asistentes no pueden responder.
-1. En el menú, entra a **Ajustes** y luego a **Cuentas de IA**.
-2. Elige **"OpenCode Zen (gratis)"**. No pide clave ni tarjeta. Déjalo con el modelo que viene seleccionado y pulsa **Activar**.
-3. Espera unos segundos a que confirme.
+## 3. La inteligencia artificial ya viene lista
+**No tienes que configurar nada.** Imrryr OS arranca con **OpenCode Zen (gratis)** activo: no pide clave, cuenta ni tarjeta, y los asistentes responden desde el primer mensaje. Puedes comprobarlo en **Ajustes → Cuentas de IA**, donde aparece como activa.
+
+Si más adelante quieres usar otra (por ejemplo una cuenta propia de Gemini u OpenCode GO), en esa misma pantalla pulsa **+ Cuenta de IA**, elige el proveedor, y luego **Usar esta**.
 
 Con la opción gratuita las respuestas pueden tardar desde 2 segundos hasta **un par de minutos**, porque ese servicio lo comparte mucha gente. No significa que esté roto. Si necesitas respuestas más rápidas o estables, puedes usar una cuenta propia de **Gemini** u otro proveedor desde el mismo lugar.
 
@@ -38,7 +37,7 @@ Entra al chat del **Asistente** y escribe algo simple, por ejemplo: *"Agrega a m
 | La ventana no aparece tras 5 minutos | Abre **"Detener Imrryr OS"**, espera 10 segundos y abre de nuevo **"Imrryr OS"** |
 | Aparece "Otro programa del equipo está usando el puerto..." | Imrryr OS necesita ciertos puertos de tu PC (3000, 4000 y 4040) y otro programa los ocupa. Cierra ese programa y vuelve a abrir Imrryr OS. Si no puedes, pide ayuda técnica: se cambia el puerto en `config\.env` |
 | El antivirus bloquea o borra archivos | Agrega la carpeta de instalación como excepción (ver abajo) y reinstala |
-| Los asistentes no responden | Revisa que el paso 3 esté hecho y que haya internet |
+| Los asistentes no responden | Revisa que haya internet y que en **Ajustes → Cuentas de IA** haya una cuenta marcada como activa |
 | Nada de lo anterior | Manda a quien te dio el programa el archivo `vault\logs\launcher.log`, dentro de la carpeta de instalación |
 
 La carpeta de instalación es `C:\Users\TU_USUARIO\AppData\Local\Programs\Imrryr OS`. Para abrirla, pega esa ruta en el Explorador de archivos cambiando `TU_USUARIO` por el tuyo.

@@ -33,9 +33,34 @@ ENV_PATH = Path(__file__).resolve().parent / ".env"
 MARCADOR_INICIO = "  # --- IMRRYR-ACTIVO (autogenerado por Cuentas de IA, no editar a mano) ---\n"
 MARCADOR_FIN = "  # --- FIN IMRRYR-ACTIVO ---\n"
 
+# Modelos gratuitos de Zen por orden de preferencia. Medidos en una prueba real (2026-10-08) con las
+# herramientas de agenda y pendientes sobre una base vacía, comprobando cada resultado en la base:
+#   mimo-v2.6-flash-free   4/4 tareas, reunión con volcado correcta y sin duplicados  -> el mejor
+#   nemotron-3.5-lightning 4/4, pero más lento y duplica pendientes
+#   big-pickle             3/4 y el más lento, aunque es el más estable en el tiempo
+# Los modelos gratuitos rotan: la cuenta inicial usa el primero que siga en el catálogo.
+MODELOS_GRATIS_PREFERIDOS = ["mimo-v2.6-flash-free", "nemotron-3.5-lightning-free", "big-pickle"]
+
 # proveedor -> (nombre visible, modelo real de LiteLLM por defecto, si requiere API key,
 # y opcionalmente api_base fijo del proveedor cuando siempre es el mismo endpoint).
 PROVEEDORES = {
+    # OpenCode Zen, capa GRATUITA. VA PRIMERO a propósito: el formulario del panel deja
+    # seleccionado el primer proveedor, y con Gemini ahí un usuario que quería OpenCode
+    # terminaba guardando su clave como cuenta de Gemini. Es también la cuenta con la que
+    # arranca una instalación nueva (ver asegurar_cuenta_inicial). Es la única excepción a "todo pasa por
+    # LiteLLM": el servidor de Zen rechaza estos modelos (403 FreeTierError,
+    # "solo se puede usar desde dentro de OpenCode") cuando llegan por un
+    # passthrough OpenAI-compatible, incluso con clave válida. Solo responden
+    # al proveedor nativo `opencode` del propio OpenCode, y sin credenciales
+    # (verificado en vivo con un HOME vacío). Por eso `nativo_opencode`: no se
+    # genera bloque de LiteLLM y las sesiones usan providerID "opencode".
+    # Se consideró imitar las cabeceras del cliente dentro de LiteLLM; se
+    # descartó a propósito: sería falsificar la identidad del cliente para
+    # saltarse una restricción que el proveedor puso deliberadamente.
+    "opencode_zen": {
+        "nombre": "OpenCode Zen (gratis)", "modelo_base": MODELOS_GRATIS_PREFERIDOS[0], "requiere_key": False,
+        "api_base": "https://opencode.ai/zen/v1", "nativo_opencode": True, "solo_gratis": True,
+    },
     "gemini": {"nombre": "Google Gemini", "modelo_base": "gemini/gemini-2.5-flash", "requiere_key": True},
     "openai": {"nombre": "OpenAI (GPT)", "modelo_base": "openai/gpt-4o-mini", "requiere_key": True},
     "anthropic": {"nombre": "Anthropic (Claude)", "modelo_base": "anthropic/claude-3-5-sonnet-20241022", "requiere_key": True},
@@ -47,20 +72,6 @@ PROVEEDORES = {
     # publicados en la web: se consultan en vivo a su endpoint /models con la
     # API key del usuario (ver listar_modelos_remotos()).
     "opencode_go": {"nombre": "OpenCode GO", "modelo_base": "kimi-k2.7-code", "requiere_key": True, "api_base": "https://opencode.ai/zen/go/v1"},
-    # OpenCode Zen, capa GRATUITA. Es la única excepción a "todo pasa por
-    # LiteLLM": el servidor de Zen rechaza estos modelos (403 FreeTierError,
-    # "solo se puede usar desde dentro de OpenCode") cuando llegan por un
-    # passthrough OpenAI-compatible, incluso con clave válida. Solo responden
-    # al proveedor nativo `opencode` del propio OpenCode, y sin credenciales
-    # (verificado en vivo con un HOME vacío). Por eso `nativo_opencode`: no se
-    # genera bloque de LiteLLM y las sesiones usan providerID "opencode".
-    # Se consideró imitar las cabeceras del cliente dentro de LiteLLM; se
-    # descartó a propósito: sería falsificar la identidad del cliente para
-    # saltarse una restricción que el proveedor puso deliberadamente.
-    "opencode_zen": {
-        "nombre": "OpenCode Zen (gratis)", "modelo_base": "big-pickle", "requiere_key": False,
-        "api_base": "https://opencode.ai/zen/v1", "nativo_opencode": True, "solo_gratis": True,
-    },
     "ollama": {"nombre": "Ollama (local, sin costo)", "modelo_base": "ollama/qwen2.5", "requiere_key": False},
     "otro": {"nombre": "Otro (avanzado)", "modelo_base": "", "requiere_key": True},
 }
@@ -321,6 +332,44 @@ def version_opencode() -> tuple[int, ...] | None:
         return None
     m = re.search(r"(\d+)\.(\d+)\.(\d+)", salida)
     return tuple(int(x) for x in m.groups()) if m else None
+
+
+def asegurar_cuenta_inicial() -> bool:
+    """Instalación nueva: deja activa la capa gratuita de OpenCode Zen, sin credenciales.
+
+    Sin esto el usuario arrancaba sin ninguna cuenta y tenía que crear una antes de poder
+    chatear; el formulario además lo llevaba a Gemini. Solo actúa cuando NO existe el
+    archivo de cuentas: si el usuario ya configuró algo (o las vació a propósito) no se
+    toca. Tampoco actúa si el OpenCode que se lanzará es demasiado viejo para la capa
+    gratuita; en ese caso queda como antes (sin cuenta) en vez de una cuenta rota.
+    """
+    if CUENTAS_PATH.exists():
+        return False
+    version = version_opencode()
+    if version is None or version < VERSION_MIN_NATIVO:
+        log("Instalación nueva, pero este OpenCode no admite la capa gratuita: no se activa una cuenta por defecto.")
+        return False
+    zen = PROVEEDORES["opencode_zen"]
+    modelo = _mejor_modelo_gratis_disponible()
+    _guardar_todas([{
+        "id": "zen_gratis", "nombre": zen["nombre"], "proveedor": "opencode_zen",
+        "modelo": modelo, "activa": True,
+    }])
+    log(f"Primera ejecución: cuenta '{zen['nombre']}' ({modelo}) activada por defecto.")
+    return True
+
+
+def _mejor_modelo_gratis_disponible() -> str:
+    """El primero de MODELOS_GRATIS_PREFERIDOS que siga publicado como gratuito. Sin red (o si
+    el catálogo no responde) se usa el preferido: mejor eso que dejar la instalación sin cuenta."""
+    try:
+        r = listar_modelos_remotos("opencode_zen")
+        vivos = {m["id"] for m in r.get("modelos", [])} if r.get("ok") else set()
+    except Exception:
+        vivos = set()
+    if not vivos:
+        return MODELOS_GRATIS_PREFERIDOS[0]
+    return next((m for m in MODELOS_GRATIS_PREFERIDOS if m in vivos), MODELOS_GRATIS_PREFERIDOS[0])
 
 
 def _reiniciar_opencode() -> bool:
