@@ -109,3 +109,25 @@ def test_puerto_libre_no_es_un_conflicto(tmp_path, monkeypatch):
     monkeypatch.setattr(startup, "RUN_DIR", tmp_path)
     libre = _puerto_libre()
     assert startup.puertos_ajenos([("dashboard", libre, f"http://localhost:{libre}/api/status", {})]) == []
+
+
+# ---------------------------------------------------------------- esperas de arranque
+def test_el_limite_de_espera_cubre_una_primera_arrancada_lenta():
+    """Medido: LiteLLM tardo 104 s en la primera apertura tras instalar. Con 120 s de
+    limite un equipo algo mas lento fallaba la primera vez."""
+    assert startup.HEALTH_TIMEOUT >= 240
+
+
+def test_si_el_servicio_muere_no_se_espera_todo_el_plazo(monkeypatch):
+    import time
+
+    class Muerto:
+        returncode = 1
+
+        def poll(self):
+            return 1
+
+    monkeypatch.setattr(startup.httpx, "get", lambda *a, **k: (_ for _ in ()).throw(startup.httpx.ConnectError("x")))
+    t0 = time.time()
+    assert startup._wait("http://localhost:1/x", {}, "Prueba", proc=Muerto()) is False
+    assert time.time() - t0 < 5

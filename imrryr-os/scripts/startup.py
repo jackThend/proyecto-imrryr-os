@@ -57,7 +57,11 @@ GATEWAY_PORT = 5050
 WHATSAPP_LOCAL_PORT = 5051
 DASHBOARD_PORT = 3000
 from config.defaults import OPENCODE_PASSWORD_DEFAULT as OPENCODE_PASSWORD  # noqa: E402
-HEALTH_TIMEOUT = 120  # segundos máx esperando cada servicio (permite arranque en frío seguro)
+# Segundos máx esperando cada servicio. LiteLLM tarda ~35 s solo en importarse en un PC
+# actual y ~100 s en la primera arrancada tras instalar (antivirus revisando los archivos
+# nuevos): medido 104 s con un límite de 120 s, es decir, en un equipo algo más lento la
+# primera apertura habría fallado. Si el proceso muere antes, _wait lo detecta y no espera.
+HEALTH_TIMEOUT = 300
 
 
 # --------------------------------------------------------------------------
@@ -326,31 +330,34 @@ def puertos_ajenos(servicios: list[tuple[str, int, str, dict]]) -> list[tuple[st
 # --------------------------------------------------------------------------
 # Healthchecks
 # --------------------------------------------------------------------------
-def wait_litellm(port: int) -> bool:
+def wait_litellm(port: int, proc: subprocess.Popen | None = None) -> bool:
     url = f"http://localhost:{port}/health/liveliness"
-    return _wait(url, headers={}, name="LiteLLM")
+    return _wait(url, headers={}, name="LiteLLM", proc=proc)
 
 
-def wait_opencode(port: int, password: str) -> bool:
+def wait_opencode(port: int, password: str, proc: subprocess.Popen | None = None) -> bool:
     url = f"http://localhost:{port}/api/health"
-    return _wait(url, headers=basic_auth_header(password), name="OpenCode")
+    return _wait(url, headers=basic_auth_header(password), name="OpenCode", proc=proc)
 
 
-def wait_gateway(port: int) -> bool:
+def wait_gateway(port: int, proc: subprocess.Popen | None = None) -> bool:
     url = f"http://localhost:{port}/webhook/health"
-    return _wait(url, headers={}, name="Gateway")
+    return _wait(url, headers={}, name="Gateway", proc=proc)
 
 
-def wait_dashboard(port: int) -> bool:
+def wait_dashboard(port: int, proc: subprocess.Popen | None = None) -> bool:
     url = f"http://localhost:{port}/api/status"
-    return _wait(url, headers={}, name="Dashboard")
+    return _wait(url, headers={}, name="Dashboard", proc=proc)
 
 
-def _wait(url: str, headers: dict, name: str) -> bool:
+def _wait(url: str, headers: dict, name: str, proc: subprocess.Popen | None = None) -> bool:
     log(f"Esperando {name} ({url})…")
     deadline = time.time() + HEALTH_TIMEOUT
     last = 0
     while time.time() < deadline:
+        if proc is not None and proc.poll() is not None:
+            log(f"X {name} se cerró durante el arranque (código {proc.returncode}); no tiene sentido seguir esperando.")
+            return False
         try:
             r = httpx.get(url, headers=headers, timeout=3)
             if r.status_code == 200:
@@ -450,27 +457,30 @@ def main() -> int:
         return 0 if ok else 1
 
     # 1. LiteLLM
+    p_litellm = None
     if not _port_open(litellm_port):
-        start_litellm(env, litellm_port)
+        p_litellm = start_litellm(env, litellm_port)
     else:
         log(f"Puerto {litellm_port} ocupado: asumo LiteLLM ya corriendo.")
-    if not wait_litellm(litellm_port):
+    if not wait_litellm(litellm_port, p_litellm):
         return 1
 
     # 2. OpenCode
+    p_opencode = None
     if not _port_open(opencode_port):
-        start_opencode(env, opencode_port, password)
+        p_opencode = start_opencode(env, opencode_port, password)
     else:
         log(f"Puerto {opencode_port} ocupado: asumo OpenCode ya corriendo.")
-    if not wait_opencode(opencode_port, password):
+    if not wait_opencode(opencode_port, password, p_opencode):
         return 1
 
     # 3. Gateway WhatsApp (webhook + selector local/cloud)
+    p_gateway = None
     if not _port_open(gateway_port):
-        start_gateway(env, gateway_port)
+        p_gateway = start_gateway(env, gateway_port)
     else:
         log(f"Puerto {gateway_port} ocupado: asumo Gateway ya corriendo.")
-    wait_gateway(gateway_port)  # no bloqueante: el gateway es opcional para el resto del backend
+    wait_gateway(gateway_port, p_gateway)  # no bloqueante: el gateway es opcional para el resto del backend
 
     # 4. Sidecar WhatsApp local (solo si el modo activo es "local")
     from gateway.config import modo_activo
@@ -484,11 +494,12 @@ def main() -> int:
         log("Modo WhatsApp activo: cloud (sidecar local no se levanta).")
 
     # 5. Dashboard (la cara visible; sin esto el usuario no tiene forma de usar el sistema)
+    p_dashboard = None
     if not _port_open(dashboard_port):
-        start_dashboard(env, dashboard_port)
+        p_dashboard = start_dashboard(env, dashboard_port)
     else:
         log(f"Puerto {dashboard_port} ocupado: asumo Dashboard ya corriendo.")
-    wait_dashboard(dashboard_port)
+    wait_dashboard(dashboard_port, p_dashboard)
 
     log("=" * 60)
     log("Imrryr OS operativo:")

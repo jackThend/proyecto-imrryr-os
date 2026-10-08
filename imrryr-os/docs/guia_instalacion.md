@@ -12,7 +12,7 @@
 4. Al terminar, deja marcada **"Iniciar Imrryr OS"** y pulsa **Finalizar**.
 
 ## 2. Primera vez que se abre
-- Espera **hasta un minuto**. Los servicios internos se están encendiendo y no verás nada mientras tanto. **No cierres ni vuelvas a abrir.**
+- Espera **hasta 3 minutos** la primera vez (después, entre 1 y 2). Los servicios internos se están encendiendo y no verás nada mientras tanto: es normal. La ventana aparece sola cuando todo está listo. **No cierres ni vuelvas a abrir.**
 - Se abrirá una ventana con el panel de Imrryr OS. Funciona como una aplicación normal, con su propio icono.
 - Si aparece un cuadro de error, **sácale una foto o captura** y mándala a quien te dio el programa.
 
@@ -35,7 +35,7 @@ Entra al chat del **Asistente** y escribe algo simple, por ejemplo: *"Agrega a m
 ## Si algo falla
 | Síntoma | Qué hacer |
 |---|---|
-| La ventana no aparece tras 2 minutos | Abre **"Detener Imrryr OS"**, espera 10 segundos y abre de nuevo **"Imrryr OS"** |
+| La ventana no aparece tras 5 minutos | Abre **"Detener Imrryr OS"**, espera 10 segundos y abre de nuevo **"Imrryr OS"** |
 | Aparece "Otro programa del equipo está usando el puerto..." | Imrryr OS necesita ciertos puertos de tu PC (3000, 4000 y 4040) y otro programa los ocupa. Cierra ese programa y vuelve a abrir Imrryr OS. Si no puedes, pide ayuda técnica: se cambia el puerto en `config\.env` |
 | El antivirus bloquea o borra archivos | Agrega la carpeta de instalación como excepción (ver abajo) y reinstala |
 | Los asistentes no responden | Revisa que el paso 3 esté hecho y que haya internet |
