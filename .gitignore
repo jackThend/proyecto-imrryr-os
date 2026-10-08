@@ -111,3 +111,6 @@ imrryr-os/vault/
 # --- Audio generado/descargado en runtime (TTS, notas de voz) ---
 imrryr-os/docs/audios/
 imrryr-os/docs/eventos/*.ics
+
+# Instalador final que se deja en la raíz para entregar (artefacto de build, no se versiona)
+/Imrryr_OS_Setup_*.exe
