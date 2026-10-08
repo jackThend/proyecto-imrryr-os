@@ -180,8 +180,12 @@ def _buscar_ripley_navegador(query: str) -> list[dict[str, Any]]:
 
     url = f"https://simple.ripley.cl/search/{quote(query)}?source=search"
     try:
+        try:
+            from navegador_cliente import lanzar_navegador
+        except ImportError:
+            from skills.navegador_cliente import lanzar_navegador
         with sync_playwright() as p:
-            navegador = p.chromium.launch(headless=True)
+            navegador = lanzar_navegador(p)
             try:
                 pagina = navegador.new_page(user_agent=HEADERS["User-Agent"])
                 pagina.goto(url, wait_until="domcontentloaded", timeout=25000)

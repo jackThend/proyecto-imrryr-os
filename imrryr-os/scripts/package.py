@@ -142,6 +142,7 @@ CORE_SKILLS = [
     "uso_ia.py",
     "errores_ia.py",
     "ruta_modelo.py",
+    "navegador_cliente.py",  # lo usan navegar_web y scraper_tiendas (no es skill: sin manifiesto)
     "perfil_negocio.py",
     "confirmacion_hitl.py",
     "memoria_perfil.py",

@@ -73,8 +73,12 @@ def _leer(url: str, max_caracteres: int) -> dict[str, Any]:
         return {"ok": False, "error": "playwright no está instalado (pip install playwright && playwright install chromium)"}
 
     try:
+        try:
+            from navegador_cliente import lanzar_navegador
+        except ImportError:
+            from skills.navegador_cliente import lanzar_navegador
         with sync_playwright() as p:
-            navegador = p.chromium.launch(headless=True)
+            navegador = lanzar_navegador(p)
             try:
                 pagina = navegador.new_page(user_agent=HEADERS["User-Agent"])
                 pagina.goto(url, wait_until="domcontentloaded", timeout=20000)

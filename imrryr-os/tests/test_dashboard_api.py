@@ -212,3 +212,17 @@ def test_chat_con_opencode_caido_error_humanizado(cliente, monkeypatch):
     assert r.status_code == 500
     cuerpo = r.json()
     assert cuerpo.get("error"), "el mensaje de error no puede venir vacío"
+
+
+def test_agentes_disponibles_solo_lista_los_que_existen_y_estan_activos(cliente, tmp_path, monkeypatch):
+    """Cada perfil empaqueta solo parte de los agentes. El panel oculta las pestañas de los demás:
+    antes mostraba Agenda, Compras, Código... y al escribirles el servidor respondia 500."""
+    import api.deps as deps
+    (tmp_path / "agente_agenda.yaml").write_text("nombre: Agenda\n", encoding="utf-8")
+    (tmp_path / "agente_compras.yaml").write_text("nombre: Compras\nactivo: false\n", encoding="utf-8")
+    (tmp_path / "guardia_seguridad.yaml").write_text("nombre: Guardia\nactivo: true\n", encoding="utf-8")
+    (tmp_path / "roto.yaml").write_text(": : no es yaml :\n  - [", encoding="utf-8")
+    monkeypatch.setattr(deps, "AGENTES_DIR", tmp_path)
+    r = cliente.get("/api/agentes-disponibles")
+    assert r.status_code == 200
+    assert r.json() == {"agentes": ["agenda", "guardia_seguridad"]}

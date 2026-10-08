@@ -24,8 +24,10 @@ Detalles de la ruta nativa (por qué es distinta):
 - Activar la cuenta re-sincroniza agentes y reinicia OpenCode; se niega con motivo si la versión es menor.
 
 ## Módulos
-- **Verificados con uso real** (conversación por chat + comprobación directa en SQLite): Agenda, Pendientes, Finanzas, Reuniones (incluye edición de transcripción, mapa conceptual, volcado a agenda/pendientes).
-- **Con tests y sin verificación en vivo reciente**: Compras (Falabella por HTTP; Ripley solo con navegador; Paris y MercadoLibre no funcionan), RRSS/Web, Correo/Secretario, CRM, Navegación por voz.
+- **Verificados con uso real el 2026-10-08**, cada agente en una copia aparte con base vacía y el modelo gratuito por defecto (chat por OpenCode + comprobación directa del dato guardado): Agenda, Asistente (memoria), Financiero, Creativo, Investigador, Reuniones, Compras (seguimiento de producto y precios reales de Falabella), RRSS (post programado), Secretario (borrador), Navegación (lectura web real y audio MP3), Guardia (alerta en `alertas.log`) y CRM (cotización PDF). 14 de 14.
+- **No verificados porque exigen cuentas reales del usuario**: leer correo (Gmail/IMAP), publicar en Instagram/Facebook, hacer push a GitHub y WhatsApp.
+- **Navegador**: Navegación y Ripley usan el Chromium de Playwright si existe y, si no, el Chrome/Edge/Brave que tenga instalado el cliente (`skills/navegador_cliente.py`). Verificado leyendo páginas y 48 productos de Ripley sin Chromium de Playwright. Paris y MercadoLibre siguen sin funcionar.
+- **Pestañas del panel**: el panel oculta las de agentes que no vienen en el perfil instalado (`/api/agentes-disponibles`). Antes pyme mostraba Agenda, Compras, Correo, RRSS, Navegación y Código y respondían error 500.
 - **Guardia de Seguridad**: solo avisa; nunca detiene servicios base (un bug anterior los mataba a los 5 min).
 
 ## Empaquetado
@@ -35,5 +37,5 @@ Detalles de la ruta nativa (por qué es distinta):
 ## Pendiente
 1. **Rotar la API key de OpenCode GO** antes de distribuir (su valor quedó visible en una sesión de trabajo; decisión del usuario: aplazada).
 2. Reactivar la suscripción de OpenCode GO si se quiere usar (o seguir con Zen gratis / Gemini).
-3. Verificación en vivo de los módulos "sin verificación reciente" (Compras, RRSS, Correo, CRM, Navegación).
+3. Verificar con cuentas reales lo que hoy no se pudo: leer correo, publicar en redes, push a GitHub y WhatsApp.
 4. **CI de GitHub funcionando** (Windows + Ubuntu, repo público desde 2026-09-30). Los 6 PRs de Dependabot se fusionaron tras probarlos en un entorno limpio; falta solo confirmar Express 5 con WhatsApp real (en local, las rutas HTTP del sidecar responden igual que con Express 4).

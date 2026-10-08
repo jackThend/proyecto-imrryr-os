@@ -3957,13 +3957,30 @@ async function guardarMapaCanvasActual() {
 
 
 
+// Cada perfil empaqueta solo parte de los agentes: se quitan las pestañas de los que no
+// existen (o están desactivados) en esta instalación, en vez de dejar pestañas que fallan.
+async function filtrarAppsPorAgentesDisponibles() {
+  try {
+    const r = await fetch('/api/agentes-disponibles');
+    if (!r.ok) return;
+    const disponibles = new Set((await r.json()).agentes || []);
+    for (let i = APPS.length - 1; i >= 0; i--) {
+      if (APPS[i].agente && !disponibles.has(APPS[i].agente)) APPS.splice(i, 1);
+    }
+    NAV_ITEMS.length = 1;
+    NAV_ITEMS.push(...APPS);
+  } catch (e) { /* sin la lista se muestran todas, como antes */ }
+}
+
 // --- Init ---
 aplicarModoAyuda(localStorage.getItem('imrryr_ayuda_on') === '1');
 aplicarTema(localStorage.getItem('imrryr_tema') || 'minimalista');
 aplicarFondoPersonalizado();
 inicializarPosicionAyuda();
-renderNavTabs();
-montarChatPanels();
-abrirApp('inicio');
-actualizarStatus();
-setInterval(actualizarStatus, 15000);
+filtrarAppsPorAgentesDisponibles().then(() => {
+  renderNavTabs();
+  montarChatPanels();
+  abrirApp('inicio');
+  actualizarStatus();
+  setInterval(actualizarStatus, 15000);
+});

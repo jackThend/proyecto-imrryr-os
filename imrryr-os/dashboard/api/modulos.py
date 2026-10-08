@@ -83,6 +83,23 @@ def _sincronizar_agentes() -> None:
     subprocess.run([sys.executable, str(deps.ROOT / "scripts" / "sync_agentes.py")], cwd=str(deps.ROOT))
 
 
+@router.get("/api/agentes-disponibles")
+async def agentes_disponibles():
+    """Agentes que existen en ESTA instalación y están activos, con el id que usa el panel
+    (`agente_agenda.yaml` -> "agenda"). El panel oculta las pestañas de los demás: cada perfil
+    empaqueta solo parte de los agentes, y mostrar una pestaña sin su agente daba error 500
+    al escribirle (verificado: pyme listaba Agenda, Compras, Correo, RRSS, Navegación y Código)."""
+    ids = []
+    for fpath in deps.AGENTES_DIR.glob("*.yaml"):
+        try:
+            data = yaml.safe_load(fpath.read_text(encoding="utf-8")) or {}
+        except Exception:
+            continue
+        if data.get("activo", True):
+            ids.append(fpath.stem.removeprefix("agente_"))
+    return {"agentes": sorted(ids)}
+
+
 @router.get("/api/modulos")
 async def listar_modulos():
     return {
