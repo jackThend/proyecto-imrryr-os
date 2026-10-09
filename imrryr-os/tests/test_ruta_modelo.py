@@ -295,3 +295,32 @@ def test_zen_es_el_primer_proveedor_del_formulario():
     """El formulario deja seleccionado el primero: con Gemini ahí, quien quería OpenCode
     guardaba su cuenta como Gemini (caso real)."""
     assert next(iter(cuentas_ia.PROVEEDORES)) == "opencode_zen"
+
+
+def test_dos_reinicios_de_opencode_nunca_se_solapan(monkeypatch):
+    """Dos peticiones seguidas (doble clic en Activar, o un clic mientras otro reinicio sigue en
+    curso) lanzaban dos restart_opencode a la vez: uno quedaba vivo sin su PID registrado y
+    'Detener Imrryr OS' no podia pararlo."""
+    import threading
+    import time
+    from types import SimpleNamespace
+
+    en_curso, maximo, total = [0], [0], [0]
+    candado = threading.Lock()
+
+    def falso_run(*a, **k):
+        with candado:
+            en_curso[0] += 1
+            maximo[0] = max(maximo[0], en_curso[0])
+            total[0] += 1
+        time.sleep(0.15)
+        with candado:
+            en_curso[0] -= 1
+        return SimpleNamespace(returncode=0, stdout="", stderr="")
+
+    monkeypatch.setattr(cuentas_ia.subprocess, "run", falso_run)
+    hilos = [threading.Thread(target=cuentas_ia._reiniciar_opencode) for _ in range(4)]
+    [h.start() for h in hilos]
+    [h.join() for h in hilos]
+    assert total[0] == 4          # los cuatro se hicieron (el último deja la config más reciente)
+    assert maximo[0] == 1         # pero de uno en uno

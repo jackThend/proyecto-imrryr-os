@@ -360,8 +360,11 @@ function cargarHeroGenerico(id) {
 
 async function cargarHome() {
   const prefs = leerInicioPrefs();
-  pintarHomeHeroEsqueleto(prefs.hero);
-  prefs.hero.forEach(id => (HERO_LOADERS[id] || cargarHeroGenerico)(id));
+  // El perfil instalado puede no traer algunas apps (p. ej. Correo, que es tarjeta grande por
+  // defecto): sin este filtro su cargador buscaba una tarjeta inexistente y lanzaba un error.
+  const heroIds = prefs.hero.filter(id => appPorId(id));
+  pintarHomeHeroEsqueleto(heroIds);
+  heroIds.forEach(id => (HERO_LOADERS[id] || cargarHeroGenerico)(id));
   cargarHomeSecundaria(prefs.secundaria);
   setupHomeDragAndDrop();
 }

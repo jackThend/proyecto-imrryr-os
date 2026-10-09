@@ -28,9 +28,9 @@ Entra al chat del **Asistente** y escribe algo simple, por ejemplo: *"Agrega a m
 
 ## Activar módulos adicionales
 Además de los módulos que ya ves, Imrryr OS trae cinco apagados que puedes encender cuando los necesites: **Agenda**, **Compras**, **Navegación**, **RRSS y Web** y **Correo**.
-1. Entra a **Módulos** en el menú.
+1. Entra a **Módulos** en el menú. La primera vez te pide **crear una contraseña de administrador** (mínimo 4 caracteres): es una sola contraseña para el equipo, para que nadie borre un módulo por accidente. Anótala; la volverá a pedir cada vez que entres a esa pantalla.
 2. En el que quieras, pulsa **Activar**.
-3. Espera **hasta un minuto** (el motor de los asistentes se reinicia). La página se recarga sola y la pestaña nueva aparece en el menú.
+3. Espera **hasta un minuto** (el motor de los asistentes se reinicia). La página se recarga sola, vuelve a Módulos y la pestaña nueva aparece en el menú.
 
 Para apagar uno, pulsa **Desactivar** en el mismo lugar: la pestaña desaparece, pero no se borra nada.
 

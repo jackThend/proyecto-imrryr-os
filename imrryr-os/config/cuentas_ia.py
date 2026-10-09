@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import subprocess
 import sys
+import threading
 from pathlib import Path
 from typing import Any
 
@@ -372,7 +373,20 @@ def _mejor_modelo_gratis_disponible() -> str:
     return next((m for m in MODELOS_GRATIS_PREFERIDOS if m in vivos), MODELOS_GRATIS_PREFERIDOS[0])
 
 
+# Un solo reinicio de OpenCode a la vez. Los endpoints que lo piden (activar cuenta, activar o
+# desactivar un módulo) son funciones normales que corren en hilos, así que dos peticiones
+# seguidas (un doble clic, o un clic mientras otro reinicio sigue en curso) se solapaban: los dos
+# scripts mataban y levantaban OpenCode a la vez, uno quedaba vivo SIN su archivo de PID y
+# "Detener Imrryr OS" ya no podía pararlo (verificado: quedó un opencode.exe huérfano en el 4040).
+_LOCK_REINICIO_OPENCODE = threading.Lock()
+
+
 def _reiniciar_opencode() -> bool:
+    with _LOCK_REINICIO_OPENCODE:
+        return _reiniciar_opencode_sin_lock()
+
+
+def _reiniciar_opencode_sin_lock() -> bool:
     try:
         resultado = subprocess.run(
             [sys.executable, str(ROOT / "scripts" / "restart_opencode.py")],
